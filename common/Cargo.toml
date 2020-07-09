@@ -1,0 +1,14 @@
+[package]
+name = "common"
+version = "0.1.0"
+authors = ["Filippos Vasilakis <vasilakisfil@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+tokio-util = { version = "0.3.1", features = ["full"] }
+futures = "0.3.4"
+bytes = "0.5.4"
+futures-util = "0.3.4"
+chrono = { version = "0.4.11", features = ["serde"] }
+log = { version = "0.4.8" }
+pretty_env_logger = { version = "0.4.0" }
