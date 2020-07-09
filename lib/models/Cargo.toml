@@ -1,18 +1,11 @@
 [package]
-name = "webphone"
+name = "models"
 version = "0.1.0"
 authors = ["Filippos Vasilakis <vasilakisfil@gmail.com>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 tokio = { version = "0.2.13", features = ["full"] }
 serde = { version = "1.0.105", features = ["derive"] }
 
-common = { path = "common" }
-models = { path = "lib/models" }
-
-
-[workspace]
-members = ["common", "lib/models"]
+common = { path = "../../common" }
