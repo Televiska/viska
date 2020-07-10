@@ -12,7 +12,9 @@ serde = { version = "1.0.105", features = ["derive"] }
 
 common = { path = "common" }
 models = { path = "lib/models" }
+processor = { path = "lib/processor" }
+server = { path = "lib/server" }
 
 
 [workspace]
-members = ["common", "lib/models"]
+members = ["common", "lib/models", "lib/processor", "lib/server"]
