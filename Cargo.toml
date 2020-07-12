@@ -11,10 +11,15 @@ tokio = { version = "0.2.13", features = ["full"] }
 serde = { version = "1.0.105", features = ["derive"] }
 
 common = { path = "common" }
+helpers = { path = "lib/helpers" }
 models = { path = "lib/models" }
 processor = { path = "lib/processor" }
 server = { path = "lib/server" }
+store = { path = "lib/store" }
 
 
 [workspace]
-members = ["common", "lib/models", "lib/processor", "lib/server"]
+members = [
+  "common", "lib/helpers", "lib/models", "lib/processor", "lib/server",
+  "lib/store"
+]
