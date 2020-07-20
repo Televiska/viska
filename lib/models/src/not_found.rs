@@ -5,12 +5,12 @@ use common::uuid::Uuid;
 #[derive(Debug, Clone)]
 pub struct TransactionData {
     pub branch_id: String,
-    pub dialog_id: String,
+    pub dialog_id: i64,
 }
 
 #[derive(Debug, Clone)]
 pub enum NotFound {
-    Default(TransactionData)
+    Default(TransactionData),
 }
 
 impl NotFound {
@@ -22,15 +22,21 @@ impl NotFound {
 }
 
 fn create_final_response_from(request: crate::Request) -> Response {
-    use common::libsip::headers::{Headers, Header};
+    use common::libsip::headers::{Header, Headers};
 
     let mut headers = Headers::new();
-    headers.push(Header::Via(request.via_header().expect("request Via header").clone()));
-    headers.push(Header::From(request.from_header().expect("request From header").clone()));
+    headers.push(Header::Via(
+        request.via_header().expect("request Via header").clone(),
+    ));
+    headers.push(Header::From(
+        request.from_header().expect("request From header").clone(),
+    ));
     let mut to = request.to_header().expect("request To header").clone();
     to.set_param("tag", Some(format!("viska-{}", Uuid::new_v4())));
     headers.push(Header::To(to));
-    headers.push(Header::CallId(request.call_id().expect("request CallId header").clone()));
+    headers.push(Header::CallId(
+        request.call_id().expect("request CallId header").clone(),
+    ));
     let cseq = request.cseq().expect("request CallId header").clone();
     headers.push(Header::CSeq(cseq.0, cseq.1));
     headers.push(Header::ContentLength(0));
@@ -67,14 +73,15 @@ impl From<store::Transaction> for NotFound {
     }
 }
 
-impl Into<store::Transaction> for NotFound {
-    fn into(self) -> store::Transaction {
+impl Into<store::DirtyTransaction> for NotFound {
+    fn into(self) -> store::DirtyTransaction {
         match self {
-            NotFound::Default(data) => store::Transaction {
-                state: store::TransactionState::Trying,
-                branch_id: data.branch_id,
-                dialog_id: data.dialog_id,
-            }
+            NotFound::Default(data) => store::DirtyTransaction {
+                state: Some(store::TransactionState::Trying),
+                branch_id: Some(data.branch_id),
+                dialog_id: Some(data.dialog_id),
+                ..Default::default()
+            },
         }
     }
 }

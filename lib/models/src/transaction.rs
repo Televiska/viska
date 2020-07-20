@@ -5,7 +5,7 @@ use common::uuid::Uuid;
 #[derive(Debug, Clone)]
 pub struct TransactionData {
     pub branch_id: String,
-    pub dialog_id: String,
+    pub dialog_id: i64,
 }
 
 #[derive(Debug, Clone)]
@@ -93,28 +93,32 @@ impl From<store::Transaction> for Transaction {
     }
 }
 
-impl Into<store::Transaction> for Transaction {
-    fn into(self) -> store::Transaction {
+impl Into<store::DirtyTransaction> for Transaction {
+    fn into(self) -> store::DirtyTransaction {
         match self {
-            Transaction::Trying(data) => store::Transaction {
-                state: store::TransactionState::Trying,
-                branch_id: data.branch_id,
-                dialog_id: data.dialog_id,
+            Transaction::Trying(data) => store::DirtyTransaction {
+                state: Some(store::TransactionState::Trying),
+                branch_id: Some(data.branch_id),
+                dialog_id: Some(data.dialog_id),
+                ..Default::default()
             },
-            Transaction::Proceeding(data) => store::Transaction {
-                state: store::TransactionState::Proceeding,
-                branch_id: data.branch_id,
-                dialog_id: data.dialog_id,
+            Transaction::Proceeding(data) => store::DirtyTransaction {
+                state: Some(store::TransactionState::Proceeding),
+                branch_id: Some(data.branch_id),
+                dialog_id: Some(data.dialog_id),
+                ..Default::default()
             },
-            Transaction::Completed(data) => store::Transaction {
-                state: store::TransactionState::Completed,
-                branch_id: data.branch_id,
-                dialog_id: data.dialog_id,
+            Transaction::Completed(data) => store::DirtyTransaction {
+                state: Some(store::TransactionState::Completed),
+                branch_id: Some(data.branch_id),
+                dialog_id: Some(data.dialog_id),
+                ..Default::default()
             },
-            Transaction::Terminated(data) => store::Transaction {
-                state: store::TransactionState::Completed,
-                branch_id: data.branch_id,
-                dialog_id: data.dialog_id,
+            Transaction::Terminated(data) => store::DirtyTransaction {
+                state: Some(store::TransactionState::Completed),
+                branch_id: Some(data.branch_id),
+                dialog_id: Some(data.dialog_id),
+                ..Default::default()
             },
         }
     }

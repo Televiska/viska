@@ -66,7 +66,7 @@ async fn process_request(request: common::bytes::BytesMut) -> Result<Vec<u8>, St
 
     let (_, request) = libsip::parse_message::<VerboseError<&[u8]>>(&request.to_vec())
         .map_err(|e| e.to_string())?;
-    let response = processor::get_response(request)?;
+    let response = processor::get_response(request).await?;
     writeln!(file, "{}", response.clone()).expect("write to file");
     let response = format!("{}", response).into_bytes();
     //debug!("{}", pretty_print(response.clone()));

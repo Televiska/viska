@@ -8,6 +8,10 @@ edition = "2018"
 tokio = { version = "0.2.13", features = ["full"] }
 serde = { version = "1.0.105", features = ["derive"] }
 
+diesel = { git = "https://github.com/diesel-rs/diesel", features = ["postgres", "chrono", "numeric", "uuid", "r2d2"] }
+r2d2 = "0.8.9"
+
+
 once_cell = {version = "1.4.0" }
 
 common = { path = "../../common" }

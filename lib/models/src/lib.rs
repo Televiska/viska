@@ -23,17 +23,16 @@ macro_rules! named_header_param {
 }
 
 mod dialog;
+mod not_found;
 mod request;
 mod response;
 mod transaction;
-mod not_found;
 
 pub use dialog::{Dialog, TransactionType};
+pub use not_found::NotFound;
 pub use request::Request;
 pub use response::Response;
 pub use transaction::Transaction;
-pub use not_found::NotFound;
-
 pub struct ServerState {
     pub request: Request,
     pub dialog: Dialog,
