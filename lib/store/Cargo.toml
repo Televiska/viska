@@ -1,5 +1,5 @@
 [package]
-name = "server"
+name = "store"
 version = "0.1.0"
 authors = ["Filippos Vasilakis <vasilakisfil@gmail.com>"]
 edition = "2018"
@@ -8,6 +8,6 @@ edition = "2018"
 tokio = { version = "0.2.13", features = ["full"] }
 serde = { version = "1.0.105", features = ["derive"] }
 
+once_cell = {version = "1.4.0" }
+
 common = { path = "../../common" }
-processor = { path = "../processor" }
-helpers = { path = "../helpers" }
