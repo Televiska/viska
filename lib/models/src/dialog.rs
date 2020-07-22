@@ -1,5 +1,5 @@
-use crate::Transaction;
 use crate::NotFound;
+use crate::Transaction;
 
 #[derive(Debug, Clone)]
 pub struct Dialog {
@@ -14,18 +14,20 @@ pub struct Dialog {
 pub enum DialogFlow {
     Registration(Transaction),
     Invite(Transaction),
-    Publish(NotFound)
+    Publish(NotFound),
 }
 
 pub enum TransactionType {
     Transaction(Transaction),
-    NotFound(NotFound)
+    NotFound(NotFound),
 }
 
 impl Dialog {
     pub fn transaction(&self) -> TransactionType {
         match &self.flow {
-            DialogFlow::Registration(transaction) => TransactionType::Transaction(transaction.clone()),
+            DialogFlow::Registration(transaction) => {
+                TransactionType::Transaction(transaction.clone())
+            }
             DialogFlow::Invite(transaction) => TransactionType::Transaction(transaction.clone()),
             DialogFlow::Publish(transaction) => TransactionType::NotFound(transaction.clone()),
         }
@@ -54,24 +56,25 @@ impl From<(store::DialogFlow, store::Transaction)> for DialogFlow {
     }
 }
 
-impl Into<store::DialogWithTransaction> for Dialog {
-    fn into(self) -> store::DialogWithTransaction {
-        let (flow, transaction): (store::DialogFlow, store::Transaction) = self.flow.into();
-        store::DialogWithTransaction {
-            dialog: store::Dialog {
-                computed_id: self.computed_id,
-                call_id: self.call_id,
-                from_tag: self.from_tag,
-                to_tag: self.to_tag,
-                flow: flow,
+impl Into<store::DirtyDialogWithTransaction> for Dialog {
+    fn into(self) -> store::DirtyDialogWithTransaction {
+        let (flow, transaction): (store::DialogFlow, store::DirtyTransaction) = self.flow.into();
+        store::DirtyDialogWithTransaction {
+            dialog: store::DirtyDialog {
+                computed_id: Some(self.computed_id),
+                call_id: Some(self.call_id),
+                from_tag: Some(self.from_tag),
+                to_tag: Some(self.to_tag),
+                flow: Some(flow),
+                ..Default::default()
             },
             transaction,
         }
     }
 }
 
-impl Into<(store::DialogFlow, store::Transaction)> for DialogFlow {
-    fn into(self) -> (store::DialogFlow, store::Transaction) {
+impl Into<(store::DialogFlow, store::DirtyTransaction)> for DialogFlow {
+    fn into(self) -> (store::DialogFlow, store::DirtyTransaction) {
         match self {
             Self::Registration(transaction) => {
                 (store::DialogFlow::Registration, transaction.into())

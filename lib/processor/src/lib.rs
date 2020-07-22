@@ -2,15 +2,15 @@ use common::libsip::SipMessage;
 use models::{Request, Response};
 use std::convert::TryInto;
 
-pub fn get_response(msg: SipMessage) -> Result<SipMessage, String> {
+pub async fn get_response(msg: SipMessage) -> Result<SipMessage, String> {
     match msg {
-        SipMessage::Request { .. } => Ok(handle_request(msg.try_into()?)?.into()),
+        SipMessage::Request { .. } => Ok(handle_request(msg.try_into()?).await?.into()),
         SipMessage::Response { .. } => Err("we don't support responses yet".into()),
     }
 }
 
-fn handle_request(request: Request) -> Result<Response, String> {
-    Ok(handle_next_step_for(state_from(request)?)?)
+async fn handle_request(request: Request) -> Result<Response, String> {
+    Ok(handle_next_step_for(state_from(request).await?)?)
 }
 
 fn handle_next_step_for(state: models::ServerState) -> Result<Response, String> {
@@ -20,18 +20,24 @@ fn handle_next_step_for(state: models::ServerState) -> Result<Response, String> 
     }
 }
 
-fn state_from(request: Request) -> Result<models::ServerState, String> {
+async fn state_from(request: Request) -> Result<models::ServerState, String> {
     Ok(models::ServerState {
-        dialog: find_or_create_dialog(request.clone())?,
+        dialog: find_or_create_dialog(request.clone()).await?,
         request,
     })
 }
 
-fn find_or_create_dialog(request: Request) -> Result<models::Dialog, String> {
+async fn find_or_create_dialog(request: Request) -> Result<models::Dialog, String> {
     match request.dialog_id() {
-        Some(dialog_id) => Ok(store::Dialogs::find_with_transaction(dialog_id)
-            .ok_or("We couldn't find dialog!")?
+        Some(dialog_id) => Ok(store::Dialog::find_with_transaction(dialog_id)
+            .await
+            .map_err(|e| e.to_string())?
             .into()),
-        None => Ok(store::Dialogs::create(request.clone().try_into()?).into()),
+        None => Ok(
+            store::Dialog::create_with_transaction(request.clone().try_into()?)
+                .await
+                .map_err(|e| e.to_string())?
+                .into(),
+        ),
     }
 }

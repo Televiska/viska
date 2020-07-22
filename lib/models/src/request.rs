@@ -1,8 +1,11 @@
-use common::libsip::{
-    core::{method::Method, version::Version},
-    headers::{via::ViaHeader, Header, Headers, NamedHeader},
-    uri::{params::UriParam, Uri},
-    SipMessage,
+use common::{
+    libsip::{
+        core::{method::Method, version::Version},
+        headers::{via::ViaHeader, Header, Headers, NamedHeader},
+        uri::{params::UriParam, Uri},
+        SipMessage,
+    },
+    uuid::Uuid,
 };
 use std::convert::{TryFrom, TryInto};
 
@@ -133,10 +136,10 @@ impl Into<SipMessage> for Request {
     }
 }
 
-impl TryInto<store::NewDialogWithTransaction> for Request {
+impl TryInto<store::DirtyDialogWithTransaction> for Request {
     type Error = String;
 
-    fn try_into(self) -> Result<store::NewDialogWithTransaction, Self::Error> {
+    fn try_into(self) -> Result<store::DirtyDialogWithTransaction, Self::Error> {
         //use store::{DialogFlow, RegistrationFlow};
         let call_id = match self.call_id() {
             Some(call_id) => call_id,
@@ -144,7 +147,6 @@ impl TryInto<store::NewDialogWithTransaction> for Request {
         }
         .clone();
 
-        //let default: String = "foobar".into();
         let from_tag = match self.from_header_tag() {
             Some(from_header_tag) => from_header_tag,
             None => return Err("missing from header tag".into()),
@@ -157,13 +159,22 @@ impl TryInto<store::NewDialogWithTransaction> for Request {
         }
         .clone();
 
-        Ok(store::NewDialogWithTransaction {
-            dialog: store::NewDialog {
-                call_id,
-                from_tag: from_tag.into(),
-                flow: flow_for_method(self.method)?,
+        let to_tag = Uuid::new_v4();
+
+        Ok(store::DirtyDialogWithTransaction {
+            dialog: store::DirtyDialog {
+                computed_id: Some(computed_id_for(&call_id, &from_tag, &to_tag)),
+                call_id: Some(call_id),
+                from_tag: Some(from_tag),
+                to_tag: Some(to_tag.to_string()),
+                flow: Some(flow_for_method(self.method)?),
+                ..Default::default()
             },
-            transaction: store::NewTransaction::with(branch_id),
+            transaction: store::DirtyTransaction {
+                branch_id: Some(branch_id),
+                state: Some(store::TransactionState::Trying),
+                ..Default::default()
+            },
         })
     }
 }
@@ -177,4 +188,8 @@ fn flow_for_method(method: Method) -> Result<store::DialogFlow, String> {
         Method::Subscribe => Ok(store::DialogFlow::Publish),
         _ => Err("Unsupported method".into()),
     }
+}
+
+fn computed_id_for(call_id: &String, from_tag: &String, to_tag: &Uuid) -> String {
+    format!("{}-{}-{}", call_id, from_tag, to_tag)
 }
