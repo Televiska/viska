@@ -1,5 +1,6 @@
 use crate::NotFound;
 use crate::Transaction;
+use crate::{DialogExt, TransactionFSM};
 
 #[derive(Debug, Clone)]
 pub struct Dialog {
@@ -17,19 +18,12 @@ pub enum DialogFlow {
     Publish(NotFound),
 }
 
-pub enum TransactionType {
-    Transaction(Transaction),
-    NotFound(NotFound),
-}
-
-impl Dialog {
-    pub fn transaction(&self) -> TransactionType {
+impl DialogExt for Dialog {
+    fn transaction(&self) -> Box<dyn TransactionFSM> {
         match &self.flow {
-            DialogFlow::Registration(transaction) => {
-                TransactionType::Transaction(transaction.clone())
-            }
-            DialogFlow::Invite(transaction) => TransactionType::Transaction(transaction.clone()),
-            DialogFlow::Publish(transaction) => TransactionType::NotFound(transaction.clone()),
+            DialogFlow::Registration(transaction) => Box::new(transaction.clone()),
+            DialogFlow::Invite(transaction) => Box::new(transaction.clone()),
+            DialogFlow::Publish(transaction) => Box::new(transaction.clone()),
         }
     }
 }

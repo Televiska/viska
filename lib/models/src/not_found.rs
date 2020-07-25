@@ -1,5 +1,5 @@
 //use common::libsip::headers::Headers;
-use crate::Response;
+use crate::{Response, TransactionFSM};
 use common::uuid::Uuid;
 
 #[derive(Debug, Clone)]
@@ -13,8 +13,8 @@ pub enum NotFound {
     Default(TransactionData),
 }
 
-impl NotFound {
-    pub fn next(&self, request: crate::Request) -> Result<Response, String> {
+impl TransactionFSM for NotFound {
+    fn next(&self, request: crate::Request) -> Result<Response, String> {
         match self {
             _ => Ok(create_final_response_from(request)),
         }

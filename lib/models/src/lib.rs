@@ -46,12 +46,21 @@ mod request;
 mod response;
 mod transaction;
 
-pub use dialog::{Dialog, TransactionType};
+pub use dialog::Dialog;
 pub use not_found::NotFound;
 pub use request::Request;
 pub use response::Response;
 pub use transaction::Transaction;
+
 pub struct ServerState {
     pub request: Request,
     pub dialog: Dialog,
+}
+
+pub trait TransactionFSM {
+    fn next(&self, request: crate::Request) -> Result<Response, String>;
+}
+
+pub trait DialogExt {
+    fn transaction(&self) -> Box<dyn crate::TransactionFSM>;
 }

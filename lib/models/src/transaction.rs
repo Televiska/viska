@@ -1,5 +1,5 @@
 //use common::libsip::headers::Headers;
-use crate::Response;
+use crate::{Response, TransactionFSM};
 use common::uuid::Uuid;
 
 #[derive(Debug, Clone)]
@@ -16,8 +16,8 @@ pub enum Transaction {
     Terminated(TransactionData),
 }
 
-impl Transaction {
-    pub fn next(&self, request: crate::Request) -> Result<Response, String> {
+impl TransactionFSM for Transaction {
+    fn next(&self, request: crate::Request) -> Result<Response, String> {
         match self {
             Transaction::Trying(_data) => Ok(create_final_response_from(request)),
             _ => Err("wrong transaction state".into()),
