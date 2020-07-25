@@ -51,7 +51,7 @@ fn create_final_response_from(request: crate::Request) -> Response {
     headers.push(Header::CallId(
         request.call_id().expect("request CallId header").clone(),
     ));
-    let cseq = request.cseq().expect("request CallId header").clone();
+    let cseq = request.cseq().expect("request CallId header");
     headers.push(Header::CSeq(cseq.0, cseq.1));
     let mut contact = request
         .contact_header()
@@ -65,7 +65,7 @@ fn create_final_response_from(request: crate::Request) -> Response {
     Response {
         code: 200,
         version: Default::default(),
-        headers: headers,
+        headers,
         body: vec![],
     }
 }

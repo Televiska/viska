@@ -18,6 +18,6 @@ CREATE TABLE transactions(
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   state VARCHAR(255) NOT NULL,
   branch_id VARCHAR NOT NULL,
-  dialog_id BIGINT NOT NULL REFERENCES dialogs(id)
+  dialog_id BIGINT NOT NULL REFERENCES dialogs(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 SELECT diesel_manage_updated_at('transactions');

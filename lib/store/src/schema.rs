@@ -12,6 +12,31 @@ table! {
 }
 
 table! {
+    requests (id) {
+        id -> Int8,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+        method -> Varchar,
+        uri -> Varchar,
+        headers -> Text,
+        body -> Nullable<Text>,
+        raw_message -> Nullable<Text>,
+    }
+}
+
+table! {
+    responses (id) {
+        id -> Int8,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+        code -> Int2,
+        headers -> Text,
+        body -> Nullable<Text>,
+        raw_message -> Nullable<Text>,
+    }
+}
+
+table! {
     transactions (id) {
         id -> Int8,
         created_at -> Timestamptz,
@@ -24,4 +49,4 @@ table! {
 
 joinable!(transactions -> dialogs (dialog_id));
 
-allow_tables_to_appear_in_same_query!(dialogs, transactions,);
+allow_tables_to_appear_in_same_query!(dialogs, requests, responses, transactions,);

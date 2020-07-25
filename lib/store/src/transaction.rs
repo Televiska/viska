@@ -64,7 +64,7 @@ impl<'a> LazyQuery<'a> {
     }
 
     pub async fn load(self) -> Result<Vec<Transaction>, Error> {
-        Ok(self.query.get_results(&db_conn()?)?.into())
+        Ok(self.query.get_results(&db_conn()?)?)
     }
 
     pub async fn first(self) -> Result<Transaction, Error> {

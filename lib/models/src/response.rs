@@ -1,8 +1,8 @@
 use common::libsip::{
     core::{method::Method, version::Version},
-    headers::{via::ViaHeader, Header, Headers, NamedHeader},
-    uri::params::UriParam,
-    SipMessage,
+    headers::{via::ViaHeader, ContactHeader, Header, Headers, NamedHeader},
+    MissingContactExpiresError, MissingHeaderError, MissingTagError, MissingUsernameError,
+    MissingViaBranchError, SipMessage,
 };
 use std::convert::TryFrom;
 
@@ -15,74 +15,106 @@ pub struct Response {
 }
 
 impl Response {
-    pub fn from_header(&self) -> Option<&NamedHeader> {
-        header!(self.headers.0.iter(), Header::From)
+    pub fn from_header(&self) -> Result<&NamedHeader, MissingHeaderError> {
+        header!(
+            self.headers.0.iter(),
+            Header::From,
+            MissingHeaderError::From
+        )
     }
 
-    pub fn from_header_tag(&self) -> Option<&String> {
-        named_header_param!(self.from_header(), "tag")
+    pub fn from_header_tag(&self) -> Result<&String, MissingTagError> {
+        named_header_param!(self.from_header(), "tag", MissingTagError::From)
     }
 
-    pub fn from_header_username(&self) -> Option<&String> {
-        self.from_header()
-            .and_then(|header| header.uri.auth.as_ref().map(|auth| &auth.username))
+    pub fn from_header_username(&self) -> Result<&String, MissingUsernameError> {
+        named_header_username!(self.from_header(), MissingUsernameError::From)
     }
 
-    pub fn to_header(&self) -> Option<&NamedHeader> {
-        header!(self.headers.0.iter(), Header::To)
+    pub fn to_header(&self) -> Result<&NamedHeader, MissingHeaderError> {
+        header!(self.headers.0.iter(), Header::To, MissingHeaderError::To)
     }
 
-    pub fn to_header_tag(&self) -> Option<&String> {
-        named_header_param!(self.to_header(), "tag")
+    pub fn to_header_tag(&self) -> Result<&String, MissingTagError> {
+        named_header_param!(self.to_header(), "tag", MissingTagError::To)
     }
 
-    pub fn to_header_username(&self) -> Option<&String> {
-        self.to_header()
-            .and_then(|header| header.uri.auth.as_ref().map(|auth| &auth.username))
+    pub fn to_header_username(&self) -> Result<&String, MissingUsernameError> {
+        named_header_username!(self.to_header(), MissingUsernameError::To)
     }
 
-    pub fn via_header(&self) -> Option<&ViaHeader> {
-        header!(self.headers.0.iter(), Header::Via)
+    pub fn via_header(&self) -> Result<&ViaHeader, MissingHeaderError> {
+        header!(self.headers.0.iter(), Header::Via, MissingHeaderError::Via)
     }
 
-    pub fn via_header_branch(&self) -> Option<&String> {
-        self.via_header().and_then(|header| {
-            header.uri.parameters.iter().find_map(|param| {
-                if let UriParam::Branch(branch) = param {
-                    Some(branch)
+    pub fn via_header_branch(&self) -> Result<&String, MissingViaBranchError> {
+        if let Ok(header) = self.via_header() {
+            header.branch().ok_or(MissingViaBranchError)
+        } else {
+            Err(MissingViaBranchError)
+        }
+    }
+
+    pub fn call_id(&self) -> Result<&String, MissingHeaderError> {
+        header!(
+            self.headers.0.iter(),
+            Header::CallId,
+            MissingHeaderError::CallId
+        )
+    }
+
+    pub fn cseq(&self) -> Result<(u32, Method), MissingHeaderError> {
+        self.headers
+            .0
+            .iter()
+            .find_map(|header| {
+                if let Header::CSeq(cseq, method) = header {
+                    Some((*cseq, *method))
                 } else {
                     None
                 }
             })
-        })
+            .ok_or(MissingHeaderError::CSeq)
     }
 
-    pub fn call_id(&self) -> Option<&String> {
-        header!(self.headers.0.iter(), Header::CallId)
+    pub fn contact_header(&self) -> Result<&ContactHeader, MissingHeaderError> {
+        header!(
+            self.headers.0.iter(),
+            Header::Contact,
+            MissingHeaderError::Contact
+        )
     }
 
-    pub fn cseq(&self) -> Option<(u32, Method)> {
-        self.headers.0.iter().find_map(|header| {
-            if let Header::CSeq(cseq, method) = header {
-                Some((*cseq, *method))
-            } else {
-                None
-            }
-        })
-    }
-
-    pub fn contact_header(&self) -> Option<&NamedHeader> {
-        header!(self.headers.0.iter(), Header::Contact)
-    }
-
-    pub fn contact_header_expires(&self) -> Option<u32> {
+    pub fn contact_header_expires(&self) -> Result<u32, MissingContactExpiresError> {
         // https://tools.ietf.org/html/rfc3261#page-228 "c-p-expires" defines that it must be unsigned number
-        named_header_param!(self.contact_header(), "expires")
-            .and_then(|expires| expires.parse::<u32>().ok())
+        named_header_param!(self.contact_header(), "expires", MissingContactExpiresError).and_then(
+            |expires| {
+                expires
+                    .to_string()
+                    .parse::<u32>()
+                    .map_err(|_| MissingContactExpiresError)
+            },
+        )
     }
 
-    pub fn expires_header(&self) -> Option<u32> {
-        header!(self.headers.0.iter(), Header::Expires).map(Clone::clone)
+    pub fn expires_header(&self) -> Result<u32, MissingHeaderError> {
+        header!(
+            self.headers.0.iter(),
+            Header::Expires,
+            MissingHeaderError::Expires
+        )
+        .map(Clone::clone)
+    }
+}
+
+impl Into<store::DirtyResponse> for Response {
+    fn into(self) -> store::DirtyResponse {
+        store::DirtyResponse {
+            code: Some(self.code as i16),
+            headers: Some(format!("{:?}", self.headers)),
+            body: Some(String::from_utf8_lossy(&self.body).to_string()),
+            ..Default::default()
+        }
     }
 }
 

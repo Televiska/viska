@@ -387,6 +387,7 @@ checksum = "a9f8082297d534141b30c8d39e9b1773713ab50fdbe4ff30f750d063b3bfd701"
 [[package]]
 name = "libsip"
 version = "0.2.6"
+source = "git+https://github.com/vasilakisfil/libsip?branch=feat/quoted-string#507551cc9914b566dab91592ce495c278e9b0d0c"
 dependencies = [
  "md5",
  "nom",

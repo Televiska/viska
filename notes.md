@@ -1,10 +1,12 @@
 # Notes
 
 #### To Do
-* Finish the convertion of Flow to DialogFlow
-* Finish the convertion of Dialog to Transaction (check states from the RFC)
-* Finsih the generation of the Response from the incoming Request
-* Finish the processor for the registration
+* ~~Finish the convertion of Flow to DialogFlow~~
+* ~~Finish the convertion of Dialog to Transaction (check states from the RFC)~~
+* ~~Finsih the generation of the Response from the incoming Request~~
+* ~~Finish the processor for the registration~~
+* Fix sip trace to log the whole message + the struct somehow
+* Look into traits
 
 
 Much later:
