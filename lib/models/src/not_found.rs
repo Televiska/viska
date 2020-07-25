@@ -37,7 +37,7 @@ fn create_final_response_from(request: crate::Request) -> Response {
     headers.push(Header::CallId(
         request.call_id().expect("request CallId header").clone(),
     ));
-    let cseq = request.cseq().expect("request CallId header").clone();
+    let cseq = request.cseq().expect("request CallId header");
     headers.push(Header::CSeq(cseq.0, cseq.1));
     headers.push(Header::ContentLength(0));
     headers.push(Header::Server("viska".into()));
@@ -45,7 +45,7 @@ fn create_final_response_from(request: crate::Request) -> Response {
     Response {
         code: 404,
         version: Default::default(),
-        headers: headers,
+        headers,
         body: vec![],
     }
 }

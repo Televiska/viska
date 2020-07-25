@@ -1,0 +1,22 @@
+CREATE TABLE requests(
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  method VARCHAR(255) NOT NULL,
+  uri VARCHAR NOT NULL,
+  headers TEXT NOT NULL,
+  body TEXT NULL,
+  raw_message TEXT NULL
+);
+SELECT diesel_manage_updated_at('requests');
+
+CREATE TABLE responses(
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  code SMALLINT NOT NULL,
+  headers TEXT NOT NULL,
+  body TEXT NULL,
+  raw_message TEXT NULL
+);
+SELECT diesel_manage_updated_at('responses');

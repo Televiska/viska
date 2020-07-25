@@ -1,5 +1,6 @@
 #[macro_use]
 pub extern crate diesel;
+mod schema;
 
 use diesel::pg::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
@@ -8,13 +9,16 @@ use std::sync::Arc;
 
 mod dialog;
 mod error;
-pub mod schema;
+mod request;
+mod response;
 mod transaction;
 
 pub use dialog::{
     Dialog, DialogFlow, DialogWithTransaction, DirtyDialog, DirtyDialogWithTransaction,
 };
 pub use error::Error;
+pub use request::{DirtyRequest, Request};
+pub use response::{DirtyResponse, Response};
 pub use transaction::{DirtyTransaction, Transaction, TransactionState};
 
 type DbConn =

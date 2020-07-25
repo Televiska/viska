@@ -89,7 +89,7 @@ impl LazyQuery {
     }
 
     pub async fn load(self) -> Result<Vec<Dialog>, Error> {
-        Ok(self.query.get_results(&db_conn()?)?.into())
+        Ok(self.query.get_results(&db_conn()?)?)
     }
 
     pub async fn first(self) -> Result<Dialog, Error> {
