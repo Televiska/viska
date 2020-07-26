@@ -18,8 +18,6 @@ pub struct Response {
 #[derive(AsChangeset, Insertable, Debug, Default)]
 #[table_name = "responses"]
 pub struct DirtyResponse {
-    pub created_at: Option<DateTime<Utc>>,
-    pub updated_at: Option<DateTime<Utc>>,
     pub code: Option<i16>,
     pub headers: Option<String>,
     pub body: Option<String>,

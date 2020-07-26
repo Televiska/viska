@@ -1,6 +1,7 @@
-use crate::NotFound;
-use crate::Transaction;
-use crate::{DialogExt, TransactionFSM};
+use crate::{
+    transactions::{NotFound, Registration},
+    DialogExt, TransactionFSM,
+};
 
 #[derive(Debug, Clone)]
 pub struct Dialog {
@@ -13,8 +14,8 @@ pub struct Dialog {
 
 #[derive(Debug, Clone)]
 pub enum DialogFlow {
-    Registration(Transaction),
-    Invite(Transaction),
+    Registration(Registration),
+    Invite(NotFound),
     Publish(NotFound),
 }
 

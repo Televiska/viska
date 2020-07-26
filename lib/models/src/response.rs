@@ -105,6 +105,14 @@ impl Response {
         )
         .map(Clone::clone)
     }
+
+    pub fn user_agent(&self) -> Result<&String, MissingHeaderError> {
+        header!(
+            self.headers.0.iter(),
+            Header::UserAgent,
+            MissingHeaderError::Contact
+        )
+    }
 }
 
 impl Into<store::DirtyResponse> for Response {

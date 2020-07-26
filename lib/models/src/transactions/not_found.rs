@@ -80,7 +80,6 @@ impl Into<store::DirtyTransaction> for NotFound {
                 state: Some(store::TransactionState::Trying),
                 branch_id: Some(data.branch_id),
                 dialog_id: Some(data.dialog_id),
-                ..Default::default()
             },
         }
     }

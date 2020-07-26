@@ -2,7 +2,7 @@ use common::{
     libsip::{
         core::{method::Method, version::Version},
         headers::{via::ViaHeader, ContactHeader, Header, Headers, NamedHeader},
-        uri::Uri,
+        uri::{domain::Domain, Uri},
         MissingContactExpiresError, MissingHeaderError, MissingTagError, MissingUsernameError,
         MissingViaBranchError, SipMessage,
     },
@@ -45,6 +45,14 @@ impl Request {
 
     pub fn from_header_username(&self) -> Result<&String, MissingUsernameError> {
         named_header_username!(self.from_header(), MissingUsernameError::From)
+    }
+
+    pub fn from_header_domain(&self) -> Result<&Domain, MissingUsernameError> {
+        if let Ok(header) = self.from_header() {
+            Ok(&header.uri.host)
+        } else {
+            Err(MissingUsernameError::From)
+        }
     }
 
     pub fn to_header(&self) -> Result<&NamedHeader, MissingHeaderError> {
@@ -113,6 +121,38 @@ impl Request {
         )
     }
 
+    pub fn contact_header_username(&self) -> Result<&String, MissingUsernameError> {
+        if let Ok(header) = self.contact_header() {
+            if let Some(auth) = &header.uri.auth {
+                Ok(&auth.username)
+            } else {
+                Err(MissingUsernameError::Contact)
+            }
+        } else {
+            Err(MissingUsernameError::Contact)
+        }
+    }
+
+    pub fn contact_header_domain(&self) -> Result<&Domain, MissingUsernameError> {
+        if let Ok(header) = self.contact_header() {
+            Ok(&header.uri.host)
+        } else {
+            Err(MissingUsernameError::Contact)
+        }
+    }
+
+    pub fn contact_header_instance(&self) -> Result<&String, MissingHeaderError> {
+        named_header_param!(
+            self.contact_header(),
+            "+sip.instance",
+            MissingHeaderError::Contact
+        )
+        .map(|instance| match instance {
+            common::libsip::headers::GenValue::Token(inner) => inner,
+            common::libsip::headers::GenValue::QuotedString(inner) => inner,
+        })
+    }
+
     pub fn expires_header(&self) -> Result<u32, MissingHeaderError> {
         header!(
             self.headers.0.iter(),
@@ -120,6 +160,22 @@ impl Request {
             MissingHeaderError::Expires
         )
         .map(Clone::clone)
+    }
+
+    pub fn uri_username(&self) -> Result<&String, MissingUsernameError> {
+        if let Some(auth) = &self.uri.auth {
+            Ok(&auth.username)
+        } else {
+            Err(MissingUsernameError::Uri)
+        }
+    }
+
+    pub fn user_agent(&self) -> Result<&String, MissingHeaderError> {
+        header!(
+            self.headers.0.iter(),
+            Header::UserAgent,
+            MissingHeaderError::Contact
+        )
     }
 }
 

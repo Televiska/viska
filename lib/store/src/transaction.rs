@@ -28,8 +28,6 @@ pub struct Transaction {
 #[derive(AsChangeset, Insertable, Debug, Default)]
 #[table_name = "transactions"]
 pub struct DirtyTransaction {
-    pub created_at: Option<DateTime<Utc>>,
-    pub updated_at: Option<DateTime<Utc>>,
     pub state: Option<TransactionState>,
     pub branch_id: Option<String>,
     pub dialog_id: Option<i64>,

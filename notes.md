@@ -5,12 +5,16 @@
 * ~~Finish the convertion of Dialog to Transaction (check states from the RFC)~~
 * ~~Finsih the generation of the Response from the incoming Request~~
 * ~~Finish the processor for the registration~~
-* Fix sip trace to log the whole message + the struct somehow
-* Look into traits
+* ~~Fix sip trace to log the whole message + the struct somehow~~
+* ~~Look into traits~~
+* Probably we need to save all contact params in a hashmap in the store
 
 
 Much later:
-* convert the state machine to use traits and generics
+* ~~convert the state machine to use traits and generics~~
+* fix upsert
+* remove asyncs from store since await is not used
+* probably we need to revert the from/into traits to be declared in the store
 
 ```
 REGISTER sip:192.168.1.223 SIP/2.0
