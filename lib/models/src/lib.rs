@@ -41,16 +41,15 @@ macro_rules! named_header_username {
 }
 
 mod dialog;
-mod not_found;
+mod registration;
 mod request;
 mod response;
-mod transaction;
+mod transactions;
 
 pub use dialog::Dialog;
-pub use not_found::NotFound;
+pub use registration::Registration;
 pub use request::Request;
 pub use response::Response;
-pub use transaction::Transaction;
 
 pub struct ServerState {
     pub request: Request,

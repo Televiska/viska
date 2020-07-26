@@ -12,6 +12,26 @@ table! {
 }
 
 table! {
+    registrations (id) {
+        id -> Int8,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+        username -> Varchar,
+        domain -> Nullable<Varchar>,
+        contact -> Varchar,
+        expires -> Timestamptz,
+        call_id -> Varchar,
+        cseq -> Int4,
+        user_agent -> Varchar,
+        instance -> Nullable<Varchar>,
+        reg_id -> Int4,
+        ip_address -> Inet,
+        port -> Int2,
+        transport -> Varchar,
+    }
+}
+
+table! {
     requests (id) {
         id -> Int8,
         created_at -> Timestamptz,
@@ -49,4 +69,4 @@ table! {
 
 joinable!(transactions -> dialogs (dialog_id));
 
-allow_tables_to_appear_in_same_query!(dialogs, requests, responses, transactions,);
+allow_tables_to_appear_in_same_query!(dialogs, registrations, requests, responses, transactions,);

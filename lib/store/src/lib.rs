@@ -9,6 +9,7 @@ use std::sync::Arc;
 
 mod dialog;
 mod error;
+mod registration;
 mod request;
 mod response;
 mod transaction;
@@ -17,6 +18,7 @@ pub use dialog::{
     Dialog, DialogFlow, DialogWithTransaction, DirtyDialog, DirtyDialogWithTransaction,
 };
 pub use error::Error;
+pub use registration::{DirtyRegistration, Registration, TransportType};
 pub use request::{DirtyRequest, Request};
 pub use response::{DirtyResponse, Response};
 pub use transaction::{DirtyTransaction, Transaction, TransactionState};

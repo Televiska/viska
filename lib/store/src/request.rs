@@ -19,8 +19,6 @@ pub struct Request {
 #[derive(AsChangeset, Insertable, Debug, Default)]
 #[table_name = "requests"]
 pub struct DirtyRequest {
-    pub created_at: Option<DateTime<Utc>>,
-    pub updated_at: Option<DateTime<Utc>>,
     pub method: Option<String>,
     pub uri: Option<String>,
     pub headers: Option<String>,

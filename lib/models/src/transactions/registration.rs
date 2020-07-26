@@ -1,6 +1,11 @@
 //use common::libsip::headers::Headers;
 use crate::{Response, TransactionFSM};
-use common::uuid::Uuid;
+use common::{
+    chrono::{Duration, Utc},
+    ipnetwork::{IpNetwork, Ipv4Network},
+    uuid::Uuid,
+};
+use std::net::Ipv4Addr;
 
 #[derive(Debug, Clone)]
 pub struct TransactionData {
@@ -9,20 +14,81 @@ pub struct TransactionData {
 }
 
 #[derive(Debug, Clone)]
-pub enum Transaction {
+pub enum Registration {
     Trying(TransactionData),
     Proceeding(TransactionData),
     Completed(TransactionData),
     Terminated(TransactionData),
 }
 
-impl TransactionFSM for Transaction {
+impl TransactionFSM for Registration {
     fn next(&self, request: crate::Request) -> Result<Response, String> {
         match self {
-            Transaction::Trying(_data) => Ok(create_final_response_from(request)),
+            Registration::Trying(_data) => {
+                update_registration_for(request.clone())?;
+                Ok(create_final_response_from(request))
+            }
             _ => Err("wrong transaction state".into()),
         }
     }
+}
+
+fn update_registration_for(request: crate::Request) -> Result<crate::Registration, String> {
+    let dirty_registration = store::DirtyRegistration {
+        username: Some(
+            request
+                .from_header_username()
+                .map_err(|e| format!("{:?}", e))?
+                .clone(),
+        ),
+        domain: Some(
+            request
+                .from_header_domain()
+                .map_err(|e| format!("{:?}", e))?
+                .clone()
+                .to_string(),
+        ),
+        contact: Some(
+            request
+                .contact_header()
+                .map_err(|e| format!("{:?}", e))?
+                .clone()
+                .to_string(),
+        ),
+        expires: Some(
+            Utc::now()
+                + Duration::seconds(
+                    request
+                        .contact_header_expires()
+                        .unwrap_or(request.expires_header().map_err(|e| format!("{:?}", e))?)
+                        as i64,
+                ),
+        ),
+        call_id: Some(request.call_id().map_err(|e| format!("{:?}", e))?.clone()),
+        cseq: Some(request.cseq().map_err(|e| format!("{:?}", e))?.0 as i32),
+        user_agent: Some(
+            request
+                .user_agent()
+                .map_err(|e| format!("{:?}", e))?
+                .clone(),
+        ),
+        instance: Some(
+            request
+                .contact_header_instance()
+                .map_err(|e| format!("{:?}", e))?
+                .to_string(),
+        ),
+        ip_address: Some(IpNetwork::V4(
+            Ipv4Network::new(Ipv4Addr::new(192, 168, 0, 3), 32).map_err(|e| e.to_string())?,
+        )),
+        port: Some(5066),
+        transport: Some(crate::registration::TransportType::Udp.into()),
+        ..Default::default()
+    };
+
+    Ok(store::Registration::upsert(dirty_registration)
+        .map_err(|e| e.to_string())?
+        .into())
 }
 
 fn create_final_response_from(request: crate::Request) -> Response {
@@ -30,7 +96,6 @@ fn create_final_response_from(request: crate::Request) -> Response {
         headers::{Header, Headers},
         uri::{Domain, UriParam},
     };
-    use std::net::Ipv4Addr;
 
     let mut headers = Headers::new();
     let mut via_header = request.via_header().expect("request Via header").clone();
@@ -70,7 +135,7 @@ fn create_final_response_from(request: crate::Request) -> Response {
     }
 }
 
-impl From<store::Transaction> for Transaction {
+impl From<store::Transaction> for Registration {
     fn from(record: store::Transaction) -> Self {
         match record.state {
             store::TransactionState::Trying => Self::Trying(TransactionData {
@@ -93,32 +158,28 @@ impl From<store::Transaction> for Transaction {
     }
 }
 
-impl Into<store::DirtyTransaction> for Transaction {
+impl Into<store::DirtyTransaction> for Registration {
     fn into(self) -> store::DirtyTransaction {
         match self {
-            Transaction::Trying(data) => store::DirtyTransaction {
+            Self::Trying(data) => store::DirtyTransaction {
                 state: Some(store::TransactionState::Trying),
                 branch_id: Some(data.branch_id),
                 dialog_id: Some(data.dialog_id),
-                ..Default::default()
             },
-            Transaction::Proceeding(data) => store::DirtyTransaction {
+            Self::Proceeding(data) => store::DirtyTransaction {
                 state: Some(store::TransactionState::Proceeding),
                 branch_id: Some(data.branch_id),
                 dialog_id: Some(data.dialog_id),
-                ..Default::default()
             },
-            Transaction::Completed(data) => store::DirtyTransaction {
+            Self::Completed(data) => store::DirtyTransaction {
                 state: Some(store::TransactionState::Completed),
                 branch_id: Some(data.branch_id),
                 dialog_id: Some(data.dialog_id),
-                ..Default::default()
             },
-            Transaction::Terminated(data) => store::DirtyTransaction {
+            Self::Terminated(data) => store::DirtyTransaction {
                 state: Some(store::TransactionState::Completed),
                 branch_id: Some(data.branch_id),
                 dialog_id: Some(data.dialog_id),
-                ..Default::default()
             },
         }
     }

@@ -117,6 +117,7 @@ dependencies = [
  "chrono",
  "futures",
  "futures-util",
+ "ipnetwork",
  "libsip",
  "log",
  "nom",
@@ -137,6 +138,8 @@ dependencies = [
  "byteorder",
  "chrono",
  "diesel_derives",
+ "ipnetwork",
+ "libc",
  "num-bigint",
  "num-integer",
  "num-traits",
@@ -350,6 +353,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ipnetwork"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8eca9f51da27bc908ef3dd85c21e1bbba794edaf94d7841e37356275b82d31e"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "kernel32-sys"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -387,7 +399,7 @@ checksum = "a9f8082297d534141b30c8d39e9b1773713ab50fdbe4ff30f750d063b3bfd701"
 [[package]]
 name = "libsip"
 version = "0.2.6"
-source = "git+https://github.com/vasilakisfil/libsip?branch=feat/quoted-string#507551cc9914b566dab91592ce495c278e9b0d0c"
+source = "git+https://github.com/ByteHeathen/libsip#f260203f442a63848821e650159f411b47a57ce0"
 dependencies = [
  "md5",
  "nom",
