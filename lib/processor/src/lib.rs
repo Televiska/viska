@@ -1,52 +1,52 @@
 mod helpers;
+mod transactions;
 
 use common::libsip::SipMessage;
 use models::{Request, Response};
 use std::convert::TryInto;
 
-pub async fn process_message(bytes: common::bytes::BytesMut) -> Result<Vec<u8>, String> {
-    let sip_message: SipMessage = helpers::parse_bytes(bytes.clone())?;
-    helpers::trace_sip_message(sip_message.clone(), Some(bytes)).await;
+//should be generic soon
+//generic is going to be injected during initialization (no initialization atm)
+pub struct Processor;
 
-    let sip_response: SipMessage = match sip_message {
-        SipMessage::Request { .. } => Ok(handle_request(sip_message.try_into()?).await?.into()),
-        SipMessage::Response { .. } => Err(String::from("we don't support responses here")),
-    }?;
+#[allow(clippy::new_without_default)]
+impl Processor {
+    pub fn new() -> Self {
+        Self
+    }
 
-    helpers::trace_sip_message(sip_response.clone(), None).await;
-    Ok(format!("{}", sip_response).into_bytes())
-}
+    pub async fn process_message(&self, bytes: common::bytes::BytesMut) -> Result<Vec<u8>, String> {
+        let sip_message: SipMessage = helpers::parse_bytes(bytes.clone())?;
+        helpers::trace_sip_message(sip_message.clone(), Some(bytes));
 
-async fn handle_request(request: Request) -> Result<Response, String> {
-    let response = handle_next_step_for(state_from(request).await?)?;
+        let sip_response: SipMessage = match sip_message {
+            SipMessage::Request { .. } => Ok(self.handle_request(sip_message.try_into()?)?.into()),
+            SipMessage::Response { .. } => Err(String::from("we don't support responses here")),
+        }?;
 
-    Ok(response)
-}
+        helpers::trace_sip_message(sip_response.clone(), None);
+        Ok(format!("{}", sip_response).into_bytes())
+    }
 
-fn handle_next_step_for(state: models::ServerState) -> Result<Response, String> {
-    use models::DialogExt;
+    fn handle_request(&self, request: Request) -> Result<Response, String> {
+        let response = self.handle_next_step_for(self.dialog_from(request.clone())?, request)?;
 
-    Ok(state.dialog.transaction().next(state.request)?)
-}
+        Ok(response)
+    }
 
-async fn state_from(request: Request) -> Result<models::ServerState, String> {
-    Ok(models::ServerState {
-        dialog: find_or_create_dialog(request.clone()).await?,
-        request,
-    })
-}
+    fn handle_next_step_for(
+        &self,
+        dialog: models::Dialog,
+        request: Request,
+    ) -> Result<Response, String> {
+        use transactions::DialogExt;
 
-async fn find_or_create_dialog(request: Request) -> Result<models::Dialog, String> {
-    match request.dialog_id() {
-        Some(dialog_id) => Ok(store::Dialog::find_with_transaction(dialog_id)
-            .await
+        Ok(dialog.transaction().next(request)?)
+    }
+
+    fn dialog_from(&self, request: Request) -> Result<models::Dialog, String> {
+        Ok(store::Dialog::find_or_create_dialog(request)
             .map_err(|e| e.to_string())?
-            .into()),
-        None => Ok(
-            store::Dialog::create_with_transaction(request.clone().try_into()?)
-                .await
-                .map_err(|e| e.to_string())?
-                .into(),
-        ),
+            .into())
     }
 }

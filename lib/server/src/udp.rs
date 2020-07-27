@@ -3,6 +3,7 @@ use common::futures::SinkExt;
 use common::futures_util::stream::StreamExt;
 use common::tokio_util::codec::BytesCodec;
 use common::tokio_util::udp::UdpFramed;
+use processor::Processor;
 use tokio::net::UdpSocket;
 
 pub async fn start() {
@@ -13,10 +14,12 @@ pub async fn start() {
     let socket = UdpFramed::new(socket, BytesCodec::new());
     let (mut sink, mut stream) = socket.split();
 
+    let processor = Processor::new(); //this should be initialized elsewhere and injected probably
+
     while let Some(request) = stream.next().await {
         match request {
             Ok((request, addr)) => {
-                let response = processor::process_message(request).await;
+                let response = processor.process_message(request).await;
                 common::log::info!("{}", addr);
                 match response {
                     Ok(response) => sink

@@ -12,7 +12,7 @@ pub fn parse_bytes(bytes: common::bytes::BytesMut) -> Result<SipMessage, String>
     Ok(request)
 }
 
-pub async fn trace_sip_message(sip_message: SipMessage, bytes: Option<common::bytes::BytesMut>) {
+pub fn trace_sip_message(sip_message: SipMessage, bytes: Option<common::bytes::BytesMut>) {
     let raw_message = match bytes {
         Some(bytes) => String::from_utf8_lossy(&bytes.to_vec()).to_string(),
         None => format!("{}", sip_message),
@@ -21,12 +21,11 @@ pub async fn trace_sip_message(sip_message: SipMessage, bytes: Option<common::by
     match sip_message {
         SipMessage::Request { .. } => {
             let mut request: store::DirtyRequest =
-                TryInto::<models::Request>::try_into(sip_message.clone())
+                TryInto::<models::Request>::try_into(sip_message)
                     .expect("should never happen")
                     .into();
             request.raw_message = Some(raw_message);
             store::Request::create(request)
-                .await
                 .map_err(|err| log::error!("{}", err))
                 .unwrap();
         }
@@ -37,7 +36,6 @@ pub async fn trace_sip_message(sip_message: SipMessage, bytes: Option<common::by
                     .into();
             response.raw_message = Some(raw_message);
             store::Response::create(response)
-                .await
                 .map_err(|err| log::error!("{}", err))
                 .unwrap();
         }

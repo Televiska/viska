@@ -6,3 +6,4 @@ edition = "2018"
 
 [dependencies]
 common = { path = "../../common" }
+store = { path = "../store" }

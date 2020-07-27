@@ -47,11 +47,11 @@ impl LazyQuery {
         self
     }
 
-    pub async fn load(self) -> Result<Vec<Request>, Error> {
+    pub fn load(self) -> Result<Vec<Request>, Error> {
         Ok(self.query.get_results(&db_conn()?)?)
     }
 
-    pub async fn first(self) -> Result<Request, Error> {
+    pub fn first(self) -> Result<Request, Error> {
         Ok(self.query.first(&db_conn()?)?)
     }
 }
@@ -61,25 +61,42 @@ impl Request {
         LazyQuery::new(requests::table.into_boxed())
     }
 
-    pub async fn find(id: i64) -> Result<Self, Error> {
+    pub fn find(id: i64) -> Result<Self, Error> {
         Ok(requests::table.find(id).first::<Self>(&db_conn()?)?)
     }
 
-    pub async fn create(record: DirtyRequest) -> Result<Self, Error> {
+    pub fn create(record: impl Into<DirtyRequest>) -> Result<Self, Error> {
         use diesel::insert_into;
 
         Ok(insert_into(requests::table)
-            .values(record)
+            .values(record.into())
             .get_result(&db_conn()?)?)
     }
 
-    pub async fn update(record: DirtyRequest, id: i64) -> Result<Self, Error> {
+    pub fn update(record: impl Into<DirtyRequest>, id: i64) -> Result<Self, Error> {
         Ok(diesel::update(requests::table.filter(requests::id.eq(id)))
-            .set(&record)
+            .set(&record.into())
             .get_result(&db_conn()?)?)
     }
 
-    pub async fn delete(id: i64) -> Result<Self, Error> {
+    pub fn delete(id: i64) -> Result<Self, Error> {
         Ok(diesel::delete(requests::table.filter(requests::id.eq(id))).get_result(&db_conn()?)?)
     }
 }
+
+impl From<models::Request> for DirtyRequest {
+    fn from(model: models::Request) -> DirtyRequest {
+        DirtyRequest {
+            method: Some(model.method.to_string()),
+            uri: Some(model.uri.to_string()),
+            headers: Some(format!("{:?}", model.headers)),
+            body: Some(String::from_utf8_lossy(&model.body).to_string()),
+            ..Default::default()
+        }
+    }
+}
+/*
+
+//this doesn't really fit in here
+
+*/
