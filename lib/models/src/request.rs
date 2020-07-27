@@ -1,14 +1,11 @@
-use common::{
-    libsip::{
-        core::{method::Method, version::Version},
-        headers::{via::ViaHeader, ContactHeader, Header, Headers, NamedHeader},
-        uri::{domain::Domain, Uri},
-        MissingContactExpiresError, MissingHeaderError, MissingTagError, MissingUsernameError,
-        MissingViaBranchError, SipMessage,
-    },
-    uuid::Uuid,
+use common::libsip::{
+    core::{method::Method, version::Version},
+    headers::{via::ViaHeader, ContactHeader, Header, Headers, NamedHeader},
+    uri::{domain::Domain, Uri},
+    MissingContactExpiresError, MissingHeaderError, MissingTagError, MissingUsernameError,
+    MissingViaBranchError, SipMessage,
 };
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 
 #[derive(Debug, Clone)]
 pub struct Request {
@@ -179,18 +176,6 @@ impl Request {
     }
 }
 
-impl Into<store::DirtyRequest> for Request {
-    fn into(self) -> store::DirtyRequest {
-        store::DirtyRequest {
-            method: Some(self.method.to_string()),
-            uri: Some(self.uri.to_string()),
-            headers: Some(format!("{:?}", self.headers)),
-            body: Some(String::from_utf8_lossy(&self.body).to_string()),
-            ..Default::default()
-        }
-    }
-}
-
 impl TryFrom<SipMessage> for Request {
     type Error = &'static str;
 
@@ -224,62 +209,4 @@ impl Into<SipMessage> for Request {
             body: self.body,
         }
     }
-}
-
-impl TryInto<store::DirtyDialogWithTransaction> for Request {
-    type Error = String;
-
-    fn try_into(self) -> Result<store::DirtyDialogWithTransaction, Self::Error> {
-        //use store::{DialogFlow, RegistrationFlow};
-        let call_id = match self.call_id() {
-            Ok(call_id) => call_id,
-            Err(_) => return Err("missing call id".into()),
-        }
-        .clone();
-
-        let from_tag = match self.from_header_tag() {
-            Ok(from_header_tag) => from_header_tag,
-            Err(_) => return Err("missing from header tag".into()),
-        }
-        .clone();
-
-        let branch_id = match self.via_header_branch() {
-            Ok(branch_id) => branch_id,
-            Err(_) => return Err("missing branch id".into()),
-        }
-        .clone();
-
-        let to_tag = Uuid::new_v4();
-
-        Ok(store::DirtyDialogWithTransaction {
-            dialog: store::DirtyDialog {
-                computed_id: Some(computed_id_for(&call_id, &from_tag, &to_tag)),
-                call_id: Some(call_id),
-                from_tag: Some(from_tag),
-                to_tag: Some(to_tag.to_string()),
-                flow: Some(flow_for_method(self.method)?),
-                ..Default::default()
-            },
-            transaction: store::DirtyTransaction {
-                branch_id: Some(branch_id),
-                state: Some(store::TransactionState::Trying),
-                ..Default::default()
-            },
-        })
-    }
-}
-
-//this doesn't really fit in here
-fn flow_for_method(method: Method) -> Result<store::DialogFlow, String> {
-    match method {
-        Method::Register => Ok(store::DialogFlow::Registration),
-        Method::Invite => Ok(store::DialogFlow::Invite),
-        Method::Publish => Ok(store::DialogFlow::Publish),
-        Method::Subscribe => Ok(store::DialogFlow::Publish),
-        _ => Err("Unsupported method".into()),
-    }
-}
-
-fn computed_id_for(call_id: &str, from_tag: &str, to_tag: &Uuid) -> String {
-    format!("{}-{}-{}", call_id, from_tag, to_tag)
 }

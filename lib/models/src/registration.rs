@@ -1,7 +1,8 @@
 use common::{
-    chrono::{DateTime, Utc},
-    ipnetwork::IpNetwork,
+    chrono::{DateTime, Duration, Utc},
+    ipnetwork::{IpNetwork, Ipv4Network},
 };
+use std::{convert::TryFrom, net::Ipv4Addr};
 
 #[derive(Debug, Clone)]
 pub struct Registration {
@@ -19,70 +20,72 @@ pub struct Registration {
     pub reg_id: i32,
     pub ip_address: IpNetwork,
     pub port: i16,
-    pub transport: TransportType,
+    pub transport: crate::TransportType,
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
-pub enum TransportType {
-    Tcp,
-    Udp,
+pub struct UpdateRegistration {
+    pub username: String,
+    pub domain: Option<String>,
+    pub contact: String,
+    pub expires: Option<DateTime<Utc>>,
+    pub call_id: String,
+    pub cseq: i32,
+    pub user_agent: String,
+    pub instance: Option<String>,
+    pub reg_id: Option<i32>,
+    pub ip_address: IpNetwork,
+    pub port: i16,
+    pub transport: crate::TransportType,
 }
 
-impl From<store::Registration> for Registration {
-    fn from(record: store::Registration) -> Self {
-        Self {
-            id: record.id,
-            created_at: record.created_at,
-            updated_at: record.updated_at,
-            username: record.username,
-            domain: record.domain,
-            contact: record.contact,
-            expires: record.expires,
-            call_id: record.call_id,
-            cseq: record.cseq,
-            user_agent: record.user_agent,
-            instance: record.instance,
-            reg_id: record.reg_id,
-            ip_address: record.ip_address,
-            port: record.port,
-            transport: record.transport.into(),
-        }
-    }
-}
+impl TryFrom<crate::Request> for UpdateRegistration {
+    type Error = String;
 
-impl Into<store::DirtyRegistration> for Registration {
-    fn into(self) -> store::DirtyRegistration {
-        store::DirtyRegistration {
-            username: Some(self.username),
-            domain: self.domain,
-            contact: Some(self.contact),
-            expires: Some(self.expires),
-            call_id: Some(self.call_id),
-            cseq: Some(self.cseq),
-            user_agent: Some(self.user_agent),
-            instance: self.instance,
-            reg_id: Some(self.reg_id),
-            ip_address: Some(self.ip_address),
-            port: Some(self.port),
-            transport: Some(self.transport.into()),
-        }
-    }
-}
-
-impl From<store::TransportType> for TransportType {
-    fn from(transport_type: store::TransportType) -> Self {
-        match transport_type {
-            store::TransportType::Tcp => Self::Tcp,
-            store::TransportType::Udp => Self::Udp,
-        }
-    }
-}
-
-impl Into<store::TransportType> for TransportType {
-    fn into(self) -> store::TransportType {
-        match self {
-            Self::Tcp => store::TransportType::Tcp,
-            Self::Udp => store::TransportType::Udp,
-        }
+    fn try_from(request: crate::Request) -> Result<Self, Self::Error> {
+        Ok(Self {
+            username: request
+                .from_header_username()
+                .map_err(|e| format!("{:?}", e))?
+                .clone(),
+            domain: Some(
+                request
+                    .from_header_domain()
+                    .map_err(|e| format!("{:?}", e))?
+                    .clone()
+                    .to_string(),
+            ),
+            contact: request
+                .contact_header()
+                .map_err(|e| format!("{:?}", e))?
+                .clone()
+                .to_string(),
+            expires: Some(
+                Utc::now()
+                    + Duration::seconds(
+                        request
+                            .contact_header_expires()
+                            .unwrap_or(request.expires_header().map_err(|e| format!("{:?}", e))?)
+                            as i64,
+                    ),
+            ),
+            call_id: request.call_id().map_err(|e| format!("{:?}", e))?.clone(),
+            cseq: request.cseq().map_err(|e| format!("{:?}", e))?.0 as i32,
+            user_agent: request
+                .user_agent()
+                .map_err(|e| format!("{:?}", e))?
+                .clone(),
+            instance: Some(
+                request
+                    .contact_header_instance()
+                    .map_err(|e| format!("{:?}", e))?
+                    .to_string(),
+            ),
+            ip_address: IpNetwork::V4(
+                Ipv4Network::new(Ipv4Addr::new(192, 168, 0, 3), 32).map_err(|e| e.to_string())?,
+            ),
+            port: 5066,
+            transport: crate::TransportType::Udp,
+            reg_id: None,
+        })
     }
 }

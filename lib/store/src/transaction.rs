@@ -61,11 +61,11 @@ impl<'a> LazyQuery<'a> {
         self
     }
 
-    pub async fn load(self) -> Result<Vec<Transaction>, Error> {
+    pub fn load(self) -> Result<Vec<Transaction>, Error> {
         Ok(self.query.get_results(&db_conn()?)?)
     }
 
-    pub async fn first(self) -> Result<Transaction, Error> {
+    pub fn first(self) -> Result<Transaction, Error> {
         Ok(self.query.first(&db_conn()?)?)
     }
 }
@@ -75,27 +75,27 @@ impl<'a> Transaction {
         LazyQuery::new(transactions::table.into_boxed())
     }
 
-    pub async fn find(id: i64) -> Result<Self, Error> {
+    pub fn find(id: i64) -> Result<Self, Error> {
         Ok(transactions::table.find(id).first::<Self>(&db_conn()?)?)
     }
 
-    pub async fn create(record: DirtyTransaction) -> Result<Self, Error> {
+    pub fn create(record: impl Into<DirtyTransaction>) -> Result<Self, Error> {
         use diesel::insert_into;
 
         Ok(insert_into(transactions::table)
-            .values(record)
+            .values(record.into())
             .get_result(&db_conn()?)?)
     }
 
-    pub async fn update(record: DirtyTransaction, id: i64) -> Result<Self, Error> {
+    pub fn update(record: impl Into<DirtyTransaction>, id: i64) -> Result<Self, Error> {
         Ok(
             diesel::update(transactions::table.filter(transactions::id.eq(id)))
-                .set(&record)
+                .set(&record.into())
                 .get_result(&db_conn()?)?,
         )
     }
 
-    pub async fn delete(id: i64) -> Result<Self, Error> {
+    pub fn delete(id: i64) -> Result<Self, Error> {
         Ok(
             diesel::delete(transactions::table.filter(transactions::id.eq(id)))
                 .get_result(&db_conn()?)?,
@@ -144,6 +144,99 @@ impl std::str::FromStr for TransactionState {
             s if s.eq_ignore_ascii_case("completed") => Ok(TransactionState::Completed),
             s if s.eq_ignore_ascii_case("terminated") => Ok(TransactionState::Terminated),
             s => Err(format!("invalid TransactionState `{}`", s)),
+        }
+    }
+}
+
+impl Into<models::transactions::NotFound> for Transaction {
+    fn into(self) -> models::transactions::NotFound {
+        use models::transactions::{not_found::TransactionData, NotFound};
+
+        match self.state {
+            TransactionState::Trying => NotFound::Default(TransactionData {
+                branch_id: self.branch_id,
+                dialog_id: self.dialog_id,
+            }),
+            TransactionState::Proceeding => NotFound::Default(TransactionData {
+                branch_id: self.branch_id,
+                dialog_id: self.dialog_id,
+            }),
+            TransactionState::Completed => NotFound::Default(TransactionData {
+                branch_id: self.branch_id,
+                dialog_id: self.dialog_id,
+            }),
+            TransactionState::Terminated => NotFound::Default(TransactionData {
+                branch_id: self.branch_id,
+                dialog_id: self.dialog_id,
+            }),
+        }
+    }
+}
+
+impl From<models::transactions::NotFound> for DirtyTransaction {
+    fn from(model: models::transactions::NotFound) -> Self {
+        use models::transactions::NotFound;
+
+        match model {
+            NotFound::Default(data) => Self {
+                state: Some(TransactionState::Trying),
+                branch_id: Some(data.branch_id),
+                dialog_id: Some(data.dialog_id),
+            },
+        }
+    }
+}
+
+impl Into<models::transactions::Registration> for Transaction {
+    fn into(self) -> models::transactions::Registration {
+        use models::transactions::{registration::TransactionData, Registration};
+
+        match self.state {
+            TransactionState::Trying => Registration::Trying(TransactionData {
+                branch_id: self.branch_id,
+                dialog_id: self.dialog_id,
+            }),
+            TransactionState::Proceeding => Registration::Proceeding(TransactionData {
+                branch_id: self.branch_id,
+                dialog_id: self.dialog_id,
+            }),
+            TransactionState::Completed => Registration::Completed(TransactionData {
+                branch_id: self.branch_id,
+                dialog_id: self.dialog_id,
+            }),
+            TransactionState::Terminated => Registration::Terminated(TransactionData {
+                branch_id: self.branch_id,
+                dialog_id: self.dialog_id,
+            }),
+        }
+    }
+}
+
+impl From<models::transactions::Registration> for DirtyTransaction {
+    fn from(model: models::transactions::Registration) -> Self {
+        use models::transactions::Registration;
+
+        match model {
+            Registration::Trying(data) => DirtyTransaction {
+                state: Some(TransactionState::Trying),
+                branch_id: Some(data.branch_id),
+                dialog_id: Some(data.dialog_id),
+            },
+            Registration::Proceeding(data) => DirtyTransaction {
+                state: Some(TransactionState::Proceeding),
+                branch_id: Some(data.branch_id),
+                dialog_id: Some(data.dialog_id),
+            },
+            Registration::Completed(data) => DirtyTransaction {
+                state: Some(TransactionState::Completed),
+                branch_id: Some(data.branch_id),
+                dialog_id: Some(data.dialog_id),
+            },
+            Registration::Terminated(data) => DirtyTransaction {
+                state: Some(TransactionState::Completed),
+                branch_id: Some(data.branch_id),
+                dialog_id: Some(data.dialog_id),
+            },
         }
     }
 }

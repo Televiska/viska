@@ -44,22 +44,15 @@ mod dialog;
 mod registration;
 mod request;
 mod response;
-mod transactions;
+pub mod transactions;
 
-pub use dialog::Dialog;
-pub use registration::Registration;
+pub use dialog::{Dialog, DialogFlow};
+pub use registration::{Registration, UpdateRegistration};
 pub use request::Request;
 pub use response::Response;
 
-pub struct ServerState {
-    pub request: Request,
-    pub dialog: Dialog,
-}
-
-pub trait TransactionFSM {
-    fn next(&self, request: crate::Request) -> Result<Response, String>;
-}
-
-pub trait DialogExt {
-    fn transaction(&self) -> Box<dyn crate::TransactionFSM>;
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub enum TransportType {
+    Tcp,
+    Udp,
 }

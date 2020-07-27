@@ -115,17 +115,6 @@ impl Response {
     }
 }
 
-impl Into<store::DirtyResponse> for Response {
-    fn into(self) -> store::DirtyResponse {
-        store::DirtyResponse {
-            code: Some(self.code as i16),
-            headers: Some(format!("{:?}", self.headers)),
-            body: Some(String::from_utf8_lossy(&self.body).to_string()),
-            ..Default::default()
-        }
-    }
-}
-
 impl TryFrom<SipMessage> for Response {
     type Error = &'static str;
 

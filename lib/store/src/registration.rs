@@ -1,7 +1,9 @@
 use crate::schema::registrations;
 use crate::{db_conn, Error};
-use common::chrono::{DateTime, Utc};
-use common::ipnetwork::IpNetwork;
+use common::{
+    chrono::{DateTime, Utc},
+    ipnetwork::IpNetwork,
+};
 use diesel::{
     deserialize::FromSql,
     pg::Pg,
@@ -110,16 +112,18 @@ impl Registration {
         Ok(registrations::table.find(id).first::<Self>(&db_conn()?)?)
     }
 
-    pub fn create(record: DirtyRegistration) -> Result<Self, Error> {
+    pub fn create(record: impl Into<DirtyRegistration>) -> Result<Self, Error> {
         use diesel::insert_into;
 
         Ok(insert_into(registrations::table)
-            .values(record)
+            .values(record.into())
             .get_result(&db_conn()?)?)
     }
 
     //TODO: fix me by adding proper indexes and using proper ON CONFLICT clauses
-    pub fn upsert(record: DirtyRegistration) -> Result<Self, Error> {
+    pub fn upsert(record: impl Into<DirtyRegistration>) -> Result<Self, Error> {
+        let record = record.into();
+
         let existing_record = Self::query()
             .username(record.username.clone())
             .domain(record.domain.clone())
@@ -130,10 +134,10 @@ impl Registration {
         }
     }
 
-    pub fn update(record: DirtyRegistration, id: i64) -> Result<Self, Error> {
+    pub fn update(record: impl Into<DirtyRegistration>, id: i64) -> Result<Self, Error> {
         Ok(
             diesel::update(registrations::table.filter(registrations::id.eq(id)))
-                .set(&record)
+                .set(&record.into())
                 .get_result(&db_conn()?)?,
         )
     }
@@ -180,6 +184,84 @@ impl std::str::FromStr for TransportType {
             s if s.eq_ignore_ascii_case("tcp") => Ok(TransportType::Tcp),
             s if s.eq_ignore_ascii_case("udp") => Ok(TransportType::Udp),
             s => Err(format!("invalid TransportType `{}`", s)),
+        }
+    }
+}
+
+impl Into<models::Registration> for Registration {
+    fn into(self) -> models::Registration {
+        models::Registration {
+            id: self.id,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+            username: self.username,
+            domain: self.domain,
+            contact: self.contact,
+            expires: self.expires,
+            call_id: self.call_id,
+            cseq: self.cseq,
+            user_agent: self.user_agent,
+            instance: self.instance,
+            reg_id: self.reg_id,
+            ip_address: self.ip_address,
+            port: self.port,
+            transport: self.transport.into(),
+        }
+    }
+}
+
+impl From<models::Registration> for DirtyRegistration {
+    fn from(model: models::Registration) -> Self {
+        Self {
+            username: Some(model.username),
+            domain: model.domain,
+            contact: Some(model.contact),
+            expires: Some(model.expires),
+            call_id: Some(model.call_id),
+            cseq: Some(model.cseq),
+            user_agent: Some(model.user_agent),
+            instance: model.instance,
+            reg_id: Some(model.reg_id),
+            ip_address: Some(model.ip_address),
+            port: Some(model.port),
+            transport: Some(model.transport.into()),
+        }
+    }
+}
+
+impl Into<models::TransportType> for TransportType {
+    fn into(self) -> models::TransportType {
+        match self {
+            TransportType::Tcp => models::TransportType::Tcp,
+            TransportType::Udp => models::TransportType::Udp,
+        }
+    }
+}
+
+impl From<models::TransportType> for TransportType {
+    fn from(model: models::TransportType) -> TransportType {
+        match model {
+            models::TransportType::Tcp => TransportType::Tcp,
+            models::TransportType::Udp => TransportType::Udp,
+        }
+    }
+}
+
+impl From<models::UpdateRegistration> for DirtyRegistration {
+    fn from(model: models::UpdateRegistration) -> Self {
+        Self {
+            username: Some(model.username),
+            domain: model.domain,
+            contact: Some(model.contact),
+            expires: model.expires,
+            call_id: Some(model.call_id),
+            cseq: Some(model.cseq),
+            user_agent: Some(model.user_agent),
+            instance: model.instance,
+            ip_address: Some(model.ip_address),
+            port: Some(model.port),
+            transport: Some(model.transport.into()),
+            reg_id: model.reg_id,
         }
     }
 }

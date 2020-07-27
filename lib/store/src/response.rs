@@ -45,11 +45,11 @@ impl LazyQuery {
         self
     }
 
-    pub async fn load(self) -> Result<Vec<Response>, Error> {
+    pub fn load(self) -> Result<Vec<Response>, Error> {
         Ok(self.query.get_results(&db_conn()?)?)
     }
 
-    pub async fn first(self) -> Result<Response, Error> {
+    pub fn first(self) -> Result<Response, Error> {
         Ok(self.query.first(&db_conn()?)?)
     }
 }
@@ -59,27 +59,38 @@ impl Response {
         LazyQuery::new(responses::table.into_boxed())
     }
 
-    pub async fn find(id: i64) -> Result<Self, Error> {
+    pub fn find(id: i64) -> Result<Self, Error> {
         Ok(responses::table.find(id).first::<Self>(&db_conn()?)?)
     }
 
-    pub async fn create(record: DirtyResponse) -> Result<Self, Error> {
+    pub fn create(record: impl Into<DirtyResponse>) -> Result<Self, Error> {
         use diesel::insert_into;
 
         Ok(insert_into(responses::table)
-            .values(record)
+            .values(record.into())
             .get_result(&db_conn()?)?)
     }
 
-    pub async fn update(record: DirtyResponse, id: i64) -> Result<Self, Error> {
+    pub fn update(record: impl Into<DirtyResponse>, id: i64) -> Result<Self, Error> {
         Ok(
             diesel::update(responses::table.filter(responses::id.eq(id)))
-                .set(&record)
+                .set(&record.into())
                 .get_result(&db_conn()?)?,
         )
     }
 
-    pub async fn delete(id: i64) -> Result<Self, Error> {
+    pub fn delete(id: i64) -> Result<Self, Error> {
         Ok(diesel::delete(responses::table.filter(responses::id.eq(id))).get_result(&db_conn()?)?)
+    }
+}
+
+impl From<models::Response> for DirtyResponse {
+    fn from(model: models::Response) -> DirtyResponse {
+        DirtyResponse {
+            code: Some(model.code as i16),
+            headers: Some(format!("{:?}", model.headers)),
+            body: Some(String::from_utf8_lossy(&model.body).to_string()),
+            ..Default::default()
+        }
     }
 }

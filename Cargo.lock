@@ -317,6 +317,7 @@ name = "helpers"
 version = "0.1.0"
 dependencies = [
  "common",
+ "store",
 ]
 
 [[package]]
@@ -519,7 +520,6 @@ version = "0.1.0"
 dependencies = [
  "common",
  "serde",
- "store",
  "tokio",
 ]
 
@@ -700,6 +700,7 @@ name = "processor"
 version = "0.1.0"
 dependencies = [
  "common",
+ "helpers",
  "models",
  "serde",
  "store",
@@ -934,6 +935,7 @@ version = "0.1.0"
 dependencies = [
  "common",
  "diesel",
+ "models",
  "once_cell",
  "r2d2",
  "serde",
