@@ -1,5 +1,8 @@
-mod error;
-pub use error::Error;
+#[macro_use]
+extern crate envconfig_derive;
+
+mod config;
+pub use config::Config;
 
 pub use bytes;
 pub use chrono;

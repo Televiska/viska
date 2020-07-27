@@ -27,16 +27,14 @@ type DbConn =
     diesel::r2d2::PooledConnection<diesel::r2d2::ConnectionManager<diesel::pg::PgConnection>>;
 
 static DB_POOL: Lazy<Arc<Pool<diesel::r2d2::ConnectionManager<PgConnection>>>> = Lazy::new(|| {
-    let manager = ConnectionManager::<PgConnection>::new(
-        std::env::var("DATABASE_URL")
-            .map_err(|_| String::from("Environment variable Database URL could not be read"))
-            .unwrap(),
-    );
+    let config = common::Config::new();
+    let manager = ConnectionManager::<PgConnection>::new(config.database_url);
+
     Arc::new(
         Pool::builder()
             .max_size(20)
             .build(manager)
-            .expect("build pool"),
+            .expect("failed to build database pool"),
     )
 });
 

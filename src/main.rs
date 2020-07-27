@@ -1,6 +1,7 @@
 #[tokio::main]
 async fn main() {
     common::pretty_env_logger::init_timed();
+    common::Config::verify();
 
     /*
     let tcp = tokio::spawn(async move {
