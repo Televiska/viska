@@ -39,50 +39,26 @@ pub struct UpdateRegistration {
 }
 
 impl TryFrom<crate::Request> for UpdateRegistration {
-    type Error = String;
+    type Error = crate::Error;
 
     fn try_from(request: crate::Request) -> Result<Self, Self::Error> {
         Ok(Self {
-            username: request
-                .from_header_username()
-                .map_err(|e| format!("{:?}", e))?
-                .clone(),
-            domain: Some(
-                request
-                    .from_header_domain()
-                    .map_err(|e| format!("{:?}", e))?
-                    .clone()
-                    .to_string(),
-            ),
-            contact: request
-                .contact_header()
-                .map_err(|e| format!("{:?}", e))?
-                .clone()
-                .to_string(),
+            username: request.from_header_username()?.clone(),
+            domain: Some(request.from_header_domain()?.clone().to_string()),
+            contact: request.contact_header()?.clone().to_string(),
             expires: Some(
                 Utc::now()
                     + Duration::seconds(
                         request
                             .contact_header_expires()
-                            .unwrap_or(request.expires_header().map_err(|e| format!("{:?}", e))?)
-                            as i64,
+                            .unwrap_or(request.expires_header()?) as i64,
                     ),
             ),
-            call_id: request.call_id().map_err(|e| format!("{:?}", e))?.clone(),
-            cseq: request.cseq().map_err(|e| format!("{:?}", e))?.0 as i32,
-            user_agent: request
-                .user_agent()
-                .map_err(|e| format!("{:?}", e))?
-                .clone(),
-            instance: Some(
-                request
-                    .contact_header_instance()
-                    .map_err(|e| format!("{:?}", e))?
-                    .to_string(),
-            ),
-            ip_address: IpNetwork::V4(
-                Ipv4Network::new(Ipv4Addr::new(192, 168, 0, 3), 32).map_err(|e| e.to_string())?,
-            ),
+            call_id: request.call_id()?.clone(),
+            cseq: request.cseq()?.0 as i32,
+            user_agent: request.user_agent()?.clone(),
+            instance: Some(request.contact_header_instance()?.to_string()),
+            ip_address: IpNetwork::V4(Ipv4Network::new(Ipv4Addr::new(192, 168, 0, 3), 32)?),
             port: 5066,
             transport: crate::TransportType::Udp,
             reg_id: None,

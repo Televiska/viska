@@ -6,6 +6,6 @@ pub fn pretty_print(request: Vec<u8>) -> String {
 {}
 ########################################################
 "#,
-        String::from_utf8(vec).expect("bytes to string")
+        String::from_utf8_lossy(&vec)
     )
 }

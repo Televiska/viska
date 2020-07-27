@@ -1,7 +1,9 @@
+mod error;
 mod helpers;
 mod transactions;
 
 use common::libsip::SipMessage;
+pub use error::Error;
 use models::{Request, Response};
 use std::convert::TryInto;
 
@@ -15,20 +17,20 @@ impl Processor {
         Self
     }
 
-    pub async fn process_message(&self, bytes: common::bytes::BytesMut) -> Result<Vec<u8>, String> {
+    pub async fn process_message(&self, bytes: common::bytes::BytesMut) -> Result<Vec<u8>, Error> {
         let sip_message: SipMessage = helpers::parse_bytes(bytes.clone())?;
-        helpers::trace_sip_message(sip_message.clone(), Some(bytes));
+        helpers::trace_sip_message(sip_message.clone(), Some(bytes))?;
 
         let sip_response: SipMessage = match sip_message {
             SipMessage::Request { .. } => Ok(self.handle_request(sip_message.try_into()?)?.into()),
             SipMessage::Response { .. } => Err(String::from("we don't support responses here")),
         }?;
 
-        helpers::trace_sip_message(sip_response.clone(), None);
+        helpers::trace_sip_message(sip_response.clone(), None)?;
         Ok(format!("{}", sip_response).into_bytes())
     }
 
-    fn handle_request(&self, request: Request) -> Result<Response, String> {
+    fn handle_request(&self, request: Request) -> Result<Response, Error> {
         let response = self.handle_next_step_for(self.dialog_from(request.clone())?, request)?;
 
         Ok(response)
@@ -38,15 +40,13 @@ impl Processor {
         &self,
         dialog: models::Dialog,
         request: Request,
-    ) -> Result<Response, String> {
+    ) -> Result<Response, Error> {
         use transactions::DialogExt;
 
         Ok(dialog.transaction().next(request)?)
     }
 
-    fn dialog_from(&self, request: Request) -> Result<models::Dialog, String> {
-        Ok(store::Dialog::find_or_create_dialog(request)
-            .map_err(|e| e.to_string())?
-            .into())
+    fn dialog_from(&self, request: Request) -> Result<models::Dialog, Error> {
+        Ok(store::Dialog::find_or_create_dialog(request)?.into())
     }
 }
