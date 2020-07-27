@@ -41,12 +41,14 @@ macro_rules! named_header_username {
 }
 
 mod dialog;
+mod error;
 mod registration;
 mod request;
 mod response;
 pub mod transactions;
 
 pub use dialog::{Dialog, DialogFlow};
+pub use error::Error;
 pub use registration::{Registration, UpdateRegistration};
 pub use request::Request;
 pub use response::Response;

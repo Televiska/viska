@@ -1,8 +1,5 @@
+use common::libsip::{self, SipMessage};
 use common::nom::error::VerboseError;
-use common::{
-    libsip::{self, SipMessage},
-    log,
-};
 use std::convert::TryInto;
 
 pub fn parse_bytes(bytes: common::bytes::BytesMut) -> Result<SipMessage, String> {
@@ -12,7 +9,11 @@ pub fn parse_bytes(bytes: common::bytes::BytesMut) -> Result<SipMessage, String>
     Ok(request)
 }
 
-pub fn trace_sip_message(sip_message: SipMessage, bytes: Option<common::bytes::BytesMut>) {
+//this should be run in its own thread?
+pub fn trace_sip_message(
+    sip_message: SipMessage,
+    bytes: Option<common::bytes::BytesMut>,
+) -> Result<(), crate::Error> {
     let raw_message = match bytes {
         Some(bytes) => String::from_utf8_lossy(&bytes.to_vec()).to_string(),
         None => format!("{}", sip_message),
@@ -21,23 +22,17 @@ pub fn trace_sip_message(sip_message: SipMessage, bytes: Option<common::bytes::B
     match sip_message {
         SipMessage::Request { .. } => {
             let mut request: store::DirtyRequest =
-                TryInto::<models::Request>::try_into(sip_message)
-                    .expect("should never happen")
-                    .into();
+                TryInto::<models::Request>::try_into(sip_message)?.into();
             request.raw_message = Some(raw_message);
-            store::Request::create(request)
-                .map_err(|err| log::error!("{}", err))
-                .unwrap();
+            store::Request::create(request)?;
         }
         SipMessage::Response { .. } => {
             let mut response: store::DirtyResponse =
-                TryInto::<models::Response>::try_into(sip_message)
-                    .expect("should never happen")
-                    .into();
+                TryInto::<models::Response>::try_into(sip_message)?.into();
             response.raw_message = Some(raw_message);
-            store::Response::create(response)
-                .map_err(|err| log::error!("{}", err))
-                .unwrap();
+            store::Response::create(response)?;
         }
-    }
+    };
+
+    Ok(())
 }

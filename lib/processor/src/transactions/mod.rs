@@ -1,5 +1,5 @@
 pub trait TransactionFSM {
-    fn next(&self, request: models::Request) -> Result<models::Response, String>;
+    fn next(&self, request: models::Request) -> Result<models::Response, crate::Error>;
 }
 
 pub trait DialogExt {

@@ -9,8 +9,10 @@ async fn main() {
     */
 
     let udp = tokio::spawn(async move {
-        server::udp::start().await;
+        server::udp::start()
+            .await
+            .expect("failed to start udp server");
     });
 
-    tokio::try_join!(udp).expect("try join");
+    tokio::try_join!(udp).expect("try join failed");
 }
