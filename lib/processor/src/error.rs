@@ -104,3 +104,9 @@ impl From<libsip::core::MissingViaBranchError> for ErrorKind {
         ErrorKind::Libsip(format!("{:?}", e))
     }
 }
+
+impl From<std::io::Error> for ErrorKind {
+    fn from(e: std::io::Error) -> Self {
+        ErrorKind::Libsip(format!("{:?}", e))
+    }
+}

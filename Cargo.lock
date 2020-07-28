@@ -115,6 +115,7 @@ version = "0.1.0"
 dependencies = [
  "bytes",
  "chrono",
+ "delegate",
  "envconfig",
  "envconfig_derive",
  "futures",
@@ -128,6 +129,17 @@ dependencies = [
  "rand_chacha",
  "tokio-util",
  "uuid",
+]
+
+[[package]]
+name = "delegate"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "12e531288b600a8bea48baff926d2f16a3f68fda1cd2d59240279907ba727332"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

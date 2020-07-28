@@ -28,7 +28,9 @@ fn create_final_response_from(request: models::Request) -> Result<models::Respon
     use common::libsip::{
         headers::{Header, Headers},
         uri::{Domain, UriParam},
+        ResponseGenerator,
     };
+    use std::convert::TryInto;
 
     let mut headers = Headers::new();
     let mut via_header = request.via_header()?.clone();
@@ -53,10 +55,9 @@ fn create_final_response_from(request: models::Request) -> Result<models::Respon
     headers.push(Header::ContentLength(0));
     headers.push(Header::Server("viska".into()));
 
-    Ok(models::Response {
-        code: 200,
-        version: Default::default(),
-        headers,
-        body: vec![],
-    })
+    Ok(ResponseGenerator::new()
+        .code(200)
+        .headers(headers.0)
+        .build()?
+        .try_into()?)
 }

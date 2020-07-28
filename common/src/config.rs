@@ -6,6 +6,7 @@ pub struct Config {
     pub database_url: String,
 }
 
+#[allow(clippy::new_without_default)]
 impl Config {
     pub fn new() -> Self {
         Envconfig::init().expect("failed to read config from env")

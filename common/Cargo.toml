@@ -20,3 +20,5 @@ uuid = { version = "0.8.1", features = ["serde", "v4"] }
 ipnetwork = "0.16.0"
 envconfig = "0.8.0"
 envconfig_derive = "0.8.0"
+delegate = "0.4.3"
+
