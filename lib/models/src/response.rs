@@ -2,11 +2,11 @@ use common::{
     delegate::delegate,
     libsip::{
         core::{method::Method, version::Version, SipMessageExt},
+        header,
         headers::{via::ViaHeader, ContactHeader, Header, Headers, NamedHeader},
-        uri::{domain::Domain},
+        uri::domain::Domain,
         MissingContactExpiresError, MissingHeaderError, MissingTagError, MissingUsernameError,
         MissingViaBranchError, SipMessage,
-        header
     },
 };
 use std::convert::TryFrom;
@@ -40,7 +40,7 @@ impl Response {
     pub fn status_code(&self) -> u32 {
         match self.inner {
             SipMessage::Request { .. } => panic!(state_mismatch_for("code")),
-            SipMessage::Response { code, ..} => code,
+            SipMessage::Response { code, .. } => code,
         }
     }
 
@@ -91,6 +91,7 @@ impl Response {
             pub fn set_from_header_tag(&mut self, tag: String);
             pub fn from_header_username(&self) -> Result<&String, MissingUsernameError>;
             pub fn to_header(&self) -> Result<&NamedHeader, MissingHeaderError>;
+            #[allow(clippy::wrong_self_convention)]
             pub fn to_header_mut(&mut self) -> Result<&mut NamedHeader, MissingHeaderError>;
             pub fn to_header_tag(&self) -> Result<&String, MissingTagError>;
             pub fn set_to_header_tag(&mut self, tag: String);
@@ -132,8 +133,5 @@ impl Into<SipMessage> for Response {
 }
 
 fn state_mismatch_for(part: &str) -> String {
-    format!(
-        "SipMessage and Response mismatch: can't fetch {}",
-        part
-    )
+    format!("SipMessage and Response mismatch: can't fetch {}", part)
 }

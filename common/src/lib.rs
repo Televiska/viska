@@ -6,6 +6,7 @@ pub use config::Config;
 
 pub use bytes;
 pub use chrono;
+pub use delegate;
 pub use futures;
 pub use futures_util;
 pub use ipnetwork;
@@ -17,4 +18,3 @@ pub use rand;
 pub use rand_chacha;
 pub use tokio_util;
 pub use uuid;
-pub use delegate;
