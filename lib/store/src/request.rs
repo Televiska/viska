@@ -87,10 +87,10 @@ impl Request {
 impl From<models::Request> for DirtyRequest {
     fn from(model: models::Request) -> DirtyRequest {
         DirtyRequest {
-            method: Some(model.method.to_string()),
-            uri: Some(model.uri.to_string()),
-            headers: Some(format!("{:?}", model.headers)),
-            body: Some(String::from_utf8_lossy(&model.body).to_string()),
+            method: Some(model.method().to_string()),
+            uri: Some(model.uri().to_string()),
+            headers: Some(format!("{:?}", model.headers())),
+            body: Some(String::from_utf8_lossy(&model.body()).to_string()),
             ..Default::default()
         }
     }

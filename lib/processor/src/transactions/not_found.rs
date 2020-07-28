@@ -9,7 +9,11 @@ impl super::TransactionFSM for models::transactions::NotFound {
 }
 
 fn create_final_response_from(request: models::Request) -> Result<models::Response, crate::Error> {
-    use common::libsip::headers::{Header, Headers};
+    use common::libsip::{
+        headers::{Header, Headers},
+        ResponseGenerator,
+    };
+    use std::convert::TryInto;
 
     let mut headers = Headers::new();
     headers.push(Header::Via(request.via_header()?.clone()));
@@ -23,10 +27,9 @@ fn create_final_response_from(request: models::Request) -> Result<models::Respon
     headers.push(Header::ContentLength(0));
     headers.push(Header::Server("viska".into()));
 
-    Ok(models::Response {
-        code: 404,
-        version: Default::default(),
-        headers,
-        body: vec![],
-    })
+    Ok(ResponseGenerator::new()
+        .code(404)
+        .headers(headers.0)
+        .build()?
+        .try_into()?)
 }

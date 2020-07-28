@@ -314,7 +314,7 @@ impl TryFrom<models::Request> for DirtyDialogWithTransaction {
                 call_id: Some(call_id),
                 from_tag: Some(from_tag),
                 to_tag: Some(to_tag.to_string()),
-                flow: Some(flow_for_method(model.method)?),
+                flow: Some(flow_for_method(model.method().clone())?),
                 ..Default::default()
             },
             transaction: crate::DirtyTransaction {
