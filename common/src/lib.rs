@@ -18,3 +18,4 @@ pub use rand;
 pub use rand_chacha;
 pub use tokio_util;
 pub use uuid;
+pub use md5;

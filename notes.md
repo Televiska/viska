@@ -16,6 +16,19 @@ Much later:
 * remove asyncs from store since await is not used
 * probably we need to revert the from/into traits to be declared in the store
 
+
+#### Viska notes
+I need to follow through RFC on the necessary processes regarding:
+* receiving a request
+* receiving a response
+* sending a request
+* sending a response
+
+Also big note on stateless proxies section, where it basically says that stateless
+proxies are mostly used to handle unauthorized requests. Hence an architecture should
+make it easy to specify, based on request method/headers/uri/etc what type of UAS
+to run.
+
 ```
 REGISTER sip:192.168.1.223 SIP/2.0
 Via: SIP/2.0/UDP 192.168.1.223:5066;rport;branch=z9hG4bKPjad27b61a-897c-47e0-abaf-d8503343d398

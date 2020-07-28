@@ -9,6 +9,7 @@ use common::{
         MissingViaBranchError, SipMessage,
     },
 };
+use sip_helpers::auth::AuthorizationHeader;
 use std::convert::TryFrom;
 
 #[derive(Debug, Clone)]
@@ -18,16 +19,36 @@ pub struct Request {
 
 impl Request {
     pub fn dialog_id(&self) -> Option<String> {
-        match (
-            self.inner.call_id(),
-            self.inner.from_header_tag(),
-            self.inner.to_header_tag(),
-        ) {
+        match (self.call_id(), self.from_header_tag(), self.to_header_tag()) {
             (Ok(call_id), Ok(from_tag), Ok(to_tag)) => {
                 Some(format!("{}-{}-{}", call_id, from_tag, to_tag))
             }
             _ => None,
         }
+    }
+
+    pub fn debug_id(&self) -> String {
+        format!(
+            "{}: {}-{}-{}",
+            self.method(),
+            self.call_id().unwrap_or(&"o".into()),
+            self.from_header_tag().unwrap_or(&"o".into()),
+            self.to_header_tag().unwrap_or(&"o".into())
+        )
+    }
+
+    pub fn debug_with(&self, msg: Option<String>) {
+        common::log::debug!(
+            "{}",
+            format!(
+                "{}: {}-{}-{} ({})",
+                self.method(),
+                self.call_id().unwrap_or(&"o".into()),
+                self.from_header_tag().unwrap_or(&"o".into()),
+                self.to_header_tag().unwrap_or(&"o".into()),
+                msg.unwrap_or("None".into())
+            )
+        )
     }
 
     pub fn method(&self) -> &Method {
@@ -57,6 +78,22 @@ impl Request {
         } else {
             Err(MissingUsernameError::From)
         }
+    }
+
+    //has wrong return error
+    pub fn auth_header(&self) -> Result<Option<AuthorizationHeader>, sip_helpers::Error> {
+        use std::convert::TryInto;
+
+        header!(
+            self.inner.headers().0.iter(),
+            Header::Authorization,
+            MissingUsernameError::From
+        )
+        .ok().map(|h| h.clone().try_into()).transpose()
+    }
+
+    pub fn is_authorized(&self) -> bool {
+        true
     }
 
     pub fn contact_header_instance(&self) -> Result<&String, MissingHeaderError> {

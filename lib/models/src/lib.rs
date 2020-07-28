@@ -12,6 +12,7 @@ macro_rules! named_header_param {
     };
 }
 
+mod auth_request;
 mod dialog;
 mod error;
 mod registration;
@@ -19,6 +20,7 @@ mod request;
 mod response;
 pub mod transactions;
 
+pub use auth_request::AuthRequest;
 pub use dialog::{Dialog, DialogFlow};
 pub use error::Error;
 pub use registration::{Registration, UpdateRegistration};

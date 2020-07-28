@@ -13,6 +13,7 @@ mod registration;
 mod request;
 mod response;
 mod transaction;
+mod auth_request;
 
 pub use dialog::{
     Dialog, DialogFlow, DialogWithTransaction, DirtyDialog, DirtyDialogWithTransaction,
@@ -22,13 +23,15 @@ pub use registration::{DirtyRegistration, Registration, TransportType};
 pub use request::{DirtyRequest, Request};
 pub use response::{DirtyResponse, Response};
 pub use transaction::{DirtyTransaction, Transaction, TransactionState};
+pub use auth_request::{DirtyAuthRequest, AuthRequest};
 
-type DbConn =
-    diesel::r2d2::PooledConnection<diesel::r2d2::ConnectionManager<diesel::pg::PgConnection>>;
+//type PgConn = diesel_logger::LoggingConnection<PgConnection>;
+type PgConn = PgConnection;
+type DbConn = diesel::r2d2::PooledConnection<diesel::r2d2::ConnectionManager<PgConn>>;
 
-static DB_POOL: Lazy<Arc<Pool<diesel::r2d2::ConnectionManager<PgConnection>>>> = Lazy::new(|| {
+static DB_POOL: Lazy<Arc<Pool<diesel::r2d2::ConnectionManager<PgConn>>>> = Lazy::new(|| {
     let config = common::Config::new();
-    let manager = ConnectionManager::<PgConnection>::new(config.database_url);
+    let manager = ConnectionManager::<PgConn>::new(config.database_url);
 
     Arc::new(
         Pool::builder()

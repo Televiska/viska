@@ -1,5 +1,6 @@
 mod error;
 mod helpers;
+mod presets;
 mod transactions;
 
 use common::libsip::SipMessage;
@@ -31,22 +32,45 @@ impl Processor {
     }
 
     fn handle_request(&self, request: Request) -> Result<Response, Error> {
-        let response = self.handle_next_step_for(self.dialog_from(request.clone())?, request)?;
+        let response = self.handle_next_step_for(self.dialog_from(request.clone()), request)?;
 
         Ok(response)
     }
 
     fn handle_next_step_for(
         &self,
-        dialog: models::Dialog,
+        dialog: Option<models::Dialog>,
         request: Request,
     ) -> Result<Response, Error> {
         use transactions::DialogExt;
 
-        Ok(dialog.transaction().next(request)?)
+        match dialog {
+            Some(dialog) => Ok(dialog.transaction().next(request)?),
+            None => {
+                let auth_header = request.auth_header();
+                match auth_header {
+                    Ok(Some(header)) => {
+                        if presets::is_authorized(header)? {
+                            let dialog: models::Dialog =
+                                store::Dialog::create_with_transaction(request.clone())?.into();
+                            Ok(dialog.transaction().next(request)?)
+                        } else {
+                            Ok(presets::create_unauthorized_from(request)?)
+                        }
+                    }
+                    Ok(None) => Ok(presets::create_unauthorized_from(request)?),
+                    Err(err) => {
+                        common::log::warn!("issue in auth header: {}", err);
+                        Ok(presets::create_unauthorized_from(request)?)
+                    }
+                }
+            }
+        }
     }
 
-    fn dialog_from(&self, request: Request) -> Result<models::Dialog, Error> {
-        Ok(store::Dialog::find_or_create_dialog(request)?.into())
+    fn dialog_from(&self, request: Request) -> Option<models::Dialog> {
+        store::Dialog::find_with_transaction(request.dialog_id()?)
+            .ok()
+            .map(|s| s.into())
     }
 }

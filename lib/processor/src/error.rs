@@ -16,6 +16,7 @@ pub enum ErrorKind {
     Store(store::Error),
     Libsip(String),
     Custom(String),
+    SipHelpers(String),
 }
 
 impl Error {
@@ -40,6 +41,7 @@ impl fmt::Display for ErrorKind {
         match self {
             ErrorKind::Models(ref inner) => write!(f, "models transformation error: {}", inner),
             ErrorKind::Store(ref inner) => write!(f, "store error: {}", inner),
+            ErrorKind::Libsip(ref inner) => write!(f, "libsip error: {}", inner),
             ErrorKind::Custom(ref inner) => write!(f, "{}", inner),
             _ => write!(f, "unknown error, {:?}", self),
         }
@@ -108,5 +110,11 @@ impl From<libsip::core::MissingViaBranchError> for ErrorKind {
 impl From<std::io::Error> for ErrorKind {
     fn from(e: std::io::Error) -> Self {
         ErrorKind::Libsip(format!("{:?}", e))
+    }
+}
+
+impl From<sip_helpers::Error> for ErrorKind {
+    fn from(e: sip_helpers::Error) -> Self {
+        ErrorKind::SipHelpers(format!("{:?}", e))
     }
 }

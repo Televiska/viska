@@ -10,6 +10,7 @@ serde = { version = "1.0.105", features = ["derive"] }
 
 diesel = { git = "https://github.com/diesel-rs/diesel", features = ["postgres", "chrono", "numeric", "uuid", "r2d2", "network-address"] }
 r2d2 = "0.8.9"
+#diesel_logger = { git = "https://github.com/vasilakisfil/diesel-logger", branch = "feat/2.0-diesel" }
 
 
 once_cell = {version = "1.4.0" }
