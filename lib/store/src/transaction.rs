@@ -154,18 +154,22 @@ impl Into<models::transactions::NotFound> for Transaction {
 
         match self.state {
             TransactionState::Trying => NotFound::Default(TransactionData {
+                id: self.id,
                 branch_id: self.branch_id,
                 dialog_id: self.dialog_id,
             }),
             TransactionState::Proceeding => NotFound::Default(TransactionData {
+                id: self.id,
                 branch_id: self.branch_id,
                 dialog_id: self.dialog_id,
             }),
             TransactionState::Completed => NotFound::Default(TransactionData {
+                id: self.id,
                 branch_id: self.branch_id,
                 dialog_id: self.dialog_id,
             }),
             TransactionState::Terminated => NotFound::Default(TransactionData {
+                id: self.id,
                 branch_id: self.branch_id,
                 dialog_id: self.dialog_id,
             }),
@@ -193,18 +197,22 @@ impl Into<models::transactions::Registration> for Transaction {
 
         match self.state {
             TransactionState::Trying => Registration::Trying(TransactionData {
+                id: self.id,
                 branch_id: self.branch_id,
                 dialog_id: self.dialog_id,
             }),
             TransactionState::Proceeding => Registration::Proceeding(TransactionData {
+                id: self.id,
                 branch_id: self.branch_id,
                 dialog_id: self.dialog_id,
             }),
             TransactionState::Completed => Registration::Completed(TransactionData {
+                id: self.id,
                 branch_id: self.branch_id,
                 dialog_id: self.dialog_id,
             }),
             TransactionState::Terminated => Registration::Terminated(TransactionData {
+                id: self.id,
                 branch_id: self.branch_id,
                 dialog_id: self.dialog_id,
             }),

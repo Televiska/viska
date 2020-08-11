@@ -1,4 +1,14 @@
 table! {
+    auth_requests (id) {
+        id -> Int8,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+        nonce -> Varchar,
+        consumed_at -> Nullable<Timestamptz>,
+    }
+}
+
+table! {
     dialogs (id) {
         id -> Int8,
         created_at -> Timestamptz,
@@ -69,4 +79,11 @@ table! {
 
 joinable!(transactions -> dialogs (dialog_id));
 
-allow_tables_to_appear_in_same_query!(dialogs, registrations, requests, responses, transactions,);
+allow_tables_to_appear_in_same_query!(
+    auth_requests,
+    dialogs,
+    registrations,
+    requests,
+    responses,
+    transactions,
+);
