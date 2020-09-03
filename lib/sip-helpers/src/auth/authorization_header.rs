@@ -78,39 +78,24 @@ impl Into<AuthHeader> for AuthorizationHeader {
         let mut map: HashMap<String, String> = HashMap::new();
         map.insert("realm".into(), self.realm);
         map.insert("nonce".into(), self.nonce);
-        match self.opaque {
-            Some(opaque) => {
-                map.insert("opaque".into(), opaque);
-            }
-            None => (),
-        };
+        if let Some(opaque) = self.opaque {
+            map.insert("opaque".into(), opaque);
+        }
         map.insert("algorithm".into(), self.algorithm.into());
-        match self.response {
-            Some(response) => {
-                map.insert("response".into(), response);
-            }
-            None => (),
-        };
+        if let Some(response) = self.response {
+            map.insert("response".into(), response);
+        }
         map.insert("username".into(), self.username);
         map.insert("uri".into(), self.uri);
-        match self.qop {
-            Some(qop) => {
-                map.insert("qop".into(), qop.into());
-            }
-            None => (),
-        };
-        match self.cnonce {
-            Some(cnonce) => {
-                map.insert("cnonce".into(), cnonce);
-            }
-            None => (),
-        };
-        match self.nc {
-            Some(nc) => {
-                map.insert("nc".into(), nc.to_string());
-            }
-            None => (),
-        };
+        if let Some(qop) = self.qop {
+            map.insert("qop".into(), qop.into());
+        }
+        if let Some(cnonce) = self.cnonce {
+            map.insert("cnonce".into(), cnonce);
+        }
+        if let Some(nc) = self.nc {
+            map.insert("nc".into(), nc.to_string());
+        }
 
         AuthHeader(AuthSchema::Digest, map)
     }

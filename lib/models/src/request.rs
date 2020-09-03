@@ -1,13 +1,16 @@
 use common::{
+    bytes::Bytes,
     delegate::delegate,
     libsip::{
         core::{method::Method, version::Version, SipMessageExt},
         header,
         headers::{via::ViaHeader, ContactHeader, Header, Headers, NamedHeader},
+        parse_message,
         uri::{domain::Domain, Uri},
         MissingContactExpiresError, MissingHeaderError, MissingTagError, MissingUsernameError,
         MissingViaBranchError, SipMessage,
     },
+    nom::error::VerboseError,
 };
 use sip_helpers::auth::AuthorizationHeader;
 use std::convert::TryFrom;
@@ -89,7 +92,9 @@ impl Request {
             Header::Authorization,
             MissingUsernameError::From
         )
-        .ok().map(|h| h.clone().try_into()).transpose()
+        .ok()
+        .map(|h| h.clone().try_into())
+        .transpose()
     }
 
     pub fn is_authorized(&self) -> bool {
@@ -168,6 +173,27 @@ impl Into<SipMessage> for Request {
         self.inner
     }
 }
+
+impl TryFrom<Bytes> for Request {
+    type Error = String;
+
+    fn try_from(bytes: Bytes) -> Result<Self, Self::Error> {
+        use std::convert::TryInto;
+
+        let (_, sip_message) =
+            parse_message::<VerboseError<&[u8]>>(&bytes.to_vec()).map_err(|e| e.to_string())?;
+
+        Ok(sip_message.try_into()?)
+    }
+}
+
+/*
+impl Into<Bytes> for Request {
+    fn into(self) -> Bytes {
+        Ok(Bytes::from(self.to_string()))
+    }
+}*/
+
 
 fn state_mismatch_for(part: &str) -> String {
     format!("SipMessage and Request mismatch: can't fetch {}", part)

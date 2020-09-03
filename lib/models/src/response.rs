@@ -1,13 +1,16 @@
 use common::{
+    bytes::Bytes,
     delegate::delegate,
     libsip::{
         core::{method::Method, version::Version, SipMessageExt},
         header,
         headers::{via::ViaHeader, ContactHeader, Header, Headers, NamedHeader},
+        parse_message,
         uri::domain::Domain,
         MissingContactExpiresError, MissingHeaderError, MissingTagError, MissingUsernameError,
         MissingViaBranchError, SipMessage,
     },
+    nom::error::VerboseError,
 };
 use std::convert::TryFrom;
 
@@ -129,6 +132,19 @@ impl TryFrom<SipMessage> for Response {
 impl Into<SipMessage> for Response {
     fn into(self) -> SipMessage {
         self.inner
+    }
+}
+
+impl TryFrom<Bytes> for Response {
+    type Error = String;
+
+    fn try_from(bytes: Bytes) -> Result<Self, Self::Error> {
+        use std::convert::TryInto;
+
+        let (_, sip_message) =
+            parse_message::<VerboseError<&[u8]>>(&bytes.to_vec()).map_err(|e| e.to_string())?;
+
+        Ok(sip_message.try_into()?)
     }
 }
 

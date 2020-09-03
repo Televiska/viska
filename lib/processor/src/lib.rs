@@ -1,11 +1,13 @@
 mod error;
-mod helpers;
+pub mod helpers;
 mod presets;
 mod transactions;
 
-use common::libsip::SipMessage;
+use common::{
+    bytes::{Bytes},
+};
 pub use error::Error;
-use models::{Request, Response};
+use models::{Request, Response, SipMessage};
 use std::convert::TryInto;
 
 //should be generic soon
@@ -18,17 +20,17 @@ impl Processor {
         Self
     }
 
-    pub async fn process_message(&self, bytes: common::bytes::BytesMut) -> Result<Vec<u8>, Error> {
-        let sip_message: SipMessage = helpers::parse_bytes(bytes.clone())?;
-        helpers::trace_sip_message(sip_message.clone(), Some(bytes))?;
+    pub async fn process_message(&self, bytes: Bytes) -> Result<Bytes, Error> {
+        let sip_message: SipMessage = bytes.try_into()?;
+        helpers::trace_sip_message(sip_message.clone())?;
 
-        let sip_response: SipMessage = match sip_message {
-            SipMessage::Request { .. } => Ok(self.handle_request(sip_message.try_into()?)?.into()),
-            SipMessage::Response { .. } => Err(String::from("we don't support responses here")),
-        }?;
+        let sip_message: SipMessage = match sip_message {
+            SipMessage::Request(request) => self.handle_request(request),
+            SipMessage::Response(_) => Err(Error::from("we don't support responses yet")),
+        }?.into();
 
-        helpers::trace_sip_message(sip_response.clone(), None)?;
-        Ok(format!("{}", sip_response).into_bytes())
+        helpers::trace_sip_message(sip_message.clone())?;
+        Ok(sip_message.into())
     }
 
     fn handle_request(&self, request: Request) -> Result<Response, Error> {

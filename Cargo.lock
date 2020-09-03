@@ -145,16 +145,6 @@ dependencies = [
 
 [[package]]
 name = "diesel"
-version = "1.4.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e2de9deab977a153492a1468d1b1c0662c1cf39e5ea87d0c060ecd59ef18d8c"
-dependencies = [
- "byteorder",
- "diesel_derives 1.4.1",
-]
-
-[[package]]
-name = "diesel"
 version = "2.0.0"
 source = "git+https://github.com/diesel-rs/diesel#6827dba6d7ff404eb2ef76bbd8ee44aa571993e7"
 dependencies = [
@@ -162,7 +152,7 @@ dependencies = [
  "bitflags",
  "byteorder",
  "chrono",
- "diesel_derives 2.0.0",
+ "diesel_derives",
  "ipnetwork",
  "libc",
  "num-bigint",
@@ -171,17 +161,6 @@ dependencies = [
  "pq-sys",
  "r2d2",
  "uuid",
-]
-
-[[package]]
-name = "diesel_derives"
-version = "1.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "45f5098f628d02a7a0f68ddba586fb61e80edec3bdc1be3b921f4ceec60858d3"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]
@@ -197,8 +176,7 @@ dependencies = [
 [[package]]
 name = "diesel_migrations"
 version = "1.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf3cde8413353dc7f5d72fa8ce0b99a560a359d2c5ef1e5817ca731cd9008f4c"
+source = "git+https://github.com/diesel-rs/diesel#8d3c955b244351aa5ec1af34d2c91b669d25269c"
 dependencies = [
  "migrations_internals",
  "migrations_macros",
@@ -519,22 +497,19 @@ checksum = "3728d817d99e5ac407411fa471ff9800a778d88a24685968b36824eaf4bee400"
 [[package]]
 name = "migrations_internals"
 version = "1.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b4fc84e4af020b837029e017966f86a1c2d5e83e64b589963d5047525995860"
+source = "git+https://github.com/diesel-rs/diesel#8d3c955b244351aa5ec1af34d2c91b669d25269c"
 dependencies = [
- "diesel 1.4.5",
+ "diesel",
 ]
 
 [[package]]
 name = "migrations_macros"
 version = "1.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9753f12909fd8d923f75ae5c3258cae1ed3c8ec052e1b38c93c21a6d157f789c"
+source = "git+https://github.com/diesel-rs/diesel#8d3c955b244351aa5ec1af34d2c91b669d25269c"
 dependencies = [
  "migrations_internals",
  "proc-macro2",
  "quote",
- "syn",
 ]
 
 [[package]]
@@ -1030,7 +1005,7 @@ name = "store"
 version = "0.1.0"
 dependencies = [
  "common",
- "diesel 2.0.0",
+ "diesel",
  "models",
  "once_cell",
  "r2d2",
@@ -1186,7 +1161,7 @@ name = "webphone"
 version = "0.1.0"
 dependencies = [
  "common",
- "diesel 2.0.0",
+ "diesel",
  "diesel_migrations",
  "helpers",
  "models",

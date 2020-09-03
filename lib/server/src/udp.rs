@@ -1,4 +1,3 @@
-use common::bytes::Bytes;
 use common::futures::SinkExt;
 use common::futures_util::stream::StreamExt;
 use common::tokio_util::codec::BytesCodec;
@@ -17,10 +16,10 @@ pub async fn start() -> Result<(), crate::Error> {
     while let Some(request) = stream.next().await {
         match request {
             Ok((request, addr)) => {
-                let response = processor.process_message(request).await;
+                let response = processor.process_message(request.freeze()).await;
                 common::log::info!("{}", addr);
                 match response {
-                    Ok(response) => sink.send((Bytes::from(response), addr)).await?,
+                    Ok(response) => sink.send((response, addr)).await?,
                     Err(e) => common::log::error!("{}", e.to_string()),
                 };
             }

@@ -1,6 +1,6 @@
 #[macro_use]
 pub extern crate diesel;
-mod schema;
+pub mod schema;
 
 use diesel::pg::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
@@ -27,7 +27,7 @@ pub use auth_request::{DirtyAuthRequest, AuthRequest};
 
 //type PgConn = diesel_logger::LoggingConnection<PgConnection>;
 type PgConn = PgConnection;
-type DbConn = diesel::r2d2::PooledConnection<diesel::r2d2::ConnectionManager<PgConn>>;
+pub type DbConn = diesel::r2d2::PooledConnection<diesel::r2d2::ConnectionManager<PgConn>>;
 
 static DB_POOL: Lazy<Arc<Pool<diesel::r2d2::ConnectionManager<PgConn>>>> = Lazy::new(|| {
     let config = common::Config::new();
