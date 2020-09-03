@@ -1,7 +1,6 @@
 use crate::auth::{Algorithm, Qop};
 use common::{
     libsip::headers::{AuthHeader, AuthSchema},
-    uuid::Uuid
 };
 use std::collections::HashMap;
 
