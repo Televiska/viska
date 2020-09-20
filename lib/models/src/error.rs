@@ -78,14 +78,8 @@ impl From<&str> for ErrorKind {
     }
 }
 
-impl From<libsip::core::MissingUsernameError> for ErrorKind {
-    fn from(e: libsip::core::MissingUsernameError) -> Self {
-        ErrorKind::Libsip(format!("{:?}", e))
-    }
-}
-
-impl From<libsip::core::MissingHeaderError> for ErrorKind {
-    fn from(e: libsip::core::MissingHeaderError) -> Self {
+impl From<libsip::core::SipMessageError> for ErrorKind {
+    fn from(e: libsip::core::SipMessageError) -> Self {
         ErrorKind::Libsip(format!("{:?}", e))
     }
 }

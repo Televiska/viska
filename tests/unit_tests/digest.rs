@@ -12,11 +12,14 @@ async fn generate_digest() {
         qop: Some(Qop::Auth),
         nc: Some(1),
         opaque: None,
-        response: None
+        response: None,
     };
 
     header.with_digest_for("123123123".into());
 
-    assert_eq!(header.response, Some("c33791267630ae12f36237d6526aae7f".to_string()));
+    assert_eq!(
+        header.response,
+        Some("c33791267630ae12f36237d6526aae7f".to_string())
+    );
     assert_eq!(header.verify_for("123123123".into()).expect("verify"), true);
 }

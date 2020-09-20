@@ -193,14 +193,10 @@ impl Dialog {
     }
 
     pub fn find_or_create_dialog(request: models::Request) -> Result<DialogWithTransaction, Error> {
-        request.debug_with(request.dialog_id().map(|s| s.to_string()));
+        //request.debug_with(request.dialog_id().map(|s| s.to_string()));
         match request.dialog_id() {
-            Some(dialog_id) => {
-                Ok(Self::find_with_transaction(dialog_id)?)
-            },
-            None => {
-                Ok(Self::create_with_transaction(request)?)
-            },
+            Some(dialog_id) => Ok(Self::find_with_transaction(dialog_id)?),
+            None => Ok(Self::create_with_transaction(request)?),
         }
     }
 

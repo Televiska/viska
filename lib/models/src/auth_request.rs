@@ -1,6 +1,4 @@
-use common::{
-    chrono::{DateTime, Utc},
-};
+use common::chrono::{DateTime, Utc};
 //use sip_helpers::auth::WwwAuthenticationHeader;
 
 #[derive(Debug, Clone)]
@@ -9,5 +7,5 @@ pub struct AuthRequest {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub nonce: String,
-    pub consumed_at: Option<DateTime<Utc>>
+    pub consumed_at: Option<DateTime<Utc>>,
 }

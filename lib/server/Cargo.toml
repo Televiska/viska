@@ -11,3 +11,4 @@ serde = { version = "1.0.105", features = ["derive"] }
 common = { path = "../../common" }
 processor = { path = "../processor" }
 helpers = { path = "../helpers" }
+models = { path = "../models" }

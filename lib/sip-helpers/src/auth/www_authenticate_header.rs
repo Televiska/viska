@@ -1,7 +1,5 @@
 use crate::auth::{Algorithm, Qop};
-use common::{
-    libsip::headers::{AuthHeader, AuthSchema},
-};
+use common::libsip::headers::{AuthHeader, AuthSchema};
 use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -33,36 +31,26 @@ impl WwwAuthenticateHeader {
     }
 }
 
-
 impl Into<AuthHeader> for WwwAuthenticateHeader {
     fn into(self) -> AuthHeader {
         let mut map: HashMap<String, String> = HashMap::new();
-        match self.domain {
-            Some(domain) => {
-                map.insert("domain".into(), domain);
-            }
-            _ => (),
-        };
+        if let Some(domain) = self.domain {
+            map.insert("domain".into(), domain);
+        }
         map.insert("realm".into(), self.realm);
         map.insert("nonce".into(), self.nonce);
-        match self.opaque {
-            Some(opaque) => {
-                map.insert("opaque".into(), opaque);
-            }
-            _ => (),
-        };
+        if let Some(opaque) = self.opaque {
+            map.insert("opaque".into(), opaque);
+        }
         match self.stale {
             true => map.insert("stale".into(), "TRUE".into()),
             false => map.insert("stale".into(), "FALSE".into()),
         };
 
         map.insert("algorithm".into(), self.algorithm.into());
-        match self.qop {
-            Some(qop) => {
-                map.insert("qop".into(), qop.into());
-            }
-            None => (),
-        };
+        if let Some(qop) = self.qop {
+            map.insert("qop".into(), qop.into());
+        }
 
         AuthHeader(AuthSchema::Digest, map)
     }

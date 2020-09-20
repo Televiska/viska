@@ -1,8 +1,8 @@
 use common::{
     libsip::{
+        core::method::Method,
         headers::{AuthHeader, Header, Headers},
         uri::{Domain, UriParam},
-        core::method::Method,
         ResponseGenerator,
     },
     uuid::Uuid,
@@ -32,14 +32,11 @@ pub fn create_registration_ok_from(
     let cseq = request.cseq()?;
     headers.push(Header::CSeq(cseq.0, cseq.1));
 
-    match request.method() {
-        Method::Register => {
-            let mut contact = request.contact_header()?.clone();
-            contact.set_param("expires", Some("600"));
-            headers.push(Header::Contact(contact));
-        },
-        _ => ()
-    };
+    if let Method::Register = request.method() {
+        let mut contact = request.contact_header()?.clone();
+        contact.set_param("expires", Some("600"));
+        headers.push(Header::Contact(contact));
+    }
     headers.push(Header::ContentLength(0));
     headers.push(Header::Server("viska".into()));
 
@@ -70,14 +67,11 @@ pub fn create_unauthorized_from(
     headers.push(Header::CallId(request.call_id()?.clone()));
     let cseq = request.cseq()?;
     headers.push(Header::CSeq(cseq.0, cseq.1));
-    match request.method() {
-        Method::Register => {
-            let mut contact = request.contact_header()?.clone();
-            contact.set_param("expires", Some("600"));
-            headers.push(Header::Contact(contact));
-        },
-        _ => ()
-    };
+    if let Method::Register = request.method() {
+        let mut contact = request.contact_header()?.clone();
+        contact.set_param("expires", Some("600"));
+        headers.push(Header::Contact(contact));
+    }
     headers.push(Header::ContentLength(0));
     headers.push(Header::Server("viska".into()));
     headers.push(Header::WwwAuthenticate(www_authenticate_header_value()?));
