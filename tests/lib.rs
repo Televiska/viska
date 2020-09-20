@@ -4,5 +4,5 @@
 pub extern crate diesel_migrations;
 
 pub mod common;
-pub mod unit_tests;
 pub mod integration;
+pub mod unit_tests;

@@ -7,14 +7,15 @@ use diesel::r2d2::{ConnectionManager, Pool};
 use once_cell::sync::Lazy;
 use std::sync::Arc;
 
+mod auth_request;
 mod dialog;
 mod error;
 mod registration;
 mod request;
 mod response;
 mod transaction;
-mod auth_request;
 
+pub use auth_request::{AuthRequest, DirtyAuthRequest};
 pub use dialog::{
     Dialog, DialogFlow, DialogWithTransaction, DirtyDialog, DirtyDialogWithTransaction,
 };
@@ -23,7 +24,6 @@ pub use registration::{DirtyRegistration, Registration, TransportType};
 pub use request::{DirtyRequest, Request};
 pub use response::{DirtyResponse, Response};
 pub use transaction::{DirtyTransaction, Transaction, TransactionState};
-pub use auth_request::{DirtyAuthRequest, AuthRequest};
 
 //type PgConn = diesel_logger::LoggingConnection<PgConnection>;
 type PgConn = PgConnection;

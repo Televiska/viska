@@ -3,7 +3,7 @@ use std::convert::{TryFrom, TryInto};
 mod authorization_header;
 mod www_authenticate_header;
 
-pub use authorization_header::{AuthorizationHeader};
+pub use authorization_header::AuthorizationHeader;
 pub use www_authenticate_header::WwwAuthenticateHeader;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -44,7 +44,7 @@ impl TryFrom<String> for Algorithm {
 
     fn try_from(s: String) -> Result<Self, Self::Error> {
         Ok(Self {
-            algo: s.try_into()?
+            algo: s.try_into()?,
         })
     }
 }
@@ -80,7 +80,6 @@ impl Into<String> for Qop {
         }
     }
 }
-
 
 impl TryFrom<String> for Qop {
     type Error = crate::Error;

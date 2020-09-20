@@ -114,7 +114,7 @@ impl TryFrom<AuthHeader> for AuthorizationHeader {
             nonce: get_from(&map, "nonce")?,
             opaque: None,
             algorithm: get_from(&map, "algorithm")
-                .unwrap_or("md5".into())
+                .unwrap_or_else(|_| "md5".into())
                 .try_into()?,
             response: Some(get_from(&map, "response")?),
             username: get_from(&map, "username")?,
@@ -135,6 +135,6 @@ impl TryFrom<AuthHeader> for AuthorizationHeader {
 fn get_from(map: &HashMap<String, String>, part: &str) -> Result<String, Error> {
     Ok(map
         .get(part)
-        .ok_or(Error::missing_part(part.into()))?
+        .ok_or_else(|| Error::missing_part(part.into()))?
         .to_string())
 }

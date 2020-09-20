@@ -3,16 +3,12 @@ async fn main() {
     common::pretty_env_logger::init_timed();
     common::Config::verify();
 
-    /*
-    let tcp = tokio::spawn(async move {
-        server::tcp::start().await;
-    });
-    */
-
     let udp = tokio::spawn(async move {
-        server::udp::start()
+        server::UdpServer::new()
             .await
-            .expect("failed to start udp server");
+            .expect("failed to start udp server")
+            .run()
+            .await
     });
 
     tokio::try_join!(udp).expect("try join failed");

@@ -5,11 +5,12 @@ impl super::TransactionFSM for models::transactions::Registration {
         match self {
             Self::Trying(data) => {
                 common::log::debug!("inside trying");
-                let next_state = Self::Completed(models::transactions::registration::TransactionData{
-                    id: data.id,
-                    dialog_id: data.dialog_id.clone(),
-                    branch_id: data.branch_id.clone(),
-                });
+                let next_state =
+                    Self::Completed(models::transactions::registration::TransactionData {
+                        id: data.id,
+                        dialog_id: data.dialog_id,
+                        branch_id: data.branch_id.clone(),
+                    });
                 store::Transaction::update(next_state, data.id)?;
                 update_registration_for(request.clone())?;
                 Ok(presets::create_registration_ok_from(request)?)

@@ -10,6 +10,7 @@
 * Convert lazy query to pub struct
 * Have we added unique index in nonce ?
 * Probably we need to save all contact params in a hashmap in the store
+*
 
 
 Much later:

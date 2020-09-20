@@ -12,7 +12,7 @@ futures-util = "0.3.4"
 chrono = { version = "0.4.11", features = ["serde"] }
 log = { version = "0.4.8" }
 pretty_env_logger = { version = "0.4.0" }
-libsip = { git = "https://github.com/ByteHeathen/libsip" }
+libsip = { git = "https://github.com/vasilakisfil/libsip", branch = "fix/auth-qop-param" }
 nom = { version = "6.0.0-alpha1" }
 rand = { version = "0.7" }
 rand_chacha = { version = "0.2.2" }
@@ -22,3 +22,5 @@ envconfig = "0.8.0"
 envconfig_derive = "0.8.0"
 delegate = "0.4.3"
 md5 = "0.7.0"
+async-trait = "0.1.40"
+

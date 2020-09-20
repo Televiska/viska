@@ -61,7 +61,7 @@ async fn request_with_auth_succeeds() {
         cnonce: None,
         nc: None,
         response: None,
-        qop: None
+        qop: None,
     };
 
     let request: SipMessage = requests::request().into();

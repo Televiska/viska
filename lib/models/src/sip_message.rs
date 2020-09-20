@@ -1,15 +1,50 @@
 use crate::{Error, Request, Response};
 use common::{
-    bytes::{Bytes},
+    bytes::Bytes,
     libsip,
+    libsip::{
+        core::{method::Method, version::Version},
+        uri::domain::Domain,
+        SipMessageError,
+    },
     nom::error::VerboseError,
 };
-use std::{convert::{TryFrom, TryInto}};
+use std::convert::{TryFrom, TryInto};
 
 #[derive(Debug, Clone)]
 pub enum SipMessage {
     Request(Request),
     Response(Response),
+}
+
+impl SipMessage {
+    pub fn method(&self) -> Option<Method> {
+        match self {
+            Self::Request(request) => Some(*request.method()),
+            Self::Response(response) => response.method(),
+        }
+    }
+
+    pub fn version(&self) -> &Version {
+        match self {
+            Self::Request(request) => request.version(),
+            Self::Response(response) => response.version(),
+        }
+    }
+
+    pub fn from_header_domain(&self) -> Result<&Domain, SipMessageError> {
+        match self {
+            Self::Request(request) => request.from_header_domain(),
+            Self::Response(response) => response.from_header_domain(),
+        }
+    }
+
+    pub fn debug_compact(&self) -> String {
+        match self {
+            Self::Request(request) => request.debug_compact(),
+            Self::Response(response) => response.debug_compact(),
+        }
+    }
 }
 
 impl TryFrom<libsip::SipMessage> for SipMessage {
@@ -136,7 +171,6 @@ impl TryFrom<&str> for SipMessage {
         Ok(libsip_sip_message.try_into()?)
     }
 }
-
 
 impl From<Request> for SipMessage {
     fn from(request: Request) -> Self {

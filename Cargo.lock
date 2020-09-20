@@ -22,6 +22,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cff77d8686867eceff3105329d4698d96c2391c176d5d03adc90c7389162b5b8"
 
 [[package]]
+name = "async-trait"
+version = "0.1.40"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "687c230d85c0a52504709705fc8a53e4a692b83a2184f03dae73e38e1e93a783"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "atty"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -113,6 +124,7 @@ dependencies = [
 name = "common"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "bytes",
  "chrono",
  "delegate",
@@ -444,7 +456,7 @@ checksum = "a9f8082297d534141b30c8d39e9b1773713ab50fdbe4ff30f750d063b3bfd701"
 [[package]]
 name = "libsip"
 version = "0.2.6"
-source = "git+https://github.com/ByteHeathen/libsip#f260203f442a63848821e650159f411b47a57ce0"
+source = "git+https://github.com/vasilakisfil/libsip?branch=fix/auth-qop-param#d24a150e02138337c30f4f85e16da737f43670df"
 dependencies = [
  "md5",
  "nom",
@@ -939,6 +951,7 @@ version = "0.1.0"
 dependencies = [
  "common",
  "helpers",
+ "models",
  "processor",
  "serde",
  "tokio",

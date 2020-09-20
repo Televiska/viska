@@ -18,19 +18,27 @@ mod error;
 mod registration;
 mod request;
 mod response;
-pub mod transactions;
 mod sip_message;
+pub mod transactions;
 
-pub use sip_message::SipMessage;
+pub mod core;
+pub mod server;
+pub mod transport;
+
 pub use auth_request::AuthRequest;
 pub use dialog::{Dialog, DialogFlow};
 pub use error::Error;
 pub use registration::{Registration, UpdateRegistration};
 pub use request::Request;
 pub use response::Response;
+pub use sip_message::SipMessage;
+
+use tokio::sync::mpsc::{Receiver, Sender};
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum TransportType {
     Tcp,
     Udp,
 }
+
+pub type ChannelOf<T> = (Sender<T>, Receiver<T>);
