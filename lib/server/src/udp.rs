@@ -13,29 +13,31 @@ use tokio::sync::mpsc::{self, Receiver, Sender};
 type UdpSink = SplitSink<UdpFramed<BytesCodec>, (Bytes, SocketAddr)>;
 type UdpStream = SplitStream<UdpFramed<BytesCodec>>;
 
+#[allow(dead_code)]
 pub struct UdpServer {
-    #[allow(dead_code)]
-    transport_sink: Sender<UdpTuple>,
     udp_sink: UdpSink,
     udp_stream: UdpStream,
-    server_stream: Receiver<UdpTuple>,
+    self_to_transport_sink: Sender<UdpTuple>,
+    transport_to_self_stream: Receiver<UdpTuple>,
 }
 
 // listens to server_stream and forwards to udp_sink
 // listens to udp_stream and forwards to transport_sink
 impl UdpServer {
     pub async fn new() -> Result<Self, crate::Error> {
-        let (server_sink, server_stream): ChannelOf<UdpTuple> = mpsc::channel(100);
+        let (transport_to_self_sink, transport_to_self_stream): ChannelOf<UdpTuple> =
+            mpsc::channel(100);
 
         let (udp_sink, udp_stream) = create_socket().await?;
 
-        let transport_sink = processor::transport::Transport::spawn(server_sink.clone()).await?;
+        let self_to_transport_sink =
+            processor::transport::Transport::spawn(transport_to_self_sink.clone()).await?;
 
         Ok(Self {
             udp_sink,
-            transport_sink,
             udp_stream,
-            server_stream,
+            self_to_transport_sink,
+            transport_to_self_stream,
         })
     }
 
@@ -48,14 +50,14 @@ impl UdpServer {
                 Some(request) = self.udp_stream.next() => {
                     match request {
                         Ok((request, addr)) => {
-                            if self.transport_sink.send((request.freeze(), addr).into()).await.is_err() {
+                            if self.self_to_transport_sink.send((request.freeze(), addr).into()).await.is_err() {
                                 common::log::error!("failed to send to transport layer");
                             }
                         }
                         Err(e) => common::log::error!("{:?}", e),
                     }
                 }
-                Some(udp_tuple) = self.server_stream.next() => {
+                Some(udp_tuple) = self.transport_to_self_stream.next() => {
                     if self.udp_sink.send(udp_tuple.into()).await.is_err() {
                         common::log::error!("failed to send to udp socket");
                     }

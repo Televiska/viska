@@ -23,6 +23,7 @@ pub mod transactions;
 
 pub mod core;
 pub mod server;
+pub mod transaction;
 pub mod transport;
 
 pub use auth_request::AuthRequest;
