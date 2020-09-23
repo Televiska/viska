@@ -1,3 +1,4 @@
+use common::async_trait::async_trait;
 use common::futures_util::stream::StreamExt;
 use models::{transaction::TransactionMsg, transport::TransportMsg, ChannelOf};
 use tokio::sync::mpsc::{self, Receiver, Sender};
@@ -10,10 +11,19 @@ pub struct Transaction {
     self_to_transport_sink: Sender<TransportMsg>,
 }
 
+#[async_trait]
+pub trait TransactionLayer: Send + Sync {
+    async fn spawn(
+        self_to_transport_sink: Sender<TransportMsg>,
+        self_to_core_sink: Sender<TransactionMsg>,
+    ) -> Result<(Sender<TransactionMsg>, Sender<TransportMsg>), crate::Error>;
+}
+
 // listens to transport_stream and might forwards to core_sink, or respond back to transport_sink
 // listens to core_stream and forwards to transport_sink
-impl Transaction {
-    pub async fn spawn(
+#[async_trait]
+impl TransactionLayer for Transaction {
+    async fn spawn(
         self_to_transport_sink: Sender<TransportMsg>,
         self_to_core_sink: Sender<TransactionMsg>,
     ) -> Result<(Sender<TransactionMsg>, Sender<TransportMsg>), crate::Error> {
@@ -39,7 +49,9 @@ impl Transaction {
 
         Ok((core_to_self_sink_cloned, transport_to_self_sink_cloned))
     }
+}
 
+impl Transaction {
     async fn run(
         &mut self,
         mut core_to_self_stream: Receiver<TransactionMsg>,

@@ -1,5 +1,7 @@
 mod processor;
 
+use crate::transaction::TransactionLayer;
+use common::async_trait::async_trait;
 use common::futures_util::stream::StreamExt;
 use models::{transaction::TransactionMsg, transport::TransportMsg, ChannelOf};
 use tokio::sync::mpsc::{self, Receiver, Sender};
@@ -13,9 +15,18 @@ pub struct Core {
     processor: processor::Processor,
 }
 
+#[async_trait]
+pub trait CoreLayer: Send + Sync {
+    async fn spawn<T: TransactionLayer>(
+        self_to_transport_sink: Sender<TransportMsg>,
+        transaction_to_transport_sink: Sender<TransportMsg>,
+    ) -> Result<(Sender<TransportMsg>, Sender<TransportMsg>), crate::Error>;
+}
+
 // listens to transport_to_core_stream and acts, might send message to self_to_transport_sink
-impl Core {
-    pub async fn spawn(
+#[async_trait]
+impl CoreLayer for Core {
+    async fn spawn<T: TransactionLayer>(
         self_to_transport_sink: Sender<TransportMsg>,
         transaction_to_transport_sink: Sender<TransportMsg>,
     ) -> Result<(Sender<TransportMsg>, Sender<TransportMsg>), crate::Error> {
@@ -25,12 +36,11 @@ impl Core {
         let (transaction_to_self_sink, transaction_to_self_stream): ChannelOf<TransactionMsg> =
             mpsc::channel(100);
 
-        let (self_to_transaction_sink, transport_to_transaction_sink) =
-            crate::transaction::Transaction::spawn(
-                transaction_to_transport_sink,
-                transaction_to_self_sink.clone(),
-            )
-            .await?;
+        let (self_to_transaction_sink, transport_to_transaction_sink) = T::spawn(
+            transaction_to_transport_sink,
+            transaction_to_self_sink.clone(),
+        )
+        .await?;
 
         let transport_to_self_sink_cloned = transport_to_self_sink.clone();
         tokio::spawn(async move {
@@ -47,7 +57,9 @@ impl Core {
 
         Ok((transport_to_self_sink_cloned, transport_to_transaction_sink))
     }
+}
 
+impl Core {
     async fn run(
         &mut self,
         mut transport_to_self_stream: Receiver<TransportMsg>,
