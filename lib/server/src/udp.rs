@@ -10,6 +10,8 @@ use std::net::SocketAddr;
 use tokio::net::UdpSocket;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
+use processor::{core::CoreLayer, transaction::TransactionLayer, transport::TransportLayer};
+
 type UdpSink = SplitSink<UdpFramed<BytesCodec>, (Bytes, SocketAddr)>;
 type UdpStream = SplitStream<UdpFramed<BytesCodec>>;
 
@@ -24,14 +26,14 @@ pub struct UdpServer {
 // listens to server_stream and forwards to udp_sink
 // listens to udp_stream and forwards to transport_sink
 impl UdpServer {
-    pub async fn new() -> Result<Self, crate::Error> {
+    pub async fn new<TR: TransportLayer, C: CoreLayer, TC: TransactionLayer>(
+    ) -> Result<Self, crate::Error> {
         let (transport_to_self_sink, transport_to_self_stream): ChannelOf<UdpTuple> =
             mpsc::channel(100);
 
         let (udp_sink, udp_stream) = create_socket().await?;
 
-        let self_to_transport_sink =
-            processor::transport::Transport::spawn(transport_to_self_sink.clone()).await?;
+        let self_to_transport_sink = TR::spawn::<C, TC>(transport_to_self_sink.clone()).await?;
 
         Ok(Self {
             udp_sink,

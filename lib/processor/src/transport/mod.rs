@@ -1,3 +1,6 @@
+use crate::core::CoreLayer;
+use crate::transaction::TransactionLayer;
+use common::async_trait::async_trait;
 use common::futures_util::stream::StreamExt;
 use models::{server::UdpTuple, transport::TransportMsg, ChannelOf};
 use tokio::sync::mpsc::{self, Receiver, Sender};
@@ -12,10 +15,18 @@ pub struct Transport {
     self_to_server_sink: Sender<UdpTuple>,
 }
 
+#[async_trait]
+pub trait TransportLayer: Send + Sync {
+    async fn spawn<C: CoreLayer, T: TransactionLayer>(
+        self_to_server_sink: Sender<UdpTuple>,
+    ) -> Result<Sender<UdpTuple>, crate::Error>;
+}
+
 // listens to core_to_self_stream and forwards to self_to_server_sink
 // listens to server_to_self_stream and forwards to self_to_core_sink
-impl Transport {
-    pub async fn spawn(
+#[async_trait]
+impl TransportLayer for Transport {
+    async fn spawn<C: CoreLayer, T: TransactionLayer>(
         self_to_server_sink: Sender<UdpTuple>,
     ) -> Result<Sender<UdpTuple>, crate::Error> {
         let (core_to_self_sink, core_to_self_stream): ChannelOf<TransportMsg> = mpsc::channel(100);
@@ -26,8 +37,7 @@ impl Transport {
         let (server_to_self_sink, server_to_self_stream): ChannelOf<UdpTuple> = mpsc::channel(100);
 
         let (self_to_core_sink, self_to_transaction_sink) =
-            crate::core::Core::spawn(core_to_self_sink.clone(), transaction_to_self_sink.clone())
-                .await?;
+            C::spawn::<T>(core_to_self_sink.clone(), transaction_to_self_sink.clone()).await?;
 
         let server_to_self_sink_cloned = server_to_self_sink.clone();
         tokio::spawn(async move {
@@ -50,7 +60,9 @@ impl Transport {
 
         Ok(server_to_self_sink_cloned)
     }
+}
 
+impl Transport {
     async fn run(
         &mut self,
         mut server_to_self_stream: Receiver<UdpTuple>,
