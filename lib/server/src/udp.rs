@@ -20,6 +20,7 @@ pub struct UdpServer {
     udp_sink: UdpSink,
     udp_stream: UdpStream,
     self_to_transport_sink: Sender<UdpTuple>,
+    transport_to_self_sink: Sender<UdpTuple>,
     transport_to_self_stream: Receiver<UdpTuple>,
 }
 
@@ -39,6 +40,7 @@ impl UdpServer {
             udp_sink,
             udp_stream,
             self_to_transport_sink,
+            transport_to_self_sink,
             transport_to_self_stream,
         })
     }
