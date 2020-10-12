@@ -181,6 +181,19 @@ impl TryFrom<SipMessage> for Request {
     }
 }
 
+impl TryFrom<crate::SipMessage> for Request {
+    type Error = &'static str;
+
+    fn try_from(sip_message: crate::SipMessage) -> Result<Self, Self::Error> {
+        match sip_message {
+            crate::SipMessage::Request(request) => Ok(request),
+            crate::SipMessage::Response(_) => {
+                panic!("Can't convert a models::SipMessage::Response into Request !")
+            }
+        }
+    }
+}
+
 impl Into<SipMessage> for Request {
     fn into(self) -> SipMessage {
         self.inner
@@ -200,12 +213,11 @@ impl TryFrom<Bytes> for Request {
     }
 }
 
-/*
 impl Into<Bytes> for Request {
     fn into(self) -> Bytes {
-        Ok(Bytes::from(self.to_string()))
+        crate::SipMessage::from(self).into()
     }
-}*/
+}
 
 fn state_mismatch_for(part: &str) -> String {
     format!("SipMessage and Request mismatch: can't fetch {}", part)

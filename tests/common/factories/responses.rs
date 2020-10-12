@@ -3,10 +3,10 @@ use crate::common::factories::{
     common::Method,
     headers::{self, NamedHeader, NamedParam},
 };
-use common::libsip::{Headers, RequestGenerator};
+use common::libsip::{Headers, ResponseGenerator};
 use std::{convert::TryInto, net::IpAddr as StdIpAddr};
 
-pub fn request(from_uri: Option<Uri>, to_uri: Option<Uri>) -> ::models::Request {
+pub fn response(from_uri: Option<Uri>, to_uri: Option<Uri>) -> ::models::Response {
     let mut headers = Headers::new();
     let from_uri = from_uri.unwrap_or_else(Uri::localhost);
     let to_uri = to_uri.unwrap_or_else(|| Uri::localhost_with_port(5090));
@@ -27,6 +27,7 @@ pub fn request(from_uri: Option<Uri>, to_uri: Option<Uri>) -> ::models::Request 
     headers.push(
         headers::To(NamedHeader {
             uri: to_uri,
+            params: NamedParam::default().into(),
             ..Default::default()
         })
         .into(),
@@ -43,10 +44,9 @@ pub fn request(from_uri: Option<Uri>, to_uri: Option<Uri>) -> ::models::Request 
     headers.push(headers::ContentLength::default().into());
     headers.push(headers::UserAgent::default().into());
 
-    RequestGenerator::new()
-        .method(Method::Register.into())
+    ResponseGenerator::new()
         .headers(headers.0)
-        .uri(Uri::localhost().into())
+        .code(200)
         .build()
         .expect("build request")
         .try_into()

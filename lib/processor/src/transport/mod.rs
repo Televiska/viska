@@ -1,3 +1,7 @@
+mod processor;
+
+pub use self::processor::Processor;
+
 use crate::core::CoreLayer;
 use crate::transaction::TransactionLayer;
 use common::async_trait::async_trait;
@@ -13,6 +17,7 @@ pub struct Transport {
     self_to_transaction_sink: Sender<TransportMsg>,
     server_to_self_sink: Sender<UdpTuple>,
     self_to_server_sink: Sender<UdpTuple>,
+    processor: processor::Processor,
 }
 
 #[async_trait]
@@ -42,6 +47,11 @@ impl TransportLayer for Transport {
         let server_to_self_sink_cloned = server_to_self_sink.clone();
         tokio::spawn(async move {
             let mut transport = Self {
+                processor: processor::Processor::new(
+                    self_to_core_sink.clone(),
+                    self_to_transaction_sink.clone(),
+                    self_to_server_sink.clone(),
+                ),
                 core_to_self_sink,
                 self_to_core_sink,
                 transaction_to_self_sink,
@@ -71,33 +81,24 @@ impl Transport {
     ) {
         use std::convert::TryInto;
 
-        let mut self_to_server_sink = self.self_to_server_sink.clone();
-        let mut self_to_core_sink = self.self_to_core_sink.clone();
-
         loop {
             tokio::select! {
                 Some(udp_tuple) = server_to_self_stream.next() => {
                     let transport_msg = udp_tuple.try_into();
                     match transport_msg {
                         Ok(transport_msg) => {
-                            if self_to_core_sink.send(transport_msg).await.is_err() {
-                                common::log::error!("failed to send");
-                            }
+                            self.processor.handle_server_message(transport_msg).await;
                         },
                         Err(error) => {
                             common::log::error!("failed to convert to transport msg: {:?}", error)
                         }
                     }
                 }
-                Some(transport_tuple) = transaction_to_self_stream.next() => {
-                    if self_to_server_sink.send(transport_tuple.into()).await.is_err() {
-                        common::log::error!("failed to send");
-                    }
+                Some(transport_msg) = transaction_to_self_stream.next() => {
+                    self.processor.handle_transaction_message(transport_msg).await;
                 }
-                Some(transport_tuple) = core_to_self_stream.next() => {
-                    if self_to_server_sink.send(transport_tuple.into()).await.is_err() {
-                        common::log::error!("failed to send");
-                    }
+                Some(transport_msg) = core_to_self_stream.next() => {
+                    self.processor.handle_core_message(transport_msg).await;
                 }
             }
         }

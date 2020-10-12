@@ -3,7 +3,7 @@ use std::convert::{TryFrom, TryInto};
 use std::net::SocketAddr;
 
 //TODO: we probably need better naming here
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TransportMsg {
     pub sip_message: crate::SipMessage,
     pub peer: SocketAddr,

@@ -160,6 +160,12 @@ impl Into<SipMessage> for Response {
     }
 }
 
+impl Into<Bytes> for Response {
+    fn into(self) -> Bytes {
+        crate::SipMessage::from(self).into()
+    }
+}
+
 impl TryFrom<Bytes> for Response {
     type Error = String;
 

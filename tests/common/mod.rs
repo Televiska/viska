@@ -22,12 +22,13 @@ pub fn setup() -> DbConn {
     };
 
     clean_db(&conn);
-    return conn;
+
+    conn
 }
 
 pub fn setup_suite() {
     //enable to debug tests
-    //webphone::common::pretty_env_logger::init_timed();
+    common::pretty_env_logger::init_timed();
 }
 
 //TODO: improve here
@@ -76,14 +77,6 @@ pub fn clean_db(conn: &DbConn) {
         .expect("deleting responses");
 }
 
-/*
-pub async fn advance_for(seconds: i64) {
-    tokio::time::pause();
-    tokio::time::advance(
-        chrono::Duration::seconds(60)
-            .to_std()
-            .expect("chrono to std"),
-    )
-    .await;
-    tokio::time::resume();
-}*/
+pub async fn delay_for(millis: u64) {
+    tokio::time::delay_for(std::time::Duration::from_millis(millis)).await;
+}

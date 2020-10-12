@@ -1,7 +1,7 @@
 use common::bytes::Bytes;
 use std::net::SocketAddr;
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UdpTuple {
     pub bytes: Bytes,
     pub peer: SocketAddr,

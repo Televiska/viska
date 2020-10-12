@@ -19,7 +19,7 @@ store = { path = "lib/store" }
 sip-helpers = { path = "lib/sip-helpers" }
 
 [dev-dependencies]
-#fake = { version = "2.0", features=['derive']}
+fake = { version = "2.2.3", features=['derive']}
 #rand = "0.7.2"
 #jsonschema-valid = "0.2.0"
 diesel = { git = "https://github.com/diesel-rs/diesel", features = ["postgres", "chrono", "numeric", "uuid", "r2d2", "network-address"] }
@@ -28,6 +28,7 @@ diesel_migrations = { git = "https://github.com/diesel-rs/diesel", features = [ 
 tokio = { version = "0.2.11", features = ["default", "test-util"] }
 #mockito = "0.25.1"
 #Inflector = "0.11.4"
+testing_logger = "0.1.1"
 
 
 [workspace]
