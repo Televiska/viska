@@ -17,6 +17,7 @@ processor = { path = "lib/processor" }
 server = { path = "lib/server" }
 store = { path = "lib/store" }
 sip-helpers = { path = "lib/sip-helpers" }
+rsip = { path = "lib/rsip" }
 
 [dev-dependencies]
 fake = { version = "2.2.3", features=['derive']}
@@ -34,5 +35,5 @@ testing_logger = "0.1.1"
 [workspace]
 members = [
   "common", "lib/helpers", "lib/models", "lib/processor", "lib/server",
-  "lib/store", "lib/sip-helpers"
+  "lib/store", "lib/sip-helpers", "lib/rsip"
 ]
