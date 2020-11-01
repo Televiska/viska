@@ -1,115 +1,90 @@
-use common::{
-    libsip::{
-        core::method::Method,
-        headers::{AuthHeader, Header, Headers},
-        uri::{Domain, UriParam},
-        ResponseGenerator,
-    },
-    uuid::Uuid,
+use common::uuid::Uuid;
+use rsip::{
+    headers::{Authorization, Headers, WwwAuthenticate},
+    message::HeadersExt,
+    Request, Response,
 };
-use sip_helpers::auth::{AuthorizationHeader, WwwAuthenticateHeader};
-use std::convert::TryInto;
-use std::net::Ipv4Addr;
 
-pub fn create_registration_ok_from(
-    request: models::Request,
-) -> Result<models::Response, crate::Error> {
-    let mut headers = Headers::new();
-    let mut via_header = request.via_header()?.clone();
-    let uri = via_header.uri.clone();
-    let uri = uri.parameters(vec![
-        UriParam::RPort(Some(5066)),
-        UriParam::Branch(request.via_header_branch()?.clone()),
-        UriParam::Received(Domain::Ipv4(Ipv4Addr::new(192, 168, 1, 223), None)),
-    ]);
-    via_header.uri = uri;
-    headers.push(Header::Via(via_header));
-    headers.push(Header::From(request.from_header()?.clone()));
+pub fn create_registration_ok_from(request: Request) -> Result<Response, crate::Error> {
+    use rsip::{
+        common::Method,
+        headers::{ContactParam, Header, NamedParam},
+    };
+
+    let mut headers: Headers = Default::default();
+    headers.push(request.via_header()?.clone().into());
+    headers.push(request.from_header()?.clone().into());
     let mut to = request.to_header()?.clone();
-    to.set_param("tag", Some(format!("viska-{}", Uuid::new_v4())));
-    headers.push(Header::To(to));
-    headers.push(Header::CallId(request.call_id()?.clone()));
-    let cseq = request.cseq()?;
-    headers.push(Header::CSeq(cseq.0, cseq.1));
-
+    to.0.add_param(NamedParam::Tag(Default::default()));
+    headers.push(to.into());
+    headers.push(request.call_id_header()?.clone().into());
+    headers.push(request.cseq_header()?.clone().into());
     if let Method::Register = request.method() {
         let mut contact = request.contact_header()?.clone();
-        contact.set_param("expires", Some("600"));
-        headers.push(Header::Contact(contact));
+        contact
+            .0
+            .add_param(ContactParam::Custom("expires".into(), Some("600".into())));
+        headers.push(contact.into());
     }
-    headers.push(Header::ContentLength(0));
-    headers.push(Header::Server("viska".into()));
+    headers.push(Header::ContentLength(Default::default()));
+    headers.push(Header::Server(Default::default()));
 
-    Ok(ResponseGenerator::new()
-        .code(200)
-        .headers(headers.0)
-        .build()?
-        .try_into()?)
+    Ok(Response {
+        code: 200.into(),
+        headers,
+        ..Default::default()
+    })
 }
 
-pub fn create_unauthorized_from(
-    request: models::Request,
-) -> Result<models::Response, crate::Error> {
-    let mut headers = Headers::new();
-    let mut via_header = request.via_header()?.clone();
-    let uri = via_header.uri.clone();
-    let uri = uri.parameters(vec![
-        UriParam::RPort(Some(5066)),
-        UriParam::Branch(request.via_header_branch()?.clone()),
-        UriParam::Received(Domain::Ipv4(Ipv4Addr::new(192, 168, 1, 223), None)),
-    ]);
-    via_header.uri = uri;
-    headers.push(Header::Via(via_header));
-    headers.push(Header::From(request.from_header()?.clone()));
+pub fn create_unauthorized_from(request: Request) -> Result<Response, crate::Error> {
+    use rsip::headers::{Header, NamedParam};
+
+    let mut headers: Headers = Default::default();
+    headers.push(request.via_header()?.clone().into());
+    headers.push(request.from_header()?.clone().into());
     let mut to = request.to_header()?.clone();
-    to.set_param("tag", Some(format!("viska-{}", Uuid::new_v4())));
-    headers.push(Header::To(to));
-    headers.push(Header::CallId(request.call_id()?.clone()));
-    let cseq = request.cseq()?;
-    headers.push(Header::CSeq(cseq.0, cseq.1));
-    if let Method::Register = request.method() {
-        let mut contact = request.contact_header()?.clone();
-        contact.set_param("expires", Some("600"));
-        headers.push(Header::Contact(contact));
-    }
-    headers.push(Header::ContentLength(0));
-    headers.push(Header::Server("viska".into()));
+    to.0.add_param(NamedParam::Tag(Default::default()));
+    headers.push(to.into());
+    headers.push(request.call_id_header()?.clone().into());
+    headers.push(request.cseq_header()?.clone().into());
+    headers.push(Header::ContentLength(Default::default()));
+    headers.push(Header::Server(Default::default()));
     headers.push(Header::WwwAuthenticate(www_authenticate_header_value()?));
 
-    Ok(ResponseGenerator::new()
-        .code(401)
-        .headers(headers.0)
-        .build()?
-        .try_into()?)
+    Ok(Response {
+        code: 401.into(),
+        headers,
+        ..Default::default()
+    })
 }
 
-pub fn create_404_from(request: models::Request) -> Result<models::Response, crate::Error> {
-    let mut headers = Headers::new();
-    headers.push(Header::Via(request.via_header()?.clone()));
-    headers.push(Header::From(request.from_header()?.clone()));
+pub fn create_404_from(request: Request) -> Result<Response, crate::Error> {
+    use rsip::headers::{Header, NamedParam};
+
+    let mut headers: Headers = Default::default();
+    headers.push(request.via_header()?.clone().into());
+    headers.push(request.from_header()?.clone().into());
     let mut to = request.to_header()?.clone();
-    to.set_param("tag", Some(format!("viska-{}", Uuid::new_v4())));
-    headers.push(Header::To(to));
-    headers.push(Header::CallId(request.call_id()?.clone()));
-    let cseq = request.cseq()?;
-    headers.push(Header::CSeq(cseq.0, cseq.1));
-    headers.push(Header::ContentLength(0));
-    headers.push(Header::Server("viska".into()));
+    to.0.add_param(NamedParam::Tag(Default::default()));
+    headers.push(to.into());
+    headers.push(request.call_id_header()?.clone().into());
+    headers.push(request.cseq_header()?.clone().into());
+    headers.push(Header::ContentLength(Default::default()));
+    headers.push(Header::Server(Default::default()));
 
-    Ok(ResponseGenerator::new()
-        .code(404)
-        .headers(headers.0)
-        .build()?
-        .try_into()?)
+    Ok(Response {
+        headers,
+        code: 404.into(),
+        ..Default::default()
+    })
 }
 
-fn www_authenticate_header_value() -> Result<AuthHeader, crate::Error> {
-    let nonce = store::AuthRequest::create(store::DirtyAuthRequest::default())?.nonce;
-    let header = WwwAuthenticateHeader::new("192.168.1.223".into(), nonce);
-
-    Ok(header.into())
+fn www_authenticate_header_value() -> Result<WwwAuthenticate, crate::Error> {
+    //let nonce = store::AuthRequest::create(store::DirtyAuthRequest::default())?.nonce;
+    let nonce = Uuid::new_v4().to_string();
+    Ok(WwwAuthenticate::new("192.168.1.223".into(), nonce))
 }
 
-pub fn is_authorized(offer: AuthorizationHeader) -> Result<bool, crate::Error> {
+pub fn is_authorized(offer: Authorization) -> Result<bool, crate::Error> {
     Ok(offer.verify_for("123123123".into())?)
 }

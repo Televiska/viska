@@ -139,7 +139,6 @@ dependencies = [
  "futures",
  "futures-util",
  "ipnetwork",
- "libsip 0.2.6 (git+https://github.com/ByteHeathen/libsip)",
  "log",
  "md5",
  "nom",
@@ -435,7 +434,6 @@ name = "helpers"
 version = "0.1.0"
 dependencies = [
  "common",
- "store",
 ]
 
 [[package]]
@@ -525,18 +523,6 @@ checksum = "a9f8082297d534141b30c8d39e9b1773713ab50fdbe4ff30f750d063b3bfd701"
 name = "libsip"
 version = "0.2.6"
 source = "git+https://github.com/vasilakisfil/libsip?branch=feat/auth-fixes#f6b956e0f4d650cdedf0fe863100545ced2a7401"
-dependencies = [
- "md5",
- "nom",
- "rand",
- "serde",
- "sha",
-]
-
-[[package]]
-name = "libsip"
-version = "0.2.6"
-source = "git+https://github.com/ByteHeathen/libsip#09d079d8e196be14afe8f016c9b7f8fc44801613"
 dependencies = [
  "md5",
  "nom",
@@ -673,8 +659,8 @@ name = "models"
 version = "0.1.0"
 dependencies = [
  "common",
+ "rsip",
  "serde",
- "sip-helpers",
  "tokio",
 ]
 
@@ -857,8 +843,8 @@ dependencies = [
  "common",
  "helpers",
  "models",
+ "rsip",
  "serde",
- "sip-helpers",
  "store",
  "tokio",
 ]
@@ -960,7 +946,7 @@ version = "0.1.0"
 dependencies = [
  "base64",
  "bytes",
- "libsip 0.2.6 (git+https://github.com/vasilakisfil/libsip?branch=feat/auth-fixes)",
+ "libsip",
  "log",
  "md5",
  "nom",
@@ -1070,13 +1056,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sip-helpers"
-version = "0.1.0"
-dependencies = [
- "common",
-]
-
-[[package]]
 name = "slab"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1115,6 +1094,7 @@ dependencies = [
  "models",
  "once_cell",
  "r2d2",
+ "rsip",
  "serde",
  "tokio",
 ]
@@ -1292,7 +1272,6 @@ dependencies = [
  "rsip",
  "serde",
  "server",
- "sip-helpers",
  "store",
  "testing_logger",
  "tokio",

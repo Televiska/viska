@@ -5,7 +5,6 @@ use crate::{
 };
 use common::{
     chrono::{DateTime, Utc},
-    libsip::core::method::Method,
     uuid::Uuid,
 };
 use diesel::{
@@ -15,6 +14,7 @@ use diesel::{
     serialize::{Output, ToSql},
     sql_types::Text,
 };
+use rsip::Request;
 use std::{
     convert::{TryFrom, TryInto},
     fmt::{self, Debug},
@@ -192,7 +192,8 @@ impl Dialog {
             .first()?)
     }
 
-    pub fn find_or_create_dialog(request: models::Request) -> Result<DialogWithTransaction, Error> {
+    pub fn find_or_create_dialog(request: Request) -> Result<DialogWithTransaction, Error> {
+        use rsip::message::HeadersExt;
         //request.debug_with(request.dialog_id().map(|s| s.to_string()));
         match request.dialog_id() {
             Some(dialog_id) => Ok(Self::find_with_transaction(dialog_id)?),
@@ -284,28 +285,27 @@ impl std::str::FromStr for DialogFlow {
     }
 }
 
-impl TryFrom<models::Request> for DirtyDialogWithTransaction {
-    type Error = String;
+impl TryFrom<rsip::Request> for DirtyDialogWithTransaction {
+    type Error = crate::Error;
 
-    fn try_from(model: models::Request) -> Result<DirtyDialogWithTransaction, Self::Error> {
+    fn try_from(model: rsip::Request) -> Result<DirtyDialogWithTransaction, Self::Error> {
+        use rsip::message::HeadersExt;
         //use store::{DialogFlow, RegistrationFlow};
-        let call_id = match model.call_id() {
-            Ok(call_id) => call_id,
-            Err(_) => return Err("missing call id".into()),
-        }
-        .clone();
+        let call_id: String = model.call_id_header()?.clone().into();
+        let from_tag: String = model
+            .from_header()?
+            .clone()
+            .tag()
+            .ok_or("missing call id")?
+            .clone()
+            .into();
 
-        let from_tag = match model.from_header_tag() {
-            Ok(from_header_tag) => from_header_tag,
-            Err(_) => return Err("missing from header tag".into()),
-        }
-        .clone();
-
-        let branch_id = match model.via_header_branch() {
-            Ok(branch_id) => branch_id,
-            Err(_) => return Err("missing branch id".into()),
-        }
-        .clone();
+        let branch_id: String = model
+            .via_header()?
+            .branch()
+            .ok_or("missing branch id")?
+            .clone()
+            .into();
 
         let to_tag = Uuid::new_v4();
 
@@ -315,7 +315,7 @@ impl TryFrom<models::Request> for DirtyDialogWithTransaction {
                 call_id: Some(call_id),
                 from_tag: Some(from_tag),
                 to_tag: Some(to_tag.to_string()),
-                flow: Some(flow_for_method(*model.method())?),
+                flow: Some(flow_for_method(model.method().clone())?),
                 ..Default::default()
             },
             transaction: crate::DirtyTransaction {
@@ -378,7 +378,9 @@ fn computed_id_for(call_id: &str, from_tag: &str, to_tag: &Uuid) -> String {
     format!("{}-{}-{}", call_id, from_tag, to_tag)
 }
 
-fn flow_for_method(method: Method) -> Result<DialogFlow, String> {
+fn flow_for_method(method: rsip::common::Method) -> Result<DialogFlow, String> {
+    use rsip::common::Method;
+
     match method {
         Method::Register => Ok(DialogFlow::Registration),
         Method::Invite => Ok(DialogFlow::Invite),

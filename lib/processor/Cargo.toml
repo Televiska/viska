@@ -12,4 +12,4 @@ common = { path = "../../common" }
 models = { path = "../models" }
 store = { path = "../store" }
 helpers = { path = "../helpers" }
-sip-helpers = { path = "../sip-helpers" }
+rsip = { path = "../rsip" }

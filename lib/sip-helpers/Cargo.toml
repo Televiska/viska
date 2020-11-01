@@ -1,8 +1,0 @@
-[package]
-name = "sip-helpers"
-version = "0.1.0"
-authors = ["Filippos Vasilakis <vasilakisfil@gmail.com>"]
-edition = "2018"
-
-[dependencies]
-common = { path = "../../common" }

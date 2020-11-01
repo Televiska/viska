@@ -9,4 +9,4 @@ tokio = { version = "0.2.13", features = ["full"] }
 serde = { version = "1.0.105", features = ["derive"] }
 
 common = { path = "../../common" }
-sip-helpers = { path = "../sip-helpers" }
+rsip = { path = "../rsip" }

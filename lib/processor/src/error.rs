@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 
-use common::libsip;
 use std::{error::Error as StdError, fmt};
 
 #[derive(Debug)]
@@ -14,15 +13,15 @@ pub enum ErrorKind {
     Empty,
     Models(models::Error),
     Store(store::Error),
-    Libsip(String),
+    Rsip(rsip::Error),
     Custom(String),
     SipHelpers(String),
 }
 
 impl Error {
-    pub fn custom(reason: String) -> Self {
+    pub fn custom(reason: impl Into<String>) -> Self {
         Self {
-            kind: ErrorKind::from(reason),
+            kind: ErrorKind::from(reason.into()),
         }
     }
 }
@@ -41,7 +40,6 @@ impl fmt::Display for ErrorKind {
         match self {
             ErrorKind::Models(ref inner) => write!(f, "models transformation error: {}", inner),
             ErrorKind::Store(ref inner) => write!(f, "store error: {}", inner),
-            ErrorKind::Libsip(ref inner) => write!(f, "libsip error: {}", inner),
             ErrorKind::Custom(ref inner) => write!(f, "{}", inner),
             _ => write!(f, "unknown error, {:?}", self),
         }
@@ -89,20 +87,8 @@ impl From<store::Error> for ErrorKind {
     }
 }
 
-impl From<libsip::core::SipMessageError> for ErrorKind {
-    fn from(e: libsip::core::SipMessageError) -> Self {
-        ErrorKind::Libsip(format!("{:?}", e))
-    }
-}
-
-impl From<std::io::Error> for ErrorKind {
-    fn from(e: std::io::Error) -> Self {
-        ErrorKind::Libsip(format!("{:?}", e))
-    }
-}
-
-impl From<sip_helpers::Error> for ErrorKind {
-    fn from(e: sip_helpers::Error) -> Self {
-        ErrorKind::SipHelpers(format!("{:?}", e))
+impl From<rsip::Error> for ErrorKind {
+    fn from(e: rsip::Error) -> Self {
+        ErrorKind::Rsip(e)
     }
 }

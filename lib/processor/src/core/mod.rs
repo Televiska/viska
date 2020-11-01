@@ -68,11 +68,11 @@ impl Core {
         loop {
             tokio::select! {
                 Some(transport_msg) = transport_to_self_stream.next() => {
-                    common::log::debug!("Received: {}", transport_msg.sip_message.debug_compact());
+                    common::log::debug!("Received: {}", "something");//transport_msg.sip_message.debug_compact());
                     self.handle_transport_msg(transport_msg).await;
                 }
                 Some(transaction_msg) = transaction_to_self_stream.next() => {
-                    common::log::debug!("Received: {}", transaction_msg.sip_message.debug_compact());
+                    common::log::debug!("Received: {}", "something");//transaction_msg.sip_message.debug_compact());
                     self.handle_transaction_msg(transaction_msg).await;
                 }
             }
