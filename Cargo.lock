@@ -50,6 +50,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8aac770f1885fd7e387acedd76065302551364496e46b3dd00860b2f8359b9d"
 
 [[package]]
+name = "base64"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
+
+[[package]]
 name = "bigdecimal"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -133,7 +139,7 @@ dependencies = [
  "futures",
  "futures-util",
  "ipnetwork",
- "libsip",
+ "libsip 0.2.6 (git+https://github.com/ByteHeathen/libsip)",
  "log",
  "md5",
  "nom",
@@ -518,6 +524,18 @@ checksum = "a9f8082297d534141b30c8d39e9b1773713ab50fdbe4ff30f750d063b3bfd701"
 [[package]]
 name = "libsip"
 version = "0.2.6"
+source = "git+https://github.com/vasilakisfil/libsip?branch=feat/auth-fixes#f6b956e0f4d650cdedf0fe863100545ced2a7401"
+dependencies = [
+ "md5",
+ "nom",
+ "rand",
+ "serde",
+ "sha",
+]
+
+[[package]]
+name = "libsip"
+version = "0.2.6"
 source = "git+https://github.com/ByteHeathen/libsip#09d079d8e196be14afe8f016c9b7f8fc44801613"
 dependencies = [
  "md5",
@@ -538,9 +556,9 @@ dependencies = [
 
 [[package]]
 name = "log"
-version = "0.4.8"
+version = "0.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14b6052be84e6b71ab17edffc2eeabf5c2c3ae1fdb464aae35ac50c67a44e1f7"
+checksum = "4fabed175da42fed1fa0746b0ea71f412aa9d35e76e95e59b192c64b9dc2bf8b"
 dependencies = [
  "cfg-if",
 ]
@@ -940,8 +958,10 @@ checksum = "26412eb97c6b088a6997e05f69403a802a92d520de2f8e63c2b65f9e0f47c4e8"
 name = "rsip"
 version = "0.1.0"
 dependencies = [
+ "base64",
  "bytes",
- "libsip",
+ "libsip 0.2.6 (git+https://github.com/vasilakisfil/libsip?branch=feat/auth-fixes)",
+ "log",
  "md5",
  "nom",
  "uuid",
