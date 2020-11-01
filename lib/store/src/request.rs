@@ -84,8 +84,8 @@ impl Request {
     }
 }
 
-impl From<models::Request> for DirtyRequest {
-    fn from(model: models::Request) -> DirtyRequest {
+impl From<rsip::Request> for DirtyRequest {
+    fn from(model: rsip::Request) -> DirtyRequest {
         DirtyRequest {
             method: Some(model.method().to_string()),
             uri: Some(model.uri().to_string()),

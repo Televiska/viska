@@ -17,3 +17,4 @@ once_cell = {version = "1.4.0" }
 
 common = { path = "../../common" }
 models = { path = "../models" }
+rsip = { path = "../rsip" }

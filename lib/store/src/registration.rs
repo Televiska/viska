@@ -33,7 +33,7 @@ pub struct Registration {
     pub reg_id: i32,
     pub ip_address: IpNetwork,
     pub port: i16,
-    pub transport: TransportType,
+    pub transport: Transport,
 }
 
 #[derive(AsChangeset, Insertable, Debug, Default)]
@@ -50,7 +50,7 @@ pub struct DirtyRegistration {
     pub reg_id: Option<i32>,
     pub ip_address: Option<IpNetwork>,
     pub port: Option<i16>,
-    pub transport: Option<TransportType>,
+    pub transport: Option<Transport>,
 }
 
 pub struct LazyQuery {
@@ -152,38 +152,38 @@ impl Registration {
 
 #[derive(FromSqlRow, AsExpression, Copy, Clone, PartialEq, Debug)]
 #[sql_type = "Text"]
-pub enum TransportType {
+pub enum Transport {
     Tcp,
     Udp,
 }
-impl fmt::Display for TransportType {
+impl fmt::Display for Transport {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         Debug::fmt(self, f)
     }
 }
-impl ToSql<Text, Pg> for TransportType {
+impl ToSql<Text, Pg> for Transport {
     fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> diesel::serialize::Result {
         <&str as ToSql<Text, Pg>>::to_sql(&self.to_string().to_lowercase().as_str(), out)
     }
 }
-impl FromSql<Text, Pg> for TransportType {
+impl FromSql<Text, Pg> for Transport {
     fn from_sql(bytes: Option<diesel::pg::PgValue>) -> diesel::deserialize::Result<Self> {
         use std::str::FromStr;
 
-        Ok(TransportType::from_str(
+        Ok(Transport::from_str(
             <String as FromSql<Text, Pg>>::from_sql(bytes)?.as_ref(),
         )?)
     }
 }
 
-impl std::str::FromStr for TransportType {
+impl std::str::FromStr for Transport {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            s if s.eq_ignore_ascii_case("tcp") => Ok(TransportType::Tcp),
-            s if s.eq_ignore_ascii_case("udp") => Ok(TransportType::Udp),
-            s => Err(format!("invalid TransportType `{}`", s)),
+            s if s.eq_ignore_ascii_case("tcp") => Ok(Transport::Tcp),
+            s if s.eq_ignore_ascii_case("udp") => Ok(Transport::Udp),
+            s => Err(format!("invalid Transport `{}`", s)),
         }
     }
 }
@@ -229,20 +229,20 @@ impl From<models::Registration> for DirtyRegistration {
     }
 }
 
-impl Into<models::TransportType> for TransportType {
-    fn into(self) -> models::TransportType {
+impl Into<rsip::common::Transport> for Transport {
+    fn into(self) -> rsip::common::Transport {
         match self {
-            TransportType::Tcp => models::TransportType::Tcp,
-            TransportType::Udp => models::TransportType::Udp,
+            Transport::Tcp => rsip::common::Transport::Tcp,
+            Transport::Udp => rsip::common::Transport::Udp,
         }
     }
 }
 
-impl From<models::TransportType> for TransportType {
-    fn from(model: models::TransportType) -> TransportType {
+impl From<rsip::common::Transport> for Transport {
+    fn from(model: rsip::common::Transport) -> Transport {
         match model {
-            models::TransportType::Tcp => TransportType::Tcp,
-            models::TransportType::Udp => TransportType::Udp,
+            rsip::common::Transport::Tcp => Transport::Tcp,
+            rsip::common::Transport::Udp => Transport::Udp,
         }
     }
 }

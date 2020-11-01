@@ -16,7 +16,6 @@ models = { path = "lib/models" }
 processor = { path = "lib/processor" }
 server = { path = "lib/server" }
 store = { path = "lib/store" }
-sip-helpers = { path = "lib/sip-helpers" }
 rsip = { path = "lib/rsip" }
 
 [dev-dependencies]
@@ -35,5 +34,5 @@ testing_logger = "0.1.1"
 [workspace]
 members = [
   "common", "lib/helpers", "lib/models", "lib/processor", "lib/server",
-  "lib/store", "lib/sip-helpers", "lib/rsip"
+  "lib/store", "lib/rsip"
 ]

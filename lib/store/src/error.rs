@@ -13,6 +13,7 @@ pub enum ErrorKind {
     Empty,
     Diesel(diesel::result::Error),
     DatabaseConnection(r2d2::Error),
+    Rsip(rsip::Error),
     Custom(String),
 }
 
@@ -77,6 +78,12 @@ impl From<diesel::result::Error> for ErrorKind {
 impl From<r2d2::Error> for ErrorKind {
     fn from(e: r2d2::Error) -> Self {
         ErrorKind::DatabaseConnection(e)
+    }
+}
+
+impl From<rsip::Error> for ErrorKind {
+    fn from(e: rsip::Error) -> Self {
+        ErrorKind::Rsip(e)
     }
 }
 

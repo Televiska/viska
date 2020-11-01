@@ -1,12 +1,13 @@
 use crate::transport::TransportMsg;
+use rsip::{common::Transport, SipMessage};
 use std::convert::TryFrom;
 use std::net::SocketAddr;
 
 #[derive(Debug)]
 pub struct TransactionMsg {
-    pub sip_message: crate::SipMessage,
+    pub sip_message: SipMessage,
     pub peer: SocketAddr,
-    pub transport: crate::TransportType, //pub ttl: u32
+    pub transport: Transport, //pub ttl: u32
 }
 
 impl Into<TransportMsg> for TransactionMsg {

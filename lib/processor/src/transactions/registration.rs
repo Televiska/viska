@@ -1,7 +1,8 @@
 use crate::presets;
+use rsip::{Request, Response};
 
 impl super::TransactionFSM for models::transactions::Registration {
-    fn next(&self, request: models::Request) -> Result<models::Response, crate::Error> {
+    fn next(&self, request: Request) -> Result<Response, crate::Error> {
         match self {
             Self::Trying(data) => {
                 common::log::debug!("inside trying");
@@ -20,7 +21,7 @@ impl super::TransactionFSM for models::transactions::Registration {
     }
 }
 
-fn update_registration_for(request: models::Request) -> Result<models::Registration, crate::Error> {
+fn update_registration_for(request: Request) -> Result<models::Registration, crate::Error> {
     use std::convert::TryInto;
 
     Ok(

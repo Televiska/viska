@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use common::{ipnetwork, libsip};
+use common::ipnetwork;
 use std::{error::Error as StdError, fmt};
 
 #[derive(Debug)]
@@ -12,17 +12,12 @@ pub struct Error {
 #[derive(Debug)]
 pub enum ErrorKind {
     Empty,
-    Libsip(String),
     IpAddress(String),
+    Rsip(rsip::Error),
     Custom(String),
 }
 
 impl Error {
-    pub fn libsip(reason: String) -> Self {
-        Self {
-            kind: ErrorKind::Libsip(reason),
-        }
-    }
     pub fn custom(reason: String) -> Self {
         Self {
             kind: ErrorKind::from(reason),
@@ -42,7 +37,6 @@ impl From<Option<ErrorKind>> for ErrorKind {
 impl fmt::Display for ErrorKind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            ErrorKind::Libsip(ref inner) => write!(f, "Libsip error: {}", inner),
             ErrorKind::Custom(ref inner) => write!(f, "{}", inner),
             _ => write!(f, "unknown error, {:?}", self),
         }
@@ -78,14 +72,14 @@ impl From<&str> for ErrorKind {
     }
 }
 
-impl From<libsip::core::SipMessageError> for ErrorKind {
-    fn from(e: libsip::core::SipMessageError) -> Self {
-        ErrorKind::Libsip(format!("{:?}", e))
-    }
-}
-
 impl From<ipnetwork::IpNetworkError> for ErrorKind {
     fn from(e: ipnetwork::IpNetworkError) -> Self {
         ErrorKind::IpAddress(e.to_string())
+    }
+}
+
+impl From<rsip::Error> for ErrorKind {
+    fn from(e: rsip::Error) -> Self {
+        ErrorKind::Rsip(e)
     }
 }

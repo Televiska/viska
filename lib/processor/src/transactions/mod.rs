@@ -1,5 +1,7 @@
+use rsip::{Request, Response};
+
 pub trait TransactionFSM {
-    fn next(&self, request: models::Request) -> Result<models::Response, crate::Error>;
+    fn next(&self, request: Request) -> Result<Response, crate::Error>;
 }
 
 pub trait DialogExt {

@@ -1,5 +1,5 @@
 pub use crate::Error;
-use models::{Request, Response, SipMessage};
+use rsip::{Request, Response, SipMessage};
 
 pub struct Processor;
 
@@ -38,10 +38,10 @@ impl Processor {
         match dialog {
             Some(dialog) => Ok(dialog.transaction().next(request)?),
             None => {
-                let auth_header = request.auth_header();
+                let auth_header = request.authorization_header();
                 match auth_header {
-                    Ok(Some(header)) => {
-                        if crate::presets::is_authorized(header)? {
+                    Ok(header) => {
+                        if crate::presets::is_authorized(header.clone())? {
                             let dialog: models::Dialog =
                                 store::Dialog::create_with_transaction(request.clone())?.into();
                             Ok(dialog.transaction().next(request)?)
@@ -49,7 +49,6 @@ impl Processor {
                             Ok(crate::presets::create_unauthorized_from(request)?)
                         }
                     }
-                    Ok(None) => Ok(crate::presets::create_unauthorized_from(request)?),
                     Err(err) => {
                         common::log::warn!("issue in auth header: {}", err);
                         Ok(crate::presets::create_unauthorized_from(request)?)
@@ -60,6 +59,8 @@ impl Processor {
     }
 
     fn dialog_from(&self, request: Request) -> Option<models::Dialog> {
+        use rsip::message::HeadersExt;
+
         store::Dialog::find_with_transaction(request.dialog_id()?)
             .ok()
             .map(|s| s.into())

@@ -84,10 +84,10 @@ impl Response {
     }
 }
 
-impl From<models::Response> for DirtyResponse {
-    fn from(model: models::Response) -> DirtyResponse {
+impl From<rsip::Response> for DirtyResponse {
+    fn from(model: rsip::Response) -> DirtyResponse {
         DirtyResponse {
-            code: Some(model.status_code() as i16),
+            code: Some(Into::<u16>::into(model.code().clone()) as i16),
             headers: Some(format!("{:?}", model.headers())),
             body: Some(String::from_utf8_lossy(&model.body()).to_string()),
             ..Default::default()

@@ -20,7 +20,7 @@ pub use dialog::{
     Dialog, DialogFlow, DialogWithTransaction, DirtyDialog, DirtyDialogWithTransaction,
 };
 pub use error::Error;
-pub use registration::{DirtyRegistration, Registration, TransportType};
+pub use registration::{DirtyRegistration, Registration, Transport};
 pub use request::{DirtyRequest, Request};
 pub use response::{DirtyResponse, Response};
 pub use transaction::{DirtyTransaction, Transaction, TransactionState};

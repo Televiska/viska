@@ -11,7 +11,6 @@ pub use delegate;
 pub use futures;
 pub use futures_util;
 pub use ipnetwork;
-pub use libsip;
 pub use log;
 pub use md5;
 pub use nom;

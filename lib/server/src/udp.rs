@@ -54,6 +54,9 @@ impl UdpServer {
                 Some(request) = self.udp_stream.next() => {
                     match request {
                         Ok((request, addr)) => {
+                            println!("########################################################################");
+                            println!("{}", String::from_utf8(request.to_vec()).expect("utf bytes to string"));
+                            println!("########################################################################");
                             if self.self_to_transport_sink.send((request.freeze(), addr).into()).await.is_err() {
                                 common::log::error!("failed to send to transport layer");
                             }
@@ -62,6 +65,9 @@ impl UdpServer {
                     }
                 }
                 Some(udp_tuple) = self.transport_to_self_stream.next() => {
+                    println!("########################################################################");
+                    println!("{}", String::from_utf8(udp_tuple.bytes.to_vec()).expect("utf bytes to string"));
+                    println!("########################################################################");
                     if self.udp_sink.send(udp_tuple.into()).await.is_err() {
                         common::log::error!("failed to send to udp socket");
                     }

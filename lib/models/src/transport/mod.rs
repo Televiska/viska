@@ -1,13 +1,14 @@
 use crate::server::UdpTuple;
+use rsip::common::Transport;
 use std::convert::{TryFrom, TryInto};
 use std::net::SocketAddr;
 
 //TODO: we probably need better naming here
 #[derive(Debug, Clone)]
 pub struct TransportMsg {
-    pub sip_message: crate::SipMessage,
+    pub sip_message: rsip::SipMessage,
     pub peer: SocketAddr,
-    pub transport: crate::TransportType, //pub ttl: u32
+    pub transport: Transport, //pub ttl: u32
 }
 
 impl Into<UdpTuple> for TransportMsg {
@@ -26,7 +27,7 @@ impl TryFrom<UdpTuple> for TransportMsg {
         Ok(Self {
             sip_message: udp_tuple.bytes.try_into()?,
             peer: udp_tuple.peer,
-            transport: crate::TransportType::Udp,
+            transport: Transport::Udp,
         })
     }
 }
