@@ -54,9 +54,8 @@ impl UdpServer {
                 Some(request) = self.udp_stream.next() => {
                     match request {
                         Ok((request, addr)) => {
-                            println!("########################################################################");
-                            println!("{}", String::from_utf8(request.to_vec()).expect("utf bytes to string"));
-                            println!("########################################################################");
+                            debug_message(request.to_vec());
+
                             if self.self_to_transport_sink.send((request.freeze(), addr).into()).await.is_err() {
                                 common::log::error!("failed to send to transport layer");
                             }
@@ -65,9 +64,8 @@ impl UdpServer {
                     }
                 }
                 Some(udp_tuple) = self.transport_to_self_stream.next() => {
-                    println!("########################################################################");
-                    println!("{}", String::from_utf8(udp_tuple.bytes.to_vec()).expect("utf bytes to string"));
-                    println!("########################################################################");
+                    debug_message(udp_tuple.bytes.to_vec());
+
                     if self.udp_sink.send(udp_tuple.into()).await.is_err() {
                         common::log::error!("failed to send to udp socket");
                     }
@@ -82,4 +80,10 @@ async fn create_socket() -> Result<(UdpSink, UdpStream), crate::Error> {
     common::log::debug!("starting udp server listening in port 5060");
     let socket = UdpFramed::new(socket, BytesCodec::new());
     Ok(socket.split())
+}
+
+fn debug_message(bytes: Vec<u8>) {
+    let separator = "########################################################################";
+    let message = String::from_utf8(bytes).expect("utf bytes to string");
+    println!("{}\n{}\n{}", separator, message, separator);
 }
