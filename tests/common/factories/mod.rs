@@ -1,13 +1,19 @@
 mod common;
-pub mod models;
+mod models_ext;
 pub mod requests;
 pub mod responses;
 
-//TODO: not really used yet
 pub trait RandomizedBuilder {
     type Item;
 
     fn build(self) -> Self::Item;
+}
+
+pub trait Randomized: Sized {
+    fn default() -> Self;
+    fn randomized() -> Self {
+        Self::default()
+    }
 }
 
 pub mod prelude {
@@ -16,4 +22,5 @@ pub mod prelude {
     pub use super::responses;
     pub use super::RandomizedBuilder;
     pub use crate::common::factories as factories;
+    pub use super::Randomized;
 }

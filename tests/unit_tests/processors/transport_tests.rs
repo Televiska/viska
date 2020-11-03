@@ -1,7 +1,7 @@
 use crate::common::{delay_for, factories::prelude::*};
 use common::futures_util::stream::StreamExt;
 use common::log::Level;
-use ::models::{server::UdpTuple, transport::TransportMsg, ChannelOf};
+use models::{server::UdpTuple, transport::TransportMsg, ChannelOf};
 use processor::transport::Processor;
 use std::convert::{TryFrom, TryInto};
 use std::net::{IpAddr, Ipv4Addr};
@@ -200,7 +200,7 @@ async fn from_transaction_applies_maddr() {
         mut transport_to_server_stream,
     } = setup();
 
-    let transport_msg = factories::models::TransportMsgBuilder {
+    let transport_msg = models::transport::TransportMsg {
         peer: SocketAddrBuilder {
             ip_addr: IpAddrBuilder {
                 multicast: true,
@@ -209,9 +209,8 @@ async fn from_transaction_applies_maddr() {
             .build(),
             ..Default::default()
         }.into(),
-        ..Default::default()
-    }
-    .build();
+        ..Randomized::default()
+    };
 
     processor
         .handle_transaction_message(transport_msg.clone())
@@ -256,7 +255,7 @@ async fn from_transaction_applies_ttl() {
         mut transport_to_server_stream,
     } = setup();
 
-    let transport_msg = factories::models::TransportMsgBuilder {
+    let transport_msg = TransportMsg {
         peer: SocketAddrBuilder {
             ip_addr: IpAddrBuilder {
                 version: IpVersion::V4,
@@ -265,9 +264,8 @@ async fn from_transaction_applies_ttl() {
             .build(),
             ..Default::default()
         }.into(),
-        ..Default::default()
-    }
-    .build();
+        ..Randomized::default()
+    };
 
     processor
         .handle_transaction_message(transport_msg.clone())
@@ -312,7 +310,7 @@ async fn from_transaction_applies_sent_by() {
         mut transport_to_server_stream,
     } = setup();
 
-    let transport_msg = factories::models::TransportMsgBuilder {
+    let transport_msg = TransportMsg {
         peer: SocketAddrBuilder {
             ip_addr: IpAddrBuilder {
                 version: IpVersion::V4,
@@ -321,9 +319,8 @@ async fn from_transaction_applies_sent_by() {
             .build(),
             ..Default::default()
         }.into(),
-        ..Default::default()
-    }
-    .build();
+        ..Randomized::default()
+    };
 
     processor
         .handle_transaction_message(transport_msg.clone())
@@ -358,7 +355,7 @@ async fn from_core_applies_maddr() {
         mut transport_to_server_stream,
     } = setup();
 
-    let transport_msg = factories::models::TransportMsgBuilder {
+    let transport_msg = TransportMsg {
         peer: SocketAddrBuilder {
             ip_addr: IpAddrBuilder {
                 multicast: true,
@@ -367,9 +364,8 @@ async fn from_core_applies_maddr() {
             .build(),
             ..Default::default()
         }.into(),
-        ..Default::default()
-    }
-    .build();
+        ..Randomized::default()
+    };
 
     processor.handle_core_message(transport_msg.clone()).await;
 
@@ -412,7 +408,7 @@ async fn from_core_applies_ttl() {
         mut transport_to_server_stream,
     } = setup();
 
-    let transport_msg = factories::models::TransportMsgBuilder {
+    let transport_msg = TransportMsg {
         peer: SocketAddrBuilder {
             ip_addr: IpAddrBuilder {
                 version: IpVersion::V4,
@@ -421,9 +417,8 @@ async fn from_core_applies_ttl() {
             .build(),
             ..Default::default()
         }.into(),
-        ..Default::default()
-    }
-    .build();
+        ..Randomized::default()
+    };
 
     processor.handle_core_message(transport_msg.clone()).await;
 
@@ -466,7 +461,7 @@ async fn from_core_applies_sent_by() {
         mut transport_to_server_stream,
     } = setup();
 
-    let transport_msg = factories::models::TransportMsgBuilder {
+    let transport_msg = TransportMsg {
         peer: SocketAddrBuilder {
             ip_addr: IpAddrBuilder {
                 version: IpVersion::V4,
@@ -475,9 +470,8 @@ async fn from_core_applies_sent_by() {
             .build(),
             ..Default::default()
         }.into(),
-        ..Default::default()
-    }
-    .build();
+        ..Randomized::default()
+    };
 
     processor.handle_core_message(transport_msg.clone()).await;
 
