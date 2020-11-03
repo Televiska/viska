@@ -1,2 +1,1 @@
-//pub mod registration;
-//pub mod processor;
+pub mod registration;
