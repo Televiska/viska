@@ -1,1 +1,4 @@
-pub mod transport;
+mod transport;
+
+pub use transport::TransportMsgBuilder;
+

@@ -1,54 +1,25 @@
-use crate::common::factories::{
-    common::uri::{HostWithPort, TestsUriExt, Uri},
-    common::Method,
-    headers::{self, NamedHeader, NamedParam},
-};
-use common::libsip::{Headers, RequestGenerator};
+use crate::common::factories::prelude::*;
+use rsip::{common::*, headers::*, Header, Headers};
 use std::{convert::TryInto, net::IpAddr as StdIpAddr};
 
-pub fn request(from_uri: Option<Uri>, to_uri: Option<Uri>) -> ::models::Request {
-    let mut headers = Headers::new();
+pub fn request(from_uri: Option<Uri>, to_uri: Option<Uri>) -> rsip::Request {
+    let mut headers: Headers = Default::default();
     let from_uri = from_uri.unwrap_or_else(Uri::localhost);
     let to_uri = to_uri.unwrap_or_else(|| Uri::localhost_with_port(5090));
-    headers.push(
-        headers::Via {
-            uri: from_uri.clone(),
-            ..Default::default()
-        }
-        .into(),
-    );
-    headers.push(
-        headers::From(NamedHeader {
-            uri: from_uri,
-            ..Default::default()
-        })
-        .into(),
-    );
-    headers.push(
-        headers::To(NamedHeader {
-            uri: to_uri,
-            ..Default::default()
-        })
-        .into(),
-    );
-    headers.push(headers::CallId::default().into());
-    headers.push(
-        headers::Contact(NamedHeader {
-            uri: Uri::localhost(),
-            ..Default::default()
-        })
-        .into(),
-    );
-    headers.push(headers::CSeq::default().into());
-    headers.push(headers::ContentLength::default().into());
-    headers.push(headers::UserAgent::default().into());
+    headers.push(Via::from(from_uri.clone()).into());
+    headers.push(From::from(from_uri.clone()).into());
+    headers.push(To::from(to_uri.clone()).into());
+    headers.push(CallId::default().into());
+    headers.push(Contact::from(from_uri.clone()).into());
+    headers.push(CSeq::default().into());
+    headers.push(ContentLength::default().into());
+    headers.push(UserAgent::default().into());
 
-    RequestGenerator::new()
-        .method(Method::Register.into())
-        .headers(headers.0)
-        .uri(Uri::localhost().into())
-        .build()
-        .expect("build request")
-        .try_into()
-        .expect("request generator to sip message")
+    rsip::Request {
+        method: Method::Register,
+        uri: to_uri,
+        version: Version::V2,
+        headers,
+        body: vec![],
+    }
 }

@@ -1,20 +1,20 @@
-use crate::common::factories::{
-    common::{SocketAddr, Transport},
-    requests::request,
-};
-use models::{transport::TransportMsg, SipMessage, TransportType};
+use crate::common::factories::{common::SocketAddrBuilder, requests::request};
+use models::transport::TransportMsg;
+use rsip::{common::Transport, SipMessage};
+use std::net::SocketAddr;
+use crate::common::factories::prelude::*;
 
 pub struct TransportMsgBuilder {
     pub sip_message: SipMessage,
     pub peer: SocketAddr,
-    pub transport: TransportType,
+    pub transport: Transport,
 }
 
 impl Default for TransportMsgBuilder {
     fn default() -> Self {
         Self {
-            sip_message: request(None, None).into(),
-            peer: SocketAddr::default(),
+            sip_message: requests::request(None, None).into(),
+            peer: SocketAddrBuilder::default().into(),
             transport: Transport::default().into(),
         }
     }
