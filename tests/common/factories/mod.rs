@@ -20,7 +20,7 @@ pub mod prelude {
     pub use super::common::*;
     pub use super::requests;
     pub use super::responses;
-    pub use super::RandomizedBuilder;
-    pub use crate::common::factories as factories;
     pub use super::Randomized;
+    pub use super::RandomizedBuilder;
+    pub use crate::common::factories;
 }

@@ -1,4 +1,6 @@
 mod processor;
+mod uac;
+mod uas;
 
 pub use self::processor::Processor;
 
