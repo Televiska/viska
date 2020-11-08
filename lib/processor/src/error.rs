@@ -16,6 +16,7 @@ pub enum ErrorKind {
     Rsip(rsip::Error),
     Custom(String),
     SipHelpers(String),
+    Io(std::io::Error),
 }
 
 impl Error {
@@ -90,5 +91,11 @@ impl From<store::Error> for ErrorKind {
 impl From<rsip::Error> for ErrorKind {
     fn from(e: rsip::Error) -> Self {
         ErrorKind::Rsip(e)
+    }
+}
+
+impl From<std::io::Error> for ErrorKind {
+    fn from(e: std::io::Error) -> Self {
+        ErrorKind::Io(e)
     }
 }

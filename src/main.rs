@@ -1,4 +1,4 @@
-use processor::{core::Core, transaction::Transaction, transport::Transport};
+use processor::{Core, SipBuilder, Transaction, Transport};
 
 #[tokio::main]
 async fn main() {
@@ -6,11 +6,10 @@ async fn main() {
     common::Config::verify();
 
     let udp = tokio::spawn(async move {
-        server::UdpServer::new::<Transport, Core, Transaction>()
-            .await
-            .expect("failed to start udp server")
-            .run()
-            .await
+        let manager =
+            SipBuilder::new::<Core, Transaction, Transport>().expect("sip manager failed");
+
+        manager.run().await
     });
 
     tokio::try_join!(udp).expect("try join failed");

@@ -1,4 +1,4 @@
-pub mod processors;
+pub mod processor;
 
 pub fn debug(udp_tuple: &models::server::UdpTuple) {
     println!(

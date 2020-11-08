@@ -1,44 +1,29 @@
 pub mod processor;
+
+use ::processor::{CoreLayer, SipBuilder, SipManager, Transaction, Transport};
 use common::async_trait::async_trait;
+use models::{server::UdpTuple, transport::TransportMsg};
 use std::any::Any;
 use std::sync::{Arc, Weak};
+use tokio::sync::Mutex;
 
-use crate::SipManager;
-use models::transport::TransportMsg;
-
-#[async_trait]
-pub trait CoreLayer: Send + Sync + Any {
-    fn new(sip_manager: Weak<SipManager>) -> Self
-    where
-        Self: Sized;
-    async fn process_incoming_message(&self, msg: TransportMsg);
-    async fn send(&self, msg: TransportMsg);
-    fn sip_manager(&self) -> Arc<SipManager>;
-    fn as_any(&self) -> &dyn Any;
-}
-
-pub struct Core {
+pub struct CoreSnitch {
     sip_manager: Weak<SipManager>,
-    processor: Arc<processor::Processor>,
+    pub messages: Mutex<Vec<TransportMsg>>,
 }
 
 #[async_trait]
-impl CoreLayer for Core {
+impl CoreLayer for CoreSnitch {
     fn new(sip_manager: Weak<SipManager>) -> Self {
         Self {
             sip_manager: sip_manager.clone(),
-            processor: Arc::new(processor::Processor::new(sip_manager)),
+            messages: Mutex::new(vec![]),
         }
     }
 
     async fn process_incoming_message(&self, msg: TransportMsg) {
-        let processor = self.processor.clone();
-        tokio::spawn(async move {
-            processor
-                .process_message(msg)
-                .await
-                .expect("process message");
-        });
+        let mut messages = self.messages.lock().await;
+        messages.push(msg);
     }
 
     async fn send(&self, msg: TransportMsg) {
@@ -55,4 +40,10 @@ impl CoreLayer for Core {
     fn as_any(&self) -> &dyn Any {
         self
     }
+}
+
+async fn setup() -> Arc<SipManager> {
+    SipBuilder::new::<CoreSnitch, Transaction, Transport>()
+        .expect("sip manager failed")
+        .manager
 }

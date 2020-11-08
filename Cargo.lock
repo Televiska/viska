@@ -1025,18 +1025,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "server"
-version = "0.1.0"
-dependencies = [
- "common",
- "helpers",
- "models",
- "processor",
- "serde",
- "tokio",
-]
-
-[[package]]
 name = "sha"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1271,7 +1259,6 @@ dependencies = [
  "r2d2",
  "rsip",
  "serde",
- "server",
  "store",
  "testing_logger",
  "tokio",

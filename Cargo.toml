@@ -14,7 +14,6 @@ common = { path = "common" }
 helpers = { path = "lib/helpers" }
 models = { path = "lib/models" }
 processor = { path = "lib/processor" }
-server = { path = "lib/server" }
 store = { path = "lib/store" }
 rsip = { path = "lib/rsip" }
 
@@ -33,6 +32,6 @@ testing_logger = "0.1.1"
 
 [workspace]
 members = [
-  "common", "lib/helpers", "lib/models", "lib/processor", "lib/server",
-  "lib/store", "lib/rsip"
+  "common", "lib/helpers", "lib/models", "lib/processor", "lib/store",
+  "lib/rsip"
 ]
