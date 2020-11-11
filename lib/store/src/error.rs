@@ -19,10 +19,10 @@ pub enum ErrorKind {
 
 impl Error {
     pub fn is_not_found(&self) -> bool {
-        match self.kind {
-            ErrorKind::Diesel(diesel::result::Error::NotFound) => true,
-            _ => false,
-        }
+        matches!(
+            self.kind,
+            ErrorKind::Diesel(diesel::result::Error::NotFound)
+        )
     }
 
     pub fn custom(reason: String) -> Self {
