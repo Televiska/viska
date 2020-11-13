@@ -1,16 +1,22 @@
-pub use crate::Error;
+pub use crate::{Error, SipManager};
+use models::transport::TransportMsg;
 use rsip::{Request, Response, SipMessage};
+use std::sync::{Arc, Weak};
 
-pub struct Processor;
+pub struct Processor {
+    sip_manager: Weak<SipManager>,
+}
 
 #[allow(clippy::new_without_default)]
 impl Processor {
-    pub fn new() -> Self {
-        Self
+    pub fn new(sip_manager: Weak<SipManager>) -> Self {
+        Self { sip_manager }
     }
 
-    pub async fn process_message(&self, sip_message: SipMessage) -> Result<SipMessage, Error> {
-        crate::helpers::trace_sip_message(sip_message.clone())?;
+    //TODO: Fix me
+    pub async fn process_message(&self, msg: TransportMsg) -> Result<(), Error> {
+        let sip_message = msg.sip_message;
+        //crate::helpers::trace_sip_message(sip_message.clone())?;
 
         let sip_message: SipMessage = match sip_message {
             SipMessage::Request(request) => self.handle_request(request),
@@ -18,8 +24,17 @@ impl Processor {
         }?
         .into();
 
-        crate::helpers::trace_sip_message(sip_message.clone())?;
-        Ok(sip_message)
+        //crate::helpers::trace_sip_message(sip_message.clone())?;
+        self.sip_manager()
+            .core
+            .send(TransportMsg {
+                sip_message,
+                peer: msg.peer,
+                transport: msg.transport,
+            })
+            .await;
+
+        Ok(())
     }
 
     fn handle_request(&self, request: Request) -> Result<Response, Error> {
@@ -40,7 +55,7 @@ impl Processor {
             None => {
                 let auth_header = request.authorization_header();
                 match auth_header {
-                    Ok(header) => {
+                    Some(header) => {
                         if crate::presets::is_authorized(header.clone())? {
                             let dialog: models::Dialog =
                                 store::Dialog::create_with_transaction(request.clone())?.into();
@@ -49,8 +64,8 @@ impl Processor {
                             Ok(crate::presets::create_unauthorized_from(request)?)
                         }
                     }
-                    Err(err) => {
-                        common::log::warn!("issue in auth header: {}", err);
+                    None => {
+                        common::log::warn!("auth header is missing");
                         Ok(crate::presets::create_unauthorized_from(request)?)
                     }
                 }
@@ -64,5 +79,9 @@ impl Processor {
         store::Dialog::find_with_transaction(request.dialog_id()?)
             .ok()
             .map(|s| s.into())
+    }
+
+    fn sip_manager(&self) -> Arc<SipManager> {
+        self.sip_manager.upgrade().expect("sip manager is missing!")
     }
 }

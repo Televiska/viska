@@ -1,8 +1,8 @@
-use super::{setup, Setup};
 use crate::common::{delay_for, factories::prelude::*};
 use common::futures_util::stream::StreamExt;
 use common::log::Level;
 use models::transport::TransportMsg;
+use std::any::Any;
 use std::convert::{TryFrom, TryInto};
 use std::net::{IpAddr, Ipv4Addr};
 
@@ -13,14 +13,7 @@ async fn incoming_response_asserts_with_wrong_sent_by() {
         message::HeadersExt,
     };
 
-    testing_logger::setup();
-
-    let Setup {
-        mut processor,
-        mut transport_to_core_stream,
-        mut transport_to_transaction_stream,
-        mut transport_to_server_stream,
-    } = setup();
+    let processor = processor::transport::processor::Processor::default();
 
     let mut response: rsip::Response = responses::response(
         Some(Uri::localhost_with_port(5060)),
@@ -33,19 +26,15 @@ async fn incoming_response_asserts_with_wrong_sent_by() {
         peer: SocketAddrBuilder::localhost_with_port(5090).into(),
     };
 
-    processor
-        .handle_server_message(server_msg.try_into().expect("server to transport msg"))
-        .await;
-
-    delay_for(10).await;
-    assert!(transport_to_core_stream.try_recv().is_err());
-    assert!(transport_to_transaction_stream.try_recv().is_err());
-
-    testing_logger::validate(|captured_logs| {
-        assert_eq!(captured_logs.len(), 1);
-        assert!(captured_logs[0].body.contains("sent-by address"));
-        assert_eq!(captured_logs[0].level, Level::Error);
-    });
+    match processor
+        .process_incoming_message(server_msg.try_into().expect("server to transport msg"))
+        .await
+    {
+        Err(processor::Error {
+            kind: processor::ErrorKind::Custom(error),
+        }) => assert!(error.contains("sent-by") && error.contains("different")),
+        _ => panic!("unexpected result"),
+    }
 }
 
 #[tokio::test]
@@ -55,12 +44,7 @@ async fn incoming_response_asserts_with_correct_sent_by() {
         message::HeadersExt,
     };
 
-    let Setup {
-        mut processor,
-        mut transport_to_core_stream,
-        mut transport_to_transaction_stream,
-        mut transport_to_server_stream,
-    } = setup();
+    let processor = processor::transport::processor::Processor::default();
 
     let response: rsip::Response = responses::response(
         Some(Uri::localhost_with_port(5060)),
@@ -71,17 +55,10 @@ async fn incoming_response_asserts_with_correct_sent_by() {
         peer: SocketAddrBuilder::localhost_with_port(5090).into(),
     };
 
-    processor
-        .handle_server_message(server_msg.try_into().expect("server to transport msg"))
-        .await;
-
-    let transport_msg = transport_to_core_stream
-        .next()
+    assert!(processor
+        .process_incoming_message(server_msg.try_into().expect("server to transport msg"))
         .await
-        .expect("transport msg");
-
-    delay_for(10).await;
-    assert!(transport_to_transaction_stream.try_recv().is_err());
+        .is_ok());
 }
 
 #[tokio::test]
@@ -91,12 +68,7 @@ async fn outgoing_transaction_request_applies_maddr() {
         message::HeadersExt,
     };
 
-    let Setup {
-        processor,
-        mut transport_to_core_stream,
-        mut transport_to_transaction_stream,
-        mut transport_to_server_stream,
-    } = setup();
+    let processor = processor::transport::processor::Processor::default();
 
     let transport_msg = models::transport::TransportMsg {
         peer: SocketAddrBuilder {
@@ -111,15 +83,12 @@ async fn outgoing_transaction_request_applies_maddr() {
         ..Randomized::default()
     };
 
-    processor
-        .handle_transaction_message(transport_msg.clone())
-        .await;
+    let message = processor.process_outgoing_message(transport_msg.clone());
 
-    let udp_tuple = transport_to_server_stream.next().await.expect("udp tuple");
-    let request: rsip::Request = udp_tuple
-        .bytes
+    let request: rsip::Request = message
+        .sip_message
         .try_into()
-        .expect("converting bytes to request");
+        .expect("transport msg to request");
     let via_uri = &request.via_header().expect("via header").uri;
 
     let maddr_param = via_uri
@@ -134,10 +103,6 @@ async fn outgoing_transaction_request_applies_maddr() {
         maddr_param,
         &uri::Param::Other("maddr".into(), Some(transport_msg.peer.ip().to_string()))
     );
-
-    delay_for(10).await;
-    assert!(transport_to_core_stream.try_recv().is_err());
-    assert!(transport_to_transaction_stream.try_recv().is_err());
 }
 
 #[tokio::test]
@@ -147,12 +112,7 @@ async fn outgoing_transaction_request_applies_ttl() {
         message::HeadersExt,
     };
 
-    let Setup {
-        processor,
-        mut transport_to_core_stream,
-        mut transport_to_transaction_stream,
-        mut transport_to_server_stream,
-    } = setup();
+    let processor = processor::transport::processor::Processor::default();
 
     let transport_msg = TransportMsg {
         peer: SocketAddrBuilder {
@@ -167,15 +127,12 @@ async fn outgoing_transaction_request_applies_ttl() {
         ..Randomized::default()
     };
 
-    processor
-        .handle_transaction_message(transport_msg.clone())
-        .await;
+    let message = processor.process_outgoing_message(transport_msg.clone());
 
-    let udp_tuple = transport_to_server_stream.next().await.expect("udp tuple");
-    let request: rsip::Request = udp_tuple
-        .bytes
+    let request: rsip::Request = message
+        .sip_message
         .try_into()
-        .expect("converting bytes to request");
+        .expect("transport msg to request");
     let via_uri = &request.via_header().expect("via header").uri;
 
     let maddr_param = via_uri
@@ -190,10 +147,6 @@ async fn outgoing_transaction_request_applies_ttl() {
         maddr_param,
         &uri::Param::Other("ttl".into(), Some("1".into()))
     );
-
-    delay_for(10).await;
-    assert!(transport_to_core_stream.try_recv().is_err());
-    assert!(transport_to_transaction_stream.try_recv().is_err());
 }
 
 #[tokio::test]
@@ -203,12 +156,7 @@ async fn outgoing_transaction_request_applies_sent_by() {
         message::HeadersExt,
     };
 
-    let Setup {
-        processor,
-        mut transport_to_core_stream,
-        mut transport_to_transaction_stream,
-        mut transport_to_server_stream,
-    } = setup();
+    let processor = processor::transport::processor::Processor::default();
 
     let transport_msg = TransportMsg {
         peer: SocketAddrBuilder {
@@ -223,23 +171,15 @@ async fn outgoing_transaction_request_applies_sent_by() {
         ..Randomized::default()
     };
 
-    processor
-        .handle_transaction_message(transport_msg.clone())
-        .await;
-
-    let udp_tuple = transport_to_server_stream.next().await.expect("udp tuple");
-    let request: rsip::Request = udp_tuple
-        .bytes
+    let message = processor.process_outgoing_message(transport_msg.clone());
+    let request: rsip::Request = message
+        .sip_message
         .try_into()
-        .expect("converting bytes to request");
+        .expect("transport msg to request");
     let via_uri = &request.via_header().expect("via header").uri;
 
     //TODO: this should be configurable through env/yaml config
     assert_eq!(via_uri.host_with_port.to_string(), "127.0.0.1:5060");
-
-    delay_for(10).await;
-    assert!(transport_to_core_stream.try_recv().is_err());
-    assert!(transport_to_transaction_stream.try_recv().is_err());
 }
 
 #[tokio::test]
@@ -249,12 +189,7 @@ async fn outgoing_core_request_applies_maddr() {
         message::HeadersExt,
     };
 
-    let Setup {
-        processor,
-        mut transport_to_core_stream,
-        mut transport_to_transaction_stream,
-        mut transport_to_server_stream,
-    } = setup();
+    let processor = processor::transport::processor::Processor::default();
 
     let transport_msg = TransportMsg {
         peer: SocketAddrBuilder {
@@ -269,13 +204,11 @@ async fn outgoing_core_request_applies_maddr() {
         ..Randomized::default()
     };
 
-    processor.handle_core_message(transport_msg.clone()).await;
-
-    let udp_tuple = transport_to_server_stream.next().await.expect("udp tuple");
-    let request: rsip::Request = udp_tuple
-        .bytes
+    let message = processor.process_outgoing_message(transport_msg.clone());
+    let request: rsip::Request = message
+        .sip_message
         .try_into()
-        .expect("converting bytes to request");
+        .expect("transport msg to request");
     let via_uri = &request.via_header().expect("via header").uri;
 
     let maddr_param = via_uri
@@ -290,10 +223,6 @@ async fn outgoing_core_request_applies_maddr() {
         maddr_param,
         &uri::Param::Other("maddr".into(), Some(transport_msg.peer.ip().to_string()))
     );
-
-    delay_for(10).await;
-    assert!(transport_to_core_stream.try_recv().is_err());
-    assert!(transport_to_transaction_stream.try_recv().is_err());
 }
 
 #[tokio::test]
@@ -303,12 +232,7 @@ async fn outgoing_core_request_applies_ttl() {
         message::HeadersExt,
     };
 
-    let Setup {
-        processor,
-        mut transport_to_core_stream,
-        mut transport_to_transaction_stream,
-        mut transport_to_server_stream,
-    } = setup();
+    let processor = processor::transport::processor::Processor::default();
 
     let transport_msg = TransportMsg {
         peer: SocketAddrBuilder {
@@ -323,13 +247,11 @@ async fn outgoing_core_request_applies_ttl() {
         ..Randomized::default()
     };
 
-    processor.handle_core_message(transport_msg.clone()).await;
-
-    let udp_tuple = transport_to_server_stream.next().await.expect("udp tuple");
-    let request: rsip::Request = udp_tuple
-        .bytes
+    let message = processor.process_outgoing_message(transport_msg.clone());
+    let request: rsip::Request = message
+        .sip_message
         .try_into()
-        .expect("converting bytes to request");
+        .expect("transport msg to request");
     let via_uri = &request.via_header().expect("via header").uri;
 
     let maddr_param = via_uri
@@ -344,10 +266,6 @@ async fn outgoing_core_request_applies_ttl() {
         maddr_param,
         &uri::Param::Other("ttl".into(), Some("1".into()))
     );
-
-    delay_for(10).await;
-    assert!(transport_to_core_stream.try_recv().is_err());
-    assert!(transport_to_transaction_stream.try_recv().is_err());
 }
 
 #[tokio::test]
@@ -357,12 +275,7 @@ async fn outgoing_core_request_applies_sent_by() {
         message::HeadersExt,
     };
 
-    let Setup {
-        processor,
-        mut transport_to_core_stream,
-        mut transport_to_transaction_stream,
-        mut transport_to_server_stream,
-    } = setup();
+    let processor = processor::transport::processor::Processor::default();
 
     let transport_msg = TransportMsg {
         peer: SocketAddrBuilder {
@@ -377,19 +290,13 @@ async fn outgoing_core_request_applies_sent_by() {
         ..Randomized::default()
     };
 
-    processor.handle_core_message(transport_msg.clone()).await;
-
-    let udp_tuple = transport_to_server_stream.next().await.expect("udp tuple");
-    let request: rsip::Request = udp_tuple
-        .bytes
+    let message = processor.process_outgoing_message(transport_msg.clone());
+    let request: rsip::Request = message
+        .sip_message
         .try_into()
-        .expect("converting bytes to request");
+        .expect("transport msg to request");
     let via_uri = &request.via_header().expect("via header").uri;
 
     //TODO: this should be configurable through env/yaml config
     assert_eq!(via_uri.host_with_port.to_string(), "127.0.0.1:5060");
-
-    delay_for(10).await;
-    assert!(transport_to_core_stream.try_recv().is_err());
-    assert!(transport_to_transaction_stream.try_recv().is_err());
 }

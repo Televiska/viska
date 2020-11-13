@@ -1,108 +1,133 @@
-mod processor;
-mod uac;
-mod uas;
+pub mod processor;
+pub mod uac;
+pub mod uas;
 
-pub use self::processor::Processor;
-
-use crate::core::CoreLayer;
-use crate::transaction::TransactionLayer;
+use crate::{Error, SipManager};
 use common::async_trait::async_trait;
-use common::futures_util::stream::StreamExt;
-use models::{server::UdpTuple, transport::TransportMsg, ChannelOf};
-use tokio::sync::mpsc::{self, Receiver, Sender};
+use std::sync::{Arc, Weak};
 
-#[allow(dead_code)]
-pub struct Transport {
-    core_to_self_sink: Sender<TransportMsg>,
-    self_to_core_sink: Sender<TransportMsg>,
-    transaction_to_self_sink: Sender<TransportMsg>,
-    self_to_transaction_sink: Sender<TransportMsg>,
-    server_to_self_sink: Sender<UdpTuple>,
-    self_to_server_sink: Sender<UdpTuple>,
-    processor: processor::Processor,
-}
+use common::bytes::Bytes;
+use common::futures::stream::{SplitSink, SplitStream};
+use common::futures::SinkExt;
+use common::futures_util::stream::StreamExt;
+use common::tokio_util::codec::BytesCodec;
+use common::tokio_util::udp::UdpFramed;
+use models::{server::UdpTuple, transport::TransportMsg};
+//use processor::Processor;
+use std::any::Any;
+use std::net::SocketAddr;
+use tokio::net::UdpSocket;
+use tokio::sync::Mutex;
+
+type UdpSink = SplitSink<UdpFramed<BytesCodec>, (Bytes, SocketAddr)>;
+type UdpStream = SplitStream<UdpFramed<BytesCodec>>;
 
 #[async_trait]
-pub trait TransportLayer: Send + Sync {
-    async fn spawn<C: CoreLayer, T: TransactionLayer>(
-        self_to_server_sink: Sender<UdpTuple>,
-    ) -> Result<Sender<UdpTuple>, crate::Error>;
+pub trait TransportLayer: Send + Sync + Any {
+    fn new(sip_manager: Weak<SipManager>) -> Result<Self, Error>
+    where
+        Self: Sized;
+    async fn process_incoming_message(&self, udp_tuple: UdpTuple) -> Result<(), Error>;
+    async fn send(&self, msg: TransportMsg) -> Result<(), Error>;
+    async fn run(&self);
+    fn sip_manager(&self) -> Arc<SipManager>;
+    fn as_any(&self) -> &dyn Any;
 }
 
-// listens to core_to_self_stream and forwards to self_to_server_sink
-// listens to server_to_self_stream and forwards to self_to_core_sink
+//with tokio 3.x, the Mutexes will be replaced with an Arc here
+pub struct Transport {
+    sip_manager: Weak<SipManager>,
+    pub processor: processor::Processor,
+    udp_sink: Mutex<UdpSink>,
+    udp_stream: Mutex<UdpStream>,
+}
+
 #[async_trait]
 impl TransportLayer for Transport {
-    async fn spawn<C: CoreLayer, T: TransactionLayer>(
-        self_to_server_sink: Sender<UdpTuple>,
-    ) -> Result<Sender<UdpTuple>, crate::Error> {
-        let (core_to_self_sink, core_to_self_stream): ChannelOf<TransportMsg> = mpsc::channel(100);
+    fn new(sip_manager: Weak<SipManager>) -> Result<Self, Error> {
+        let (udp_sink, udp_stream) = create_socket()?;
 
-        let (transaction_to_self_sink, transaction_to_self_stream): ChannelOf<TransportMsg> =
-            mpsc::channel(100);
+        Ok(Self {
+            sip_manager,
+            processor: processor::Processor::default(),
+            udp_sink: Mutex::new(udp_sink),
+            udp_stream: Mutex::new(udp_stream),
+        })
+    }
 
-        let (server_to_self_sink, server_to_self_stream): ChannelOf<UdpTuple> = mpsc::channel(100);
+    async fn process_incoming_message(&self, udp_tuple: UdpTuple) -> Result<(), Error> {
+        use std::convert::TryInto;
 
-        let (self_to_core_sink, self_to_transaction_sink) =
-            C::spawn::<T>(core_to_self_sink.clone(), transaction_to_self_sink.clone()).await?;
+        let message = self
+            .processor
+            .process_incoming_message(udp_tuple.try_into()?)
+            .await?;
 
-        let server_to_self_sink_cloned = server_to_self_sink.clone();
-        tokio::spawn(async move {
-            let mut transport = Self {
-                processor: processor::Processor::new(
-                    self_to_core_sink.clone(),
-                    self_to_transaction_sink.clone(),
-                    self_to_server_sink.clone(),
-                ),
-                core_to_self_sink,
-                self_to_core_sink,
-                transaction_to_self_sink,
-                self_to_transaction_sink,
-                server_to_self_sink,
-                self_to_server_sink,
-            };
-            transport
-                .run(
-                    server_to_self_stream,
-                    transaction_to_self_stream,
-                    core_to_self_stream,
-                )
-                .await;
-        });
+        self.sip_manager()
+            .core
+            .process_incoming_message(message)
+            .await;
 
-        Ok(server_to_self_sink_cloned)
+        Ok(())
+    }
+
+    async fn send(&self, msg: TransportMsg) -> Result<(), Error> {
+        common::log::debug!("{:?}", msg);
+
+        Ok(self
+            .udp_send(self.processor.process_outgoing_message(msg).into())
+            .await?)
+    }
+
+    async fn run(&self) {
+        loop {
+            match self.udp_stream.lock().await.next().await {
+                Some(Ok((request, addr))) => {
+                    //debug_message(request.to_vec());
+
+                    match self
+                        .process_incoming_message((request.freeze(), addr).into())
+                        .await
+                    {
+                        Ok(_) => (),
+                        Err(error) => {
+                            common::log::error!("failed to process incoming message: {:?}", error)
+                        }
+                    }
+                }
+                Some(Err(e)) => common::log::error!("{:?}", e),
+                None => common::log::error!("nothing here"),
+            }
+        }
+    }
+
+    fn sip_manager(&self) -> Arc<SipManager> {
+        self.sip_manager.upgrade().expect("sip manager is missing!")
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 
 impl Transport {
-    async fn run(
-        &mut self,
-        mut server_to_self_stream: Receiver<UdpTuple>,
-        mut transaction_to_self_stream: Receiver<TransportMsg>,
-        mut core_to_self_stream: Receiver<TransportMsg>,
-    ) {
-        use std::convert::TryInto;
+    async fn udp_send(&self, udp_tuple: UdpTuple) -> Result<(), Error> {
+        //debug_message(udp_tuple.bytes.to_vec());
 
-        loop {
-            tokio::select! {
-                Some(udp_tuple) = server_to_self_stream.next() => {
-                    let transport_msg = udp_tuple.try_into();
-                    match transport_msg {
-                        Ok(transport_msg) => {
-                            self.processor.handle_server_message(transport_msg).await;
-                        },
-                        Err(error) => {
-                            common::log::error!("failed to convert to transport msg: {:?}", error)
-                        }
-                    }
-                }
-                Some(transport_msg) = transaction_to_self_stream.next() => {
-                    self.processor.handle_transaction_message(transport_msg).await;
-                }
-                Some(transport_msg) = core_to_self_stream.next() => {
-                    self.processor.handle_core_message(transport_msg).await;
-                }
-            }
-        }
+        Ok(self.udp_sink.lock().await.send(udp_tuple.into()).await?)
     }
+}
+
+fn create_socket() -> Result<(UdpSink, UdpStream), crate::Error> {
+    let socket = UdpSocket::from_std(std::net::UdpSocket::bind("0.0.0.0:5060")?)?;
+    common::log::debug!("starting udp server listening in port 5060");
+    let socket = UdpFramed::new(socket, BytesCodec::new());
+    Ok(socket.split())
+}
+
+#[allow(dead_code)]
+fn debug_message(bytes: Vec<u8>) {
+    let separator = "########################################################################";
+    let message = String::from_utf8(bytes).expect("utf bytes to string");
+    println!("{}\n{}\n{}", separator, message, separator);
 }
