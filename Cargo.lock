@@ -837,19 +837,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "processor"
-version = "0.1.0"
-dependencies = [
- "common",
- "helpers",
- "models",
- "rsip",
- "serde",
- "store",
- "tokio",
-]
-
-[[package]]
 name = "quick-error"
 version = "1.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1041,6 +1028,19 @@ checksum = "94f478ede9f64724c5d173d7bb56099ec3e2d9fc2774aac65d34b8b890405f41"
 dependencies = [
  "arc-swap",
  "libc",
+]
+
+[[package]]
+name = "sip_server"
+version = "0.1.0"
+dependencies = [
+ "common",
+ "helpers",
+ "models",
+ "rsip",
+ "serde",
+ "store",
+ "tokio",
 ]
 
 [[package]]
@@ -1255,10 +1255,10 @@ dependencies = [
  "fake",
  "helpers",
  "models",
- "processor",
  "r2d2",
  "rsip",
  "serde",
+ "sip_server",
  "store",
  "testing_logger",
  "tokio",

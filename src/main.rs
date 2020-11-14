@@ -1,4 +1,4 @@
-use processor::{Core, SipBuilder, Transaction, Transport};
+use sip_server::{Core, SipBuilder, Transaction, Transport};
 
 #[tokio::main]
 async fn main() {

@@ -2,6 +2,7 @@ use crate::common::{delay_for, factories::prelude::*};
 use common::futures_util::stream::StreamExt;
 use common::log::Level;
 use models::transport::TransportMsg;
+use sip_server::transport::processor::Processor as TransportProcessor;
 use std::convert::{TryFrom, TryInto};
 use std::net::{IpAddr, Ipv4Addr};
 
@@ -12,7 +13,7 @@ async fn incoming_request_with_other_sent_by_adds_received_param() {
         message::HeadersExt,
     };
 
-    let processor = processor::transport::processor::Processor::default();
+    let processor = TransportProcessor::default();
 
     let mut response: rsip::Request = requests::request(
         Some(Uri::localhost_with_port(5060)),
@@ -49,7 +50,7 @@ async fn incoming_request_with_same_sent_by_param() {
         message::HeadersExt,
     };
 
-    let processor = processor::transport::processor::Processor::default();
+    let processor = TransportProcessor::default();
 
     let mut response: rsip::Request = requests::request(
         Some(Uri::localhost_with_port(5060)),

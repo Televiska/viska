@@ -1,8 +1,8 @@
 pub mod processor;
 
-use ::processor::{CoreLayer, SipBuilder, SipManager, Transaction, Transport};
 use common::async_trait::async_trait;
 use models::{server::UdpTuple, transport::TransportMsg};
+use sip_server::{CoreLayer, SipBuilder, SipManager, Transaction, Transport};
 use std::any::Any;
 use std::sync::{Arc, Weak};
 use tokio::sync::Mutex;

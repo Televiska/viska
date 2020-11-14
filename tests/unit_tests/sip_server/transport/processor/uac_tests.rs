@@ -2,6 +2,7 @@ use crate::common::{delay_for, factories::prelude::*};
 use common::futures_util::stream::StreamExt;
 use common::log::Level;
 use models::transport::TransportMsg;
+use sip_server::transport::processor::Processor as TransportProcessor;
 use std::any::Any;
 use std::convert::{TryFrom, TryInto};
 use std::net::{IpAddr, Ipv4Addr};
@@ -13,7 +14,7 @@ async fn incoming_response_asserts_with_wrong_sent_by() {
         message::HeadersExt,
     };
 
-    let processor = processor::transport::processor::Processor::default();
+    let processor = TransportProcessor::default();
 
     let mut response: rsip::Response = responses::response(
         Some(Uri::localhost_with_port(5060)),
@@ -30,8 +31,8 @@ async fn incoming_response_asserts_with_wrong_sent_by() {
         .process_incoming_message(server_msg.try_into().expect("server to transport msg"))
         .await
     {
-        Err(processor::Error {
-            kind: processor::ErrorKind::Custom(error),
+        Err(sip_server::Error {
+            kind: sip_server::ErrorKind::Custom(error),
         }) => assert!(error.contains("sent-by") && error.contains("different")),
         _ => panic!("unexpected result"),
     }
@@ -44,7 +45,7 @@ async fn incoming_response_asserts_with_correct_sent_by() {
         message::HeadersExt,
     };
 
-    let processor = processor::transport::processor::Processor::default();
+    let processor = TransportProcessor::default();
 
     let response: rsip::Response = responses::response(
         Some(Uri::localhost_with_port(5060)),
@@ -68,7 +69,7 @@ async fn outgoing_transaction_request_applies_maddr() {
         message::HeadersExt,
     };
 
-    let processor = processor::transport::processor::Processor::default();
+    let processor = TransportProcessor::default();
 
     let transport_msg = models::transport::TransportMsg {
         peer: SocketAddrBuilder {
@@ -112,7 +113,7 @@ async fn outgoing_transaction_request_applies_ttl() {
         message::HeadersExt,
     };
 
-    let processor = processor::transport::processor::Processor::default();
+    let processor = TransportProcessor::default();
 
     let transport_msg = TransportMsg {
         peer: SocketAddrBuilder {
@@ -156,7 +157,7 @@ async fn outgoing_transaction_request_applies_sent_by() {
         message::HeadersExt,
     };
 
-    let processor = processor::transport::processor::Processor::default();
+    let processor = TransportProcessor::default();
 
     let transport_msg = TransportMsg {
         peer: SocketAddrBuilder {
@@ -189,7 +190,7 @@ async fn outgoing_core_request_applies_maddr() {
         message::HeadersExt,
     };
 
-    let processor = processor::transport::processor::Processor::default();
+    let processor = TransportProcessor::default();
 
     let transport_msg = TransportMsg {
         peer: SocketAddrBuilder {
@@ -232,7 +233,7 @@ async fn outgoing_core_request_applies_ttl() {
         message::HeadersExt,
     };
 
-    let processor = processor::transport::processor::Processor::default();
+    let processor = TransportProcessor::default();
 
     let transport_msg = TransportMsg {
         peer: SocketAddrBuilder {
@@ -275,7 +276,7 @@ async fn outgoing_core_request_applies_sent_by() {
         message::HeadersExt,
     };
 
-    let processor = processor::transport::processor::Processor::default();
+    let processor = TransportProcessor::default();
 
     let transport_msg = TransportMsg {
         peer: SocketAddrBuilder {
