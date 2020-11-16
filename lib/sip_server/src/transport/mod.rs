@@ -4,7 +4,11 @@ pub mod uas;
 
 use crate::{Error, SipManager};
 use common::async_trait::async_trait;
-use std::sync::{Arc, Weak};
+use std::{
+    any::Any,
+    fmt::Debug,
+    sync::{Arc, Weak},
+};
 
 use common::bytes::Bytes;
 use common::futures::stream::{SplitSink, SplitStream};
@@ -14,7 +18,6 @@ use common::tokio_util::codec::BytesCodec;
 use common::tokio_util::udp::UdpFramed;
 use models::{server::UdpTuple, transport::TransportMsg};
 //use processor::Processor;
-use std::any::Any;
 use std::net::SocketAddr;
 use tokio::net::UdpSocket;
 use tokio::sync::Mutex;
@@ -23,7 +26,7 @@ type UdpSink = SplitSink<UdpFramed<BytesCodec>, (Bytes, SocketAddr)>;
 type UdpStream = SplitStream<UdpFramed<BytesCodec>>;
 
 #[async_trait]
-pub trait TransportLayer: Send + Sync + Any {
+pub trait TransportLayer: Send + Sync + Any + Debug {
     fn new(sip_manager: Weak<SipManager>) -> Result<Self, Error>
     where
         Self: Sized;
@@ -115,6 +118,16 @@ impl Transport {
         //debug_message(udp_tuple.bytes.to_vec());
 
         Ok(self.udp_sink.lock().await.send(udp_tuple.into()).await?)
+    }
+}
+
+impl std::fmt::Debug for Transport {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Transport")
+            .field("processor", &self.processor)
+            .field("udp_sink", &self.udp_sink)
+            .field("udp_stream", &self.udp_stream)
+            .finish()
     }
 }
 

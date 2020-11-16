@@ -17,6 +17,12 @@ pub enum ErrorKind {
     Custom(String),
     SipHelpers(String),
     Io(std::io::Error),
+    Transaction(Transaction),
+}
+
+#[derive(Debug)]
+pub enum Transaction {
+    NotFound,
 }
 
 impl Error {
@@ -97,5 +103,11 @@ impl From<rsip::Error> for ErrorKind {
 impl From<std::io::Error> for ErrorKind {
     fn from(e: std::io::Error) -> Self {
         ErrorKind::Io(e)
+    }
+}
+
+impl From<Transaction> for ErrorKind {
+    fn from(e: Transaction) -> Self {
+        ErrorKind::Transaction(e)
     }
 }

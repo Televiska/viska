@@ -7,7 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "0.2.13", features = ["full"] }
+tokio = { version = "0.2.21", features = ["full"] }
 serde = { version = "1.0.105", features = ["derive"] }
 
 common = { path = "common" }
@@ -24,7 +24,7 @@ fake = { version = "2.2.3", features=['derive']}
 diesel = { git = "https://github.com/diesel-rs/diesel", features = ["postgres", "chrono", "numeric", "uuid", "r2d2", "network-address"] }
 r2d2 = "0.8.9"
 diesel_migrations = { git = "https://github.com/diesel-rs/diesel", features = [ "postgres" ] }
-tokio = { version = "0.2.11", features = ["default", "test-util"] }
+tokio = { version = "0.2.21", features = ["full", "test-util"] }
 #mockito = "0.25.1"
 #Inflector = "0.11.4"
 testing_logger = "0.1.1"

@@ -15,12 +15,12 @@ async fn incoming_request_with_other_sent_by_adds_received_param() {
 
     let processor = TransportProcessor::default();
 
-    let mut response: rsip::Request = requests::request(
+    let mut request: rsip::Request = requests::request(
         Some(Uri::localhost_with_port(5060)),
         Some(Uri::localhost_with_port(5090)),
     );
     let server_msg = models::server::UdpTuple {
-        bytes: response.into(),
+        bytes: request.into(),
         peer: (IpAddr::V4(Ipv4Addr::new(196, 168, 0, 1)), 5061).into(),
     };
 
@@ -52,12 +52,12 @@ async fn incoming_request_with_same_sent_by_param() {
 
     let processor = TransportProcessor::default();
 
-    let mut response: rsip::Request = requests::request(
+    let mut request: rsip::Request = requests::request(
         Some(Uri::localhost_with_port(5060)),
         Some(Uri::localhost_with_port(5090)),
     );
     let server_msg = models::server::UdpTuple {
-        bytes: response.into(),
+        bytes: request.into(),
         peer: (IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 5060).into(),
     };
 

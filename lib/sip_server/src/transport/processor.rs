@@ -18,11 +18,9 @@ impl Processor {
         } = msg;
 
         let sip_message = match sip_message {
-            SipMessage::Request(request) => {
-                uas::apply_request_defaults(request, peer, transport.clone())?
-            }
+            SipMessage::Request(request) => uas::apply_request_defaults(request, peer, transport)?,
             SipMessage::Response(response) => {
-                uac::apply_response_defaults(response, peer, transport.clone())?
+                uac::apply_response_defaults(response, peer, transport)?
             }
         };
 
@@ -43,11 +41,9 @@ impl Processor {
         } = msg;
 
         let sip_message = match sip_message {
-            SipMessage::Request(request) => {
-                uac::apply_request_defaults(request, peer, transport.clone())
-            }
+            SipMessage::Request(request) => uac::apply_request_defaults(request, peer, transport),
             SipMessage::Response(response) => {
-                uas::apply_response_defaults(response, peer, transport.clone())
+                uas::apply_response_defaults(response, peer, transport)
             }
         };
 

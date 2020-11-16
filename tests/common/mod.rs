@@ -1,4 +1,8 @@
+pub mod extensions;
 pub mod factories;
+pub mod snitches;
+
+use std::time::Duration;
 
 use diesel_migrations::{self};
 diesel_migrations::embed_migrations!();
@@ -77,6 +81,14 @@ pub fn clean_db(conn: &DbConn) {
         .expect("deleting responses");
 }
 
-pub async fn delay_for(millis: u64) {
-    tokio::time::delay_for(std::time::Duration::from_millis(millis)).await;
+pub async fn advance_for(duration: Duration) {
+    delay_for(Duration::from_millis(1)).await;
+    tokio::time::pause();
+    tokio::time::advance(duration).await;
+    tokio::time::resume();
+    delay_for(Duration::from_millis(1)).await;
+}
+
+pub async fn delay_for(duration: Duration) {
+    tokio::time::delay_for(duration).await;
 }
