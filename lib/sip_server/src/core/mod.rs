@@ -1,13 +1,16 @@
 pub mod processor;
 use common::async_trait::async_trait;
-use std::any::Any;
-use std::sync::{Arc, Weak};
+use std::{
+    any::Any,
+    fmt::Debug,
+    sync::{Arc, Weak},
+};
 
 use crate::SipManager;
 use models::transport::TransportMsg;
 
 #[async_trait]
-pub trait CoreLayer: Send + Sync + Any {
+pub trait CoreLayer: Send + Sync + Any + Debug {
     fn new(sip_manager: Weak<SipManager>) -> Self
     where
         Self: Sized;
@@ -54,5 +57,13 @@ impl CoreLayer for Core {
 
     fn as_any(&self) -> &dyn Any {
         self
+    }
+}
+
+impl std::fmt::Debug for Core {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Core")
+            .field("processor", &self.processor)
+            .finish()
     }
 }

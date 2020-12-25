@@ -2,6 +2,7 @@ mod common;
 mod models_ext;
 pub mod requests;
 pub mod responses;
+mod rsip_ext;
 
 pub trait RandomizedBuilder {
     type Item;

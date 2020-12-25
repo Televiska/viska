@@ -1,6 +1,6 @@
 #![feature(arc_new_cyclic)]
 
-mod error;
+pub mod error;
 pub mod helpers;
 mod presets;
 mod transactions;

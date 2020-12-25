@@ -3,6 +3,7 @@ use models::transport::TransportMsg;
 use rsip::{Request, Response, SipMessage};
 use std::sync::{Arc, Weak};
 
+#[derive(Debug)]
 pub struct Processor {
     sip_manager: Weak<SipManager>,
 }

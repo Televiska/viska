@@ -6,6 +6,7 @@ pub fn request(from_uri: Option<Uri>, to_uri: Option<Uri>) -> rsip::Request {
     let mut headers: Headers = Default::default();
     let from_uri = from_uri.unwrap_or_else(Uri::localhost);
     let to_uri = to_uri.unwrap_or_else(|| Uri::localhost_with_port(5090));
+
     headers.push(Via::from(from_uri.clone()).into());
     headers.push(From::from(from_uri.clone()).into());
     headers.push(To::from(to_uri.clone()).into());
@@ -21,5 +22,16 @@ pub fn request(from_uri: Option<Uri>, to_uri: Option<Uri>) -> rsip::Request {
         version: Version::V2,
         headers,
         body: vec![],
+    }
+}
+
+pub fn invite_request() -> rsip::Request {
+    let mut headers: Headers = Randomized::default();
+    headers.unique_push(CSeq::from((1, Method::Invite)).into());
+
+    rsip::Request {
+        method: Method::Invite,
+        headers,
+        ..Randomized::default()
     }
 }

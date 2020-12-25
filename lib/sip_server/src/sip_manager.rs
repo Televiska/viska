@@ -7,6 +7,7 @@ pub struct SipBuilder {
 }
 
 #[allow(dead_code)]
+#[derive(Debug)]
 pub struct SipManager {
     pub core: Arc<dyn CoreLayer>,
     pub transaction: Arc<dyn TransactionLayer>,
@@ -16,9 +17,9 @@ pub struct SipManager {
 impl SipBuilder {
     pub fn new<C, Trx, T>() -> Result<Self, Error>
     where
-        C: CoreLayer + std::any::Any + 'static,
-        Trx: TransactionLayer + std::any::Any + 'static,
-        T: TransportLayer + std::any::Any + 'static,
+        C: CoreLayer,
+        Trx: TransactionLayer,
+        T: TransportLayer,
     {
         Ok(Self {
             manager: Arc::new_cyclic(|me| SipManager {
