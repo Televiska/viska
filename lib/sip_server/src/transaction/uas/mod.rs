@@ -73,7 +73,7 @@ impl TrxStateMachine {
         Ok(Self {
             id: sip_request.transaction_id()?,
             state: TrxState::Proceeding(Default::default()),
-            response: response.unwrap_or(sip_request.provisional_of(100)),
+            response: response.unwrap_or_else(|| sip_request.provisional_of(100)),
             msg: RequestMsg {
                 sip_request,
                 peer,
@@ -175,7 +175,7 @@ impl TrxStateMachine {
                     .core
                     .process_incoming_message(self.request_msg_from(request).into())
                     .await;
-            },
+            }
             (TrxState::Confirmed(_), Method::Ack) => {
                 //absorb ack
             }

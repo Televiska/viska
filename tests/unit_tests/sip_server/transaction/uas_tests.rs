@@ -157,7 +157,6 @@ async fn multiple_invite_on_proceeding() {
             .into(),
         )
         .await;
-    assert!(result.is_ok());
     assert_eq!(transport.messages.len().await, 2);
     match transport.messages.last().await {
         TransportMsg {
@@ -325,7 +324,6 @@ async fn multiple_invites_on_completed_resends_response() {
             .into(),
         )
         .await;
-    assert!(result.is_ok());
     assert_eq!(transport.messages.len().await, 3);
     match transport.messages.last().await {
         TransportMsg {
@@ -467,8 +465,7 @@ async fn with_ack_moves_to_confirmed() {
             sip_request: request.ack_request_with(response.sip_response),
             ..Randomized::default()
         }.into())
-        .await
-        .expect("new uas invite transaction result");
+        .await;
     assert_eq!(core.messages.len().await, 0);
     assert_eq!(transport.messages.len().await, 2);
     assert_eq!(transaction.uas_state.read().await.len(), 1);
@@ -532,7 +529,6 @@ async fn multiple_invites_on_accepted_resends_response() {
             .into(),
         )
         .await;
-    assert!(result.is_ok());
     assert_eq!(transport.messages.len().await, 3);
     match transport.messages.last().await {
         TransportMsg {
@@ -805,8 +801,7 @@ async fn multiple_ack_received_are_forwarded_to_tu() {
             sip_request: request.ack_request_with(response.sip_response),
             ..Randomized::default()
         }.into())
-        .await
-        .expect("new uas invite transaction result");
+        .await;
     assert_eq!(core.messages.len().await, 1);
     assert_eq!(transport.messages.len().await, 2);
     assert_eq!(transaction.uas_state.read().await.len(), 1);
@@ -859,8 +854,7 @@ async fn when_confirmed_acks_have_no_effect() {
             sip_request: request.ack_request_with(response.sip_response.clone()),
             ..Randomized::default()
         }.into())
-        .await
-        .expect("new uas invite transaction result");
+        .await;
 
     assert_eq!(core.messages.len().await, 0);
     assert_eq!(transport.messages.len().await, 2);
@@ -876,15 +870,13 @@ async fn when_confirmed_acks_have_no_effect() {
             sip_request: request.ack_request_with(response.sip_response.clone()),
             ..Randomized::default()
         }.into())
-        .await
-        .expect("new uas invite transaction result");
+        .await;
     let result = transaction
         .process_incoming_message(RequestMsg {
             sip_request: request.ack_request_with(response.sip_response),
             ..Randomized::default()
         }.into())
-        .await
-        .expect("new uas invite transaction result");
+        .await;
 
     assert_eq!(core.messages.len().await, 0);
     assert_eq!(transport.messages.len().await, 2);
@@ -942,8 +934,7 @@ async fn when_confirmed_when_time_i_kicks_in_move_to_terminated() {
             sip_request: request.ack_request_with(response.sip_response.clone()),
             ..Randomized::default()
         }.into())
-        .await
-        .expect("new uas invite transaction result");
+        .await;
 
     assert_eq!(core.messages.len().await, 0);
     assert_eq!(transport.messages.len().await, 2);

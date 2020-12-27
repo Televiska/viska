@@ -28,7 +28,7 @@ pub trait TransactionLayer: Send + Sync + Any + Debug {
         msg: RequestMsg,
         response: Option<rsip::Response>,
     ) -> Result<(), Error>;
-    async fn process_incoming_message(&self, msg: TransportMsg) -> Result<(), Error>;
+    async fn process_incoming_message(&self, msg: TransportMsg);
     async fn send(&self, msg: ResponseMsg) -> Result<(), Error>;
     async fn run(&self) -> Result<(), Error>;
     fn as_any(&self) -> &dyn Any;
@@ -56,21 +56,11 @@ impl TransactionLayer for Transaction {
         self.sip_manager.upgrade().expect("sip manager is missing!")
     }
 
-    async fn process_incoming_message(&self, msg: TransportMsg) -> Result<(), Error> {
-        let sip_message = msg.sip_message;
-
-        match sip_message {
-            SipMessage::Request(request) => {
-                self.process_incoming_request(RequestMsg::new(request, msg.peer, msg.transport))
-                    .await?
-            }
-            SipMessage::Response(response) => {
-                self.process_incoming_response(ResponseMsg::new(response, msg.peer, msg.transport))
-                    .await?
-            }
-        }
-
-        Ok(())
+    async fn process_incoming_message(&self, msg: TransportMsg) {
+        match self.process_incoming(msg).await {
+            Ok(_) => (),
+            Err(error) => common::log::warn!("error while processing incoming: {:?}", error),
+        };
     }
 
     async fn new_uac_invite_transaction(&self, msg: RequestMsg) -> Result<(), Error> {
@@ -153,24 +143,40 @@ impl Transaction {
         }
     }
 
+    async fn process_incoming(&self, msg: TransportMsg) -> Result<(), Error> {
+        let sip_message = msg.sip_message;
+
+        match sip_message {
+            SipMessage::Request(request) => {
+                self.process_incoming_request(RequestMsg::new(request, msg.peer, msg.transport))
+                    .await?
+            }
+            SipMessage::Response(response) => {
+                self.process_incoming_response(ResponseMsg::new(response, msg.peer, msg.transport))
+                    .await?
+            }
+        }
+
+        Ok(())
+    }
+
     async fn process_incoming_request(&self, msg: RequestMsg) -> Result<(), Error> {
         let transaction_id = msg
             .sip_request
             .transaction_id()
             .map_err(|_| Error::from(error::Transaction::NotFound))?;
 
-        println!("{:?}", transaction_id);
         match self.uas_state.read().await.get(&transaction_id) {
             Some(transaction_machine) => {
                 let mut transaction_machine = transaction_machine.lock().await;
                 transaction_machine
                     .next(Some(msg.sip_request.into()))
                     .await?;
-            }
-            None => common::log::warn!("cannot find a server transaction for {:?}", msg),
-        }
 
-        Ok(())
+                Ok(())
+            }
+            None => Err(Error::from(error::Transaction::NotFound)),
+        }
     }
 
     async fn process_incoming_response(&self, msg: ResponseMsg) -> Result<(), Error> {
@@ -183,11 +189,10 @@ impl Transaction {
             Some(transaction_machine) => {
                 let mut transaction_machine = transaction_machine.lock().await;
                 transaction_machine.next(Some(msg.sip_response)).await;
+                Ok(())
             }
-            None => common::log::warn!("cannot find a client transaction for {:?}", msg),
+            None => Err(Error::from(error::Transaction::NotFound)),
         }
-
-        Ok(())
     }
 }
 
