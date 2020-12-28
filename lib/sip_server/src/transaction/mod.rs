@@ -1,7 +1,7 @@
 pub mod uac;
 pub mod uas;
 
-use crate::{error, Error, SipManager};
+use crate::{error::TransactionError, Error, SipManager};
 use common::async_trait::async_trait;
 use models::{
     transport::{RequestMsg, ResponseMsg, TransportMsg},
@@ -28,6 +28,7 @@ pub trait TransactionLayer: Send + Sync + Any + Debug {
         msg: RequestMsg,
         response: Option<rsip::Response>,
     ) -> Result<(), Error>;
+    async fn has_transaction(&self, transaction_id: &str) -> bool;
     async fn process_incoming_message(&self, msg: TransportMsg);
     async fn send(&self, msg: ResponseMsg) -> Result<(), Error>;
     async fn run(&self) -> Result<(), Error>;
@@ -56,11 +57,30 @@ impl TransactionLayer for Transaction {
         self.sip_manager.upgrade().expect("sip manager is missing!")
     }
 
+    //potential bug if state changes between this and process_incoming_message ?
+    async fn has_transaction(&self, transaction_id: &str) -> bool {
+        let uas_state = self.uas_state.read().await;
+        let uac_state = self.uac_state.read().await;
+
+        match (uas_state.get(transaction_id), uac_state.get(transaction_id)) {
+            (Some(uas_trx), Some(uac_trx)) => {
+                uas_trx.lock().await.is_active() || uac_trx.lock().await.is_active()
+            }
+            (Some(uas_trx), None) => uas_trx.lock().await.is_active(),
+            (None, Some(uac_trx)) => uac_trx.lock().await.is_active(),
+            (None, None) => false,
+        }
+    }
+
+    //returns error only if transaction is not found
+    //TODO: maybe fix that in the future ?
     async fn process_incoming_message(&self, msg: TransportMsg) {
         match self.process_incoming(msg).await {
             Ok(_) => (),
-            Err(error) => common::log::warn!("error while processing incoming: {:?}", error),
-        };
+            Err(error) => {
+                common::log::warn!("error while processing incoming: {:?}", error);
+            }
+        }
     }
 
     async fn new_uac_invite_transaction(&self, msg: RequestMsg) -> Result<(), Error> {
@@ -101,7 +121,7 @@ impl TransactionLayer for Transaction {
                     .await?;
                 Ok(())
             }
-            None => Err(Error::from(error::Transaction::NotFound)),
+            None => Err(Error::from(TransactionError::NotFound)),
         }
     }
 
@@ -164,7 +184,7 @@ impl Transaction {
         let transaction_id = msg
             .sip_request
             .transaction_id()
-            .map_err(|_| Error::from(error::Transaction::NotFound))?;
+            .map_err(|_| Error::from(TransactionError::NotFound))?;
 
         match self.uas_state.read().await.get(&transaction_id) {
             Some(transaction_machine) => {
@@ -175,7 +195,7 @@ impl Transaction {
 
                 Ok(())
             }
-            None => Err(Error::from(error::Transaction::NotFound)),
+            None => Err(Error::from(TransactionError::NotFound)),
         }
     }
 
@@ -183,7 +203,7 @@ impl Transaction {
         let transaction_id = msg
             .sip_response
             .transaction_id()
-            .map_err(|_| Error::from(error::Transaction::NotFound))?;
+            .map_err(|_| Error::from(TransactionError::NotFound))?;
 
         match self.uac_state.read().await.get(&transaction_id) {
             Some(transaction_machine) => {
@@ -191,7 +211,7 @@ impl Transaction {
                 transaction_machine.next(Some(msg.sip_response)).await;
                 Ok(())
             }
-            None => Err(Error::from(error::Transaction::NotFound)),
+            None => Err(Error::from(TransactionError::NotFound)),
         }
     }
 }

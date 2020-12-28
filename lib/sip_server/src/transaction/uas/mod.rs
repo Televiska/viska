@@ -84,6 +84,16 @@ impl TrxStateMachine {
         })
     }
 
+    pub fn is_active(&self) -> bool {
+        match self.state {
+            TrxState::Errored(_) => false,
+            TrxState::Terminated(_) => false,
+            //potential bug here if between is_active and next(Some(req)), state is changed with
+            //next(None)
+            _ => true
+        }
+    }
+
     pub async fn next(&mut self, sip_message: Option<rsip::SipMessage>) -> Result<(), Error> {
         use rsip::SipMessage;
         let result = match sip_message {

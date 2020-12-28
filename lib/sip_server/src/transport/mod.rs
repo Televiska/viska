@@ -66,10 +66,32 @@ impl TransportLayer for Transport {
             .process_incoming_message(udp_tuple.try_into()?)
             .await?;
 
-        self.sip_manager()
-            .core
-            .process_incoming_message(message)
-            .await;
+        let transaction_id = message.transaction_id();
+        match transaction_id {
+            Ok(transaction_id) => {
+                if self
+                    .sip_manager()
+                    .transaction
+                    .has_transaction(&transaction_id).await
+                {
+                    self.sip_manager()
+                        .transaction
+                        .process_incoming_message(message)
+                        .await;
+                } else {
+                    self.sip_manager()
+                        .core
+                        .process_incoming_message(message)
+                        .await;
+                }
+            }
+            Err(_) => {
+                self.sip_manager()
+                    .core
+                    .process_incoming_message(message)
+                    .await;
+            }
+        }
 
         Ok(())
     }

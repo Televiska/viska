@@ -34,6 +34,7 @@ impl CoreLayer for Core {
         }
     }
 
+    //TODO: remove expect and log instead
     async fn process_incoming_message(&self, msg: TransportMsg) {
         let processor = self.processor.clone();
         tokio::spawn(async move {

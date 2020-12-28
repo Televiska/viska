@@ -79,6 +79,16 @@ impl TrxStateMachine {
         };
     }
 
+    pub fn is_active(&self) -> bool {
+        match self.state {
+            TrxState::Errored(_) => false,
+            TrxState::Terminated(_) => false,
+            //potential bug here if between is_active and next(Some(req)), state is changed with
+            //next(None)
+            _ => true
+        }
+    }
+
     async fn next_step(&mut self) -> Result<(), Error> {
         match &self.state {
             TrxState::Calling(calling) => {
