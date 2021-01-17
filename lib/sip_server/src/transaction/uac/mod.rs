@@ -85,7 +85,7 @@ impl TrxStateMachine {
             TrxState::Terminated(_) => false,
             //potential bug here if between is_active and next(Some(req)), state is changed with
             //next(None)
-            _ => true
+            _ => true,
         }
     }
 

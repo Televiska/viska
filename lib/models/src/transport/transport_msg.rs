@@ -17,6 +17,16 @@ impl TransportMsg {
     }
 }
 
+impl From<(rsip::SipMessage, SocketAddr, Transport)> for TransportMsg {
+    fn from(triple: (rsip::SipMessage, SocketAddr, Transport)) -> Self {
+        Self {
+            sip_message: triple.0,
+            peer: triple.1,
+            transport: triple.2,
+        }
+    }
+}
+
 impl Into<UdpTuple> for TransportMsg {
     fn into(self) -> UdpTuple {
         UdpTuple {

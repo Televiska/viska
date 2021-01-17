@@ -7,17 +7,21 @@
 * ~~Finish the processor for the registration~~
 * ~~Fix sip trace to log the whole message + the struct somehow~~
 * ~~Look into traits~~
-* Convert lazy query to pub struct
-* Have we added unique index in nonce ?
-* Probably we need to save all contact params in a hashmap in the store
-*
-
-
-Much later:
+* ~~Convert lazy query to pub struct~~
+* ~~Have we added unique index in nonce ?~~
+* ~~Probably we need to save all contact params in a hashmap in the store~~
 * ~~convert the state machine to use traits and generics~~
-* fix upsert
-* remove asyncs from store since await is not used
-* probably we need to revert the from/into traits to be declared in the store
+* ~~fix upsert~~
+* ~~remove asyncs from store since await is not used~~
+* ~~probably we need to revert the from/into traits to be declared in the store~~
+* ~~create a uri default + builder to use for test~~
+  * ~~and then create a Randomized that use default + builder~~
+* ~~finish uri update test~~
+  * ~~we don't support the '*' case~~
+* ~~add error tests~~
+  * ~~wrong to/from etc~~
+* add capabilities
+* start on dialogs
 
 
 #### Questions

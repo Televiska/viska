@@ -5,7 +5,7 @@ impl Randomized for rsip::Request {
     fn default() -> Self {
         Self {
             method: Method::default(),
-            uri: Uri::localhost(),
+            uri: Uri::default().sips(),
             version: Default::default(),
             headers: Randomized::default(),
             body: vec![],
@@ -23,15 +23,17 @@ impl Randomized for Headers {
     fn default() -> Self {
         let mut headers: Headers = Default::default();
 
-        let from_uri = Uri::localhost();
-        let to_uri = Uri::localhost_with_port(5090);
+        let base_uri = Uri::default().sips();
 
-        headers.push(Via::from(from_uri.clone()).into());
-        headers.push(From::from(from_uri.clone()).into());
+        let from_uri = base_uri.clone().with_username("filippos");
+        let to_uri = base_uri.clone().with_username("fil").with_port(5090);
+
         headers.push(To::from(to_uri.clone()).into());
-        headers.push(CallId::default().into());
-        headers.push(Contact::from(from_uri.clone()).into());
+        headers.push(From::from(from_uri.clone()).into());
         headers.push(CSeq::default().into());
+        headers.push(CallId::default().into());
+        headers.push(MaxForwards::default().into());
+        headers.push(Via::from(base_uri.clone().stripped()).into());
         headers.push(ContentLength::default().into());
         headers.push(UserAgent::default().into());
 

@@ -1,4 +1,9 @@
-pub mod processor;
+mod processor;
+mod registrar;
+
+pub use processor::Processor;
+pub use registrar::Registrar;
+
 use common::async_trait::async_trait;
 use std::{
     any::Any,
@@ -22,7 +27,7 @@ pub trait CoreLayer: Send + Sync + Any + Debug {
 
 pub struct Core {
     sip_manager: Weak<SipManager>,
-    processor: Arc<processor::Processor>,
+    processor: Arc<Processor>,
 }
 
 #[async_trait]
@@ -30,7 +35,7 @@ impl CoreLayer for Core {
     fn new(sip_manager: Weak<SipManager>) -> Self {
         Self {
             sip_manager: sip_manager.clone(),
-            processor: Arc::new(processor::Processor::new(sip_manager)),
+            processor: Arc::new(Processor::new(sip_manager)),
         }
     }
 

@@ -1,7 +1,7 @@
 use crate::schema::registrations;
 use crate::{db_conn, Error};
 use common::{
-    chrono::{DateTime, Utc},
+    chrono::{DateTime, Duration, Utc},
     ipnetwork::IpNetwork,
 };
 use diesel::{
@@ -11,9 +11,12 @@ use diesel::{
     serialize::{Output, ToSql},
     sql_types::Text,
 };
+use models::transport::RequestMsg;
 use std::{
+    convert::{TryFrom, TryInto},
     fmt::{self, Debug},
     io::Write,
+    net::{IpAddr, Ipv4Addr},
 };
 
 #[derive(Queryable, AsChangeset, Insertable, Debug, Clone)]
@@ -30,7 +33,6 @@ pub struct Registration {
     pub cseq: i32,
     pub user_agent: String,
     pub instance: Option<String>,
-    pub reg_id: i32,
     pub ip_address: IpNetwork,
     pub port: i16,
     pub transport: Transport,
@@ -47,7 +49,6 @@ pub struct DirtyRegistration {
     pub cseq: Option<i32>,
     pub user_agent: Option<String>,
     pub instance: Option<String>,
-    pub reg_id: Option<i32>,
     pub ip_address: Option<IpNetwork>,
     pub port: Option<i16>,
     pub transport: Option<Transport>,
@@ -188,47 +189,6 @@ impl std::str::FromStr for Transport {
     }
 }
 
-impl Into<models::Registration> for Registration {
-    fn into(self) -> models::Registration {
-        models::Registration {
-            id: self.id,
-            created_at: self.created_at,
-            updated_at: self.updated_at,
-            username: self.username,
-            domain: self.domain,
-            contact: self.contact,
-            expires: self.expires,
-            call_id: self.call_id,
-            cseq: self.cseq,
-            user_agent: self.user_agent,
-            instance: self.instance,
-            reg_id: self.reg_id,
-            ip_address: self.ip_address,
-            port: self.port,
-            transport: self.transport.into(),
-        }
-    }
-}
-
-impl From<models::Registration> for DirtyRegistration {
-    fn from(model: models::Registration) -> Self {
-        Self {
-            username: Some(model.username),
-            domain: model.domain,
-            contact: Some(model.contact),
-            expires: Some(model.expires),
-            call_id: Some(model.call_id),
-            cseq: Some(model.cseq),
-            user_agent: Some(model.user_agent),
-            instance: model.instance,
-            reg_id: Some(model.reg_id),
-            ip_address: Some(model.ip_address),
-            port: Some(model.port),
-            transport: Some(model.transport.into()),
-        }
-    }
-}
-
 impl Into<rsip::common::Transport> for Transport {
     fn into(self) -> rsip::common::Transport {
         match self {
@@ -247,21 +207,63 @@ impl From<rsip::common::Transport> for Transport {
     }
 }
 
-impl From<models::UpdateRegistration> for DirtyRegistration {
-    fn from(model: models::UpdateRegistration) -> Self {
-        Self {
-            username: Some(model.username),
-            domain: model.domain,
-            contact: Some(model.contact),
-            expires: model.expires,
-            call_id: Some(model.call_id),
-            cseq: Some(model.cseq),
-            user_agent: Some(model.user_agent),
-            instance: model.instance,
-            ip_address: Some(model.ip_address),
-            port: Some(model.port),
-            transport: Some(model.transport.into()),
-            reg_id: model.reg_id,
+impl TryFrom<RequestMsg> for DirtyRegistration {
+    type Error = crate::Error;
+
+    fn try_from(msg: RequestMsg) -> Result<Self, Self::Error> {
+        use rsip::{
+            common::Method,
+            message::{ExpiresExt, HeadersExt},
+        };
+
+        let request = msg.sip_request;
+
+        if request.method != Method::Register {
+            return Err(Self::Error::custom(format!(
+                "cannot create registration from {} method",
+                request.method
+            )));
         }
+        let expires = match (request.contact_header_expires()?, request.expires_header()) {
+            (Some(expire), _) => expire,
+            (None, Ok(rsip::headers::Expires(expire))) => *expire,
+            _ => 3600,
+        } as i64;
+
+        Ok(Self {
+            username: Some(
+                request
+                    .from_header()?
+                    .0
+                    .uri
+                    .username()
+                    .ok_or("missing username in from header")?,
+            ),
+            domain: Some(request.from_header()?.clone().0.uri.domain()),
+            contact: Some(
+                Into::<rsip::Header>::into(request.contact_header()?.clone())
+                    .to_string()
+                    .splitn(2, ':')
+                    .last()
+                    .expect("contact header value part")
+                    .to_owned(),
+            ),
+            expires: Some(Utc::now() + Duration::seconds(expires)),
+            call_id: Some(request.call_id_header()?.clone().0),
+            cseq: Some(request.cseq_header()?.seq as i32),
+            user_agent: Some(request.user_agent_header()?.clone().0),
+            instance: request.contact_header()?.sip_instance(),
+            ip_address: Some(IpAddr::V4(Ipv4Addr::new(192, 168, 0, 3)).into()),
+            port: Some(request.from_header()?.clone().0.uri.port() as i16),
+            transport: Some(Transport::Udp),
+        })
+    }
+}
+
+impl TryInto<rsip::headers::Contact> for Registration {
+    type Error = rsip::Error;
+
+    fn try_into(self) -> Result<rsip::headers::Contact, Self::Error> {
+        Ok(self.contact.try_into()?)
     }
 }

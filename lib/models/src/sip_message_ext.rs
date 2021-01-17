@@ -10,7 +10,9 @@ impl SipMessageExt for rsip::Request {
         Ok(self
             .via_header()?
             .branch()
-            .ok_or("missing branch in via header!")?.clone().into())
+            .ok_or("missing branch in via header!")?
+            .clone()
+            .into())
     }
 }
 
@@ -19,7 +21,9 @@ impl SipMessageExt for rsip::Response {
         Ok(self
             .via_header()?
             .branch()
-            .ok_or("missing branch in via header!")?.clone().into())
+            .ok_or("missing branch in via header!")?
+            .clone()
+            .into())
     }
 }
 
