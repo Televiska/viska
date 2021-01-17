@@ -16,12 +16,10 @@ async fn incoming_response_asserts_with_wrong_sent_by() {
 
     let processor = TransportProcessor::default();
 
-    let mut response: rsip::Response = responses::response(
-        Some(Uri::localhost_with_port(5060)),
-        Some(Uri::localhost_with_port(5090)),
-    );
+    let mut response: rsip::Response =
+        responses::response(Some(Uri::default()), Some(Uri::default().with_port(5090)));
     let via_header = response.via_header_mut().expect("via_header");
-    via_header.uri = Uri::localhost_with_port(5070).into();
+    via_header.uri = Uri::default().with_port(5070).into();
     let server_msg = models::server::UdpTuple {
         bytes: response.into(),
         peer: SocketAddrBuilder::localhost_with_port(5090).into(),
@@ -47,10 +45,8 @@ async fn incoming_response_asserts_with_correct_sent_by() {
 
     let processor = TransportProcessor::default();
 
-    let response: rsip::Response = responses::response(
-        Some(Uri::localhost_with_port(5060)),
-        Some(Uri::localhost_with_port(5090)),
-    );
+    let response: rsip::Response =
+        responses::response(Some(Uri::default()), Some(Uri::default().with_port(5090)));
     let server_msg = models::server::UdpTuple {
         bytes: response.into(),
         peer: SocketAddrBuilder::localhost_with_port(5090).into(),

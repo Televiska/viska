@@ -20,7 +20,7 @@ pub fn setup() -> DbConn {
                 "DATABASE_URL",
                 std::env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL env var"),
             );
-            recreate_db(&conn);
+            //recreate_db(&conn);
             setup_suite();
         }
     };
@@ -33,18 +33,6 @@ pub fn setup() -> DbConn {
 pub fn setup_suite() {
     //enable to debug tests
     common::pretty_env_logger::init_timed();
-}
-
-//TODO: improve here
-fn recreate_db(conn: &DbConn) {
-    use diesel::RunQueryDsl;
-
-    diesel::sql_query("DROP DATABASE IF EXISTS \"webphone-test\"")
-        .execute(conn)
-        .expect("Dropping webphone-test");
-    diesel::sql_query("CREATE DATABASE \"webphone-test\"")
-        .execute(conn)
-        .expect("Creating webphone-test");
 }
 
 pub fn conn() -> DbConn {
@@ -60,7 +48,7 @@ pub fn clean_db(conn: &DbConn) {
     use store::schema::responses;
     use store::schema::transactions;
 
-    embedded_migrations::run_with_output(conn, &mut std::io::stdout()).expect("running migrations");
+    embedded_migrations::run(conn).expect("running migrations");
     diesel::delete(auth_requests::table)
         .execute(conn)
         .expect("deleting auth_requests");

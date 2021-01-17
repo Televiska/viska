@@ -72,7 +72,8 @@ impl TransportLayer for Transport {
                 if self
                     .sip_manager()
                     .transaction
-                    .has_transaction(&transaction_id).await
+                    .has_transaction(&transaction_id)
+                    .await
                 {
                     self.sip_manager()
                         .transaction

@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use crate::common::{
     advance_for,
     extensions::TransactionUacExt,
@@ -13,10 +12,10 @@ use models::{
 };
 use sip_server::{
     transaction::uac::{TrxState, TrxStateMachine, TIMER_M},
-    Transaction, TransactionLayer,
-    SipManager, SipBuilder
+    SipBuilder, SipManager, Transaction, TransactionLayer,
 };
 use std::any::Any;
+use std::sync::Arc;
 use std::time::Duration;
 
 async fn setup() -> Arc<SipManager> {

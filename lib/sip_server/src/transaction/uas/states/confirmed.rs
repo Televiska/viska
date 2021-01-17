@@ -1,7 +1,7 @@
 use std::time::Duration;
 use tokio::time::Instant;
 
-use super::super::{TIMER_I};
+use super::super::TIMER_I;
 
 #[derive(Debug)]
 pub struct Confirmed {
@@ -14,4 +14,3 @@ impl Confirmed {
         self.entered_at.elapsed() > Duration::from_millis(TIMER_I)
     }
 }
-

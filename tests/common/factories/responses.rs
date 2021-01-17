@@ -3,17 +3,19 @@ use rsip::{common::*, headers::*, Header, Headers};
 use std::{convert::TryInto, net::IpAddr as StdIpAddr};
 
 pub fn response(from_uri: Option<Uri>, to_uri: Option<Uri>) -> rsip::Response {
-    let mut headers: Headers = Default::default();
-    let from_uri = from_uri.unwrap_or_else(Uri::localhost);
-    let to_uri = to_uri.unwrap_or_else(|| Uri::localhost_with_port(5090));
-    headers.push(Via::from(from_uri.clone()).into());
-    headers.push(From::from(from_uri.clone()).into());
-    headers.push(To::from(to_uri.clone()).into());
-    headers.push(CallId::default().into());
-    headers.push(Contact::from(from_uri.clone()).into());
-    headers.push(CSeq::from((1, Method::Invite)).into());
-    headers.push(ContentLength::default().into());
-    headers.push(UserAgent::default().into());
+    let mut headers: Headers = Randomized::default();
+    if let Some(from_uri) = from_uri {
+        let mut from_header: From = rsip::header_opt!(headers.iter(), Header::From)
+            .expect("from header")
+            .clone();
+        headers.unique_push(from_header.with_uri(from_uri).into());
+    }
+    if let Some(to_uri) = to_uri {
+        let mut to_header: To = rsip::header_opt!(headers.iter(), Header::To)
+            .expect("to header")
+            .clone();
+        headers.unique_push(to_header.with_uri(to_uri).into());
+    }
 
     rsip::Response {
         code: 200.into(),

@@ -1,4 +1,5 @@
-use models::transport::TransportMsg;
+use models::transport::{RequestMsg, ResponseMsg, TransportMsg};
+use std::convert::TryInto;
 use tokio::sync::Mutex;
 
 #[derive(Debug)]
@@ -17,6 +18,24 @@ impl Messages {
             .clone()
     }
 
+    pub async fn first_request_msg(&self) -> RequestMsg {
+        TryInto::<RequestMsg>::try_into(self.first().await).expect("convert to RequestMsg")
+    }
+
+    pub async fn first_request(&self) -> rsip::Request {
+        TryInto::<rsip::Request>::try_into(self.first().await.sip_message)
+            .expect("convert to rsip::Request")
+    }
+
+    pub async fn first_response_msg(&self) -> ResponseMsg {
+        TryInto::<ResponseMsg>::try_into(self.first().await).expect("convert to ResponseMsg")
+    }
+
+    pub async fn first_response(&self) -> rsip::Response {
+        TryInto::<rsip::Response>::try_into(self.first().await.sip_message)
+            .expect("convert to rsip::Response")
+    }
+
     pub async fn last(&self) -> TransportMsg {
         self.0
             .lock()
@@ -24,6 +43,24 @@ impl Messages {
             .last()
             .expect("missing last message")
             .clone()
+    }
+
+    pub async fn last_request_msg(&self) -> RequestMsg {
+        TryInto::<RequestMsg>::try_into(self.last().await).expect("convert to RequestMsg")
+    }
+
+    pub async fn last_request(&self) -> rsip::Request {
+        TryInto::<rsip::Request>::try_into(self.last().await.sip_message)
+            .expect("convert to rsip::Request")
+    }
+
+    pub async fn last_response_msg(&self) -> ResponseMsg {
+        TryInto::<ResponseMsg>::try_into(self.last().await).expect("convert to ResponseMsg")
+    }
+
+    pub async fn last_response(&self) -> rsip::Response {
+        TryInto::<rsip::Response>::try_into(self.last().await.sip_message)
+            .expect("convert to rsip::Response")
     }
 
     pub async fn push(&self, msg: TransportMsg) {

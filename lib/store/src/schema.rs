@@ -34,7 +34,6 @@ table! {
         cseq -> Int4,
         user_agent -> Varchar,
         instance -> Nullable<Varchar>,
-        reg_id -> Int4,
         ip_address -> Inet,
         port -> Int2,
         transport -> Varchar,

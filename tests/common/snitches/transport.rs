@@ -72,7 +72,7 @@ impl TransportLayer for TransportErrorSnitch {
             false => {
                 self.messages.push(msg).await;
                 Ok(())
-            },
+            }
         }
     }
 

@@ -34,6 +34,16 @@ impl Into<UdpTuple> for RequestMsg {
     }
 }
 
+impl From<(rsip::Request, SocketAddr, Transport)> for RequestMsg {
+    fn from(triple: (rsip::Request, SocketAddr, Transport)) -> Self {
+        Self {
+            sip_request: triple.0,
+            peer: triple.1,
+            transport: triple.2,
+        }
+    }
+}
+
 impl TryFrom<UdpTuple> for RequestMsg {
     type Error = crate::Error;
 
