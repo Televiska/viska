@@ -98,3 +98,21 @@ pub fn register_delete_request_with_uri(uri: Uri) -> rsip::Request {
         ..Randomized::default()
     }
 }
+
+pub fn options_request() -> rsip::Request {
+    let mut headers: Headers = Randomized::default();
+    headers.unique_push(CSeq::from((1, Method::Options)).into());
+
+    let base_uri = Uri::default().sips();
+    let to_uri = base_uri.clone().with_username("filippos");
+
+    headers.unique_push(To::from(to_uri.clone()).into());
+    headers.retain(|h| !matches!(h, Header::Contact(_)));
+
+    rsip::Request {
+        method: Method::Options,
+        uri: base_uri,
+        headers,
+        ..Randomized::default()
+    }
+}

@@ -5,7 +5,7 @@ use crate::common::{
 };
 use ::common::ipnetwork::IpNetwork;
 use models::transport::RequestMsg;
-use sip_server::{Core, CoreLayer, Registrar, SipBuilder, SipManager, Transaction};
+use sip_server::{core::Registrar, Core, CoreLayer, SipBuilder, SipManager, Transaction};
 use std::sync::Arc;
 
 async fn setup() -> (Registrar, Arc<SipManager>) {

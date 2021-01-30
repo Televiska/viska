@@ -1,3 +1,4 @@
+pub mod capabilities;
 pub mod registrar;
 
 use crate::common::snitches::TransactionEmptySnitch;

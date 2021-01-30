@@ -26,6 +26,23 @@
   * ~~fix parsing contact errors~~
 * add capabilities
 * start on dialogs
+  * dialog id
+  * local sequence number
+  * remote sequence number
+  * local URI
+  * remote URI
+  * remote target
+  * secure flag
+  * route set (ordered list of URIs)
+  * state (pending, early, established)
+
+
+#### Rsip improvements
+Need to split up the enum types to
+* row: which basically is a stringified input of the header
+* typed: provides typed guarantees of the header (for instance `Allow(Vec<Method>)`)
+
+Easy convertions between the 2 and easy convertion with the string/display/parse
 
 
 #### Questions
