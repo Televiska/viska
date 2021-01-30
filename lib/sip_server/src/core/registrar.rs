@@ -40,7 +40,7 @@ impl Registrar {
         for contact_header in msg.sip_request.contact_headers() {
             match expires_value_for(contact_header, msg.sip_request.expires_header()) {
                 0 => {
-                    //delete entry
+                    store::Registration::delete_by_uri(contact_header.0.uri.to_string())?;
                 }
                 _ => {
                     store::Registration::upsert(store::DirtyRegistration::try_from(msg.clone())?)?;
@@ -54,8 +54,7 @@ impl Registrar {
     async fn handle_query(&self, msg: RequestMsg) -> Result<(), Error> {
         let response = create_registration_ok_from(
             msg.sip_request.clone(),
-            store::Registration::query()
-                .load()?
+            store::Registration::search(Default::default())?
                 .into_iter()
                 .map(TryInto::try_into)
                 .collect::<Result<Vec<rsip::headers::Contact>, rsip::Error>>()?,

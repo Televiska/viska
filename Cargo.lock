@@ -522,7 +522,7 @@ checksum = "a9f8082297d534141b30c8d39e9b1773713ab50fdbe4ff30f750d063b3bfd701"
 [[package]]
 name = "libsip"
 version = "0.2.6"
-source = "git+https://github.com/vasilakisfil/libsip?branch=feat/auth-fixes#f6b956e0f4d650cdedf0fe863100545ced2a7401"
+source = "git+https://github.com/vasilakisfil/libsip?branch=feat/compatibility-fixes#201ec8770160beeeea697b82ba0f06829bdc4b39"
 dependencies = [
  "md5",
  "nom",

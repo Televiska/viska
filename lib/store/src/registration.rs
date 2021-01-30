@@ -19,6 +19,15 @@ use std::{
     net::{IpAddr, Ipv4Addr},
 };
 
+#[derive(Debug, Default)]
+pub struct SearchFilter {
+    pub id: Option<i64>,
+    pub username: Option<String>,
+    pub domain: Option<String>,
+    pub offset: Option<i64>,
+    pub per_page: Option<i64>,
+}
+
 #[derive(Queryable, AsChangeset, Insertable, Debug, Clone)]
 #[table_name = "registrations"]
 pub struct Registration {
@@ -36,6 +45,7 @@ pub struct Registration {
     pub ip_address: IpNetwork,
     pub port: i16,
     pub transport: Transport,
+    pub contact_uri: String,
 }
 
 #[derive(AsChangeset, Insertable, Debug, Default)]
@@ -52,65 +62,54 @@ pub struct DirtyRegistration {
     pub ip_address: Option<IpNetwork>,
     pub port: Option<i16>,
     pub transport: Option<Transport>,
-}
-
-pub struct LazyQuery {
-    query: registrations::BoxedQuery<'static, diesel::pg::Pg>,
-}
-
-impl LazyQuery {
-    pub fn new(query: registrations::BoxedQuery<'static, diesel::pg::Pg>) -> Self {
-        Self { query }
-    }
-
-    pub fn paginate(mut self, page: i64, per_page: i64) -> Self {
-        let offset = (page - 1) * per_page;
-
-        self.query = self.query.offset(offset).limit(per_page);
-        self
-    }
-
-    pub fn username(mut self, username: Option<String>) -> Self {
-        if let Some(username) = username {
-            self.query = self.query.filter(registrations::username.eq(username));
-        }
-        self
-    }
-
-    pub fn domain(mut self, domain: Option<String>) -> Self {
-        if let Some(domain) = domain {
-            self.query = self.query.filter(registrations::domain.eq(domain));
-        }
-        self
-    }
-
-    pub fn order_by_created_at(mut self) -> Self {
-        self.query = self.query.order(registrations::created_at.desc());
-        self
-    }
-
-    pub fn load(self) -> Result<Vec<Registration>, Error> {
-        Ok(self.query.get_results(&db_conn()?)?)
-    }
-
-    pub fn first(self) -> Result<Option<Registration>, Error> {
-        Ok(self.query.first(&db_conn()?).optional()?)
-    }
-
-    pub fn exists(self) -> Result<bool, Error> {
-        use diesel::dsl::{exists, select};
-
-        Ok(select(exists(self.query)).get_result(&db_conn()?)?)
-    }
+    pub contact_uri: Option<String>,
 }
 
 impl Registration {
-    pub fn query() -> LazyQuery {
-        LazyQuery::new(registrations::table.into_boxed())
+    fn query_boxed(filter: SearchFilter) -> registrations::BoxedQuery<'static, diesel::pg::Pg> {
+        let mut query = registrations::table.into_boxed();
+
+        if let Some(id) = filter.id {
+            query = query.filter(registrations::id.eq(id));
+        }
+
+        if let Some(username) = filter.username {
+            query = query.filter(registrations::username.eq(username));
+        }
+
+        if let Some(domain) = filter.domain {
+            query = query.filter(registrations::domain.eq(domain));
+        }
+
+        if let Some(offset) = filter.offset {
+            query = query.offset(offset)
+        }
+
+        if let Some(per_page) = filter.per_page {
+            query = query.limit(per_page)
+        }
+
+        query
     }
 
-    pub fn find(id: i64) -> Result<Self, Error> {
-        Ok(registrations::table.find(id).first::<Self>(&db_conn()?)?)
+    pub fn search(filter: SearchFilter) -> Result<Vec<Registration>, Error> {
+        Ok(Self::query_boxed(filter).load::<Registration>(&db_conn()?)?)
+    }
+
+    pub fn count(filter: SearchFilter) -> Result<i64, Error> {
+        Ok(Self::query_boxed(filter).count().get_result(&db_conn()?)?)
+    }
+
+    pub fn find_by(filter: SearchFilter) -> Result<Option<Registration>, Error> {
+        Ok(Self::query_boxed(filter)
+            .get_result::<Registration>(&db_conn()?)
+            .optional()?)
+    }
+
+    pub fn find(id: i64) -> Result<Registration, Error> {
+        Ok(registrations::table
+            .filter(registrations::id.eq(id))
+            .get_result::<Registration>(&db_conn()?)?)
     }
 
     pub fn create(record: impl Into<DirtyRegistration>) -> Result<Self, Error> {
@@ -125,10 +124,11 @@ impl Registration {
     pub fn upsert(record: impl Into<DirtyRegistration>) -> Result<Self, Error> {
         let record = record.into();
 
-        let existing_record = Self::query()
-            .username(record.username.clone())
-            .domain(record.domain.clone())
-            .first()?;
+        let existing_record = Self::find_by(SearchFilter {
+            username: record.username.clone(),
+            domain: record.domain.clone(),
+            ..Default::default()
+        })?;
         match existing_record {
             Some(existing_record) => Ok(Self::update(record, existing_record.id)?),
             None => Ok(Self::create(record)?),
@@ -146,6 +146,13 @@ impl Registration {
     pub fn delete(id: i64) -> Result<Self, Error> {
         Ok(
             diesel::delete(registrations::table.filter(registrations::id.eq(id)))
+                .get_result(&db_conn()?)?,
+        )
+    }
+
+    pub fn delete_by_uri(uri: String) -> Result<Self, Error> {
+        Ok(
+            diesel::delete(registrations::table.filter(registrations::contact_uri.eq(uri)))
                 .get_result(&db_conn()?)?,
         )
     }
@@ -230,6 +237,8 @@ impl TryFrom<RequestMsg> for DirtyRegistration {
             _ => 3600,
         } as i64;
 
+        let contact_header = request.contact_header()?;
+
         Ok(Self {
             username: Some(
                 request
@@ -241,7 +250,7 @@ impl TryFrom<RequestMsg> for DirtyRegistration {
             ),
             domain: Some(request.from_header()?.clone().0.uri.domain()),
             contact: Some(
-                Into::<rsip::Header>::into(request.contact_header()?.clone())
+                Into::<rsip::Header>::into(contact_header.clone())
                     .to_string()
                     .splitn(2, ':')
                     .last()
@@ -255,6 +264,7 @@ impl TryFrom<RequestMsg> for DirtyRegistration {
             instance: request.contact_header()?.sip_instance(),
             ip_address: Some(IpAddr::V4(Ipv4Addr::new(192, 168, 0, 3)).into()),
             port: Some(request.from_header()?.clone().0.uri.port() as i16),
+            contact_uri: Some(contact_header.0.uri.to_string()),
             transport: Some(Transport::Udp),
         })
     }

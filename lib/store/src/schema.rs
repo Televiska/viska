@@ -37,6 +37,7 @@ table! {
         ip_address -> Inet,
         port -> Int2,
         transport -> Varchar,
+        contact_uri -> Varchar,
     }
 }
 
