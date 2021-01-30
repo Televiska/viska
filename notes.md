@@ -20,6 +20,10 @@
   * ~~we don't support the '*' case~~
 * ~~add error tests~~
   * ~~wrong to/from etc~~
+* ~~continue on regitrations~~
+  * ~~implement remove bindings with expire = 0~~
+    * ~~add contact_uri in db~~
+  * ~~fix parsing contact errors~~
 * add capabilities
 * start on dialogs
 

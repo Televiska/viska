@@ -72,7 +72,7 @@ pub fn create_405_from(request: Request) -> Result<Response, crate::Error> {
 fn www_authenticate_header_value() -> Result<WwwAuthenticate, crate::Error> {
     //let nonce = store::AuthRequest::create(store::DirtyAuthRequest::default())?.nonce;
     let nonce = Uuid::new_v4().to_string();
-    Ok(WwwAuthenticate::new("192.168.1.223".into(), nonce))
+    Ok(WwwAuthenticate::new("127.0.0.1".into(), nonce))
 }
 
 pub fn is_authorized(offer: Authorization) -> Result<bool, crate::Error> {

@@ -80,3 +80,21 @@ pub fn register_request() -> rsip::Request {
         ..Randomized::default()
     }
 }
+
+pub fn register_delete_request_with_uri(uri: Uri) -> rsip::Request {
+    let request = register_query_request();
+    let mut headers = request.headers.clone();
+
+    let from_header = rsip::header_opt!(headers.iter(), Header::From)
+        .expect("from header")
+        .clone();
+    headers.unique_push(Contact::from(uri).into());
+    headers.unique_push(Expires::from(0).into());
+
+    rsip::Request {
+        method: Method::Register,
+        uri: from_header.0.uri.stripped().sips(),
+        headers,
+        ..Randomized::default()
+    }
+}
