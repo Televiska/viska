@@ -10,7 +10,7 @@ pub mod sip_manager;
 pub mod transaction;
 pub mod transport;
 
-pub use crate::core::{Core, CoreLayer, Registrar};
+pub use crate::core::{Core, CoreLayer};
 pub use crate::transaction::{Transaction, TransactionLayer};
 pub use crate::transport::{Transport, TransportLayer};
 pub use error::{Error, ErrorKind};

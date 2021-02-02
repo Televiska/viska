@@ -1,6 +1,8 @@
+mod capabilities;
 mod processor;
 mod registrar;
 
+pub use capabilities::Capabilities;
 pub use processor::Processor;
 pub use registrar::Registrar;
 

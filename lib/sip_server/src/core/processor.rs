@@ -1,4 +1,4 @@
-pub use super::Registrar;
+pub use super::{Capabilities, Registrar};
 pub use crate::{presets, Error, SipManager};
 use models::transport::ResponseMsg;
 use models::transport::{RequestMsg, TransportMsg};
@@ -9,6 +9,7 @@ use std::sync::{Arc, Weak};
 pub struct Processor {
     sip_manager: Weak<SipManager>,
     registrar: Registrar,
+    capabilities: Capabilities,
 }
 
 #[allow(clippy::new_without_default)]
@@ -16,6 +17,7 @@ impl Processor {
     pub fn new(sip_manager: Weak<SipManager>) -> Self {
         Self {
             registrar: Registrar::new(sip_manager.clone()),
+            capabilities: Capabilities::new(sip_manager.clone()),
             sip_manager,
         }
     }
@@ -40,6 +42,7 @@ impl Processor {
 
         match msg.sip_request.method {
             Method::Register => self.registrar.process_incoming_request(msg).await?,
+            Method::Options => self.capabilities.process_incoming_request(msg).await?,
             _ => {
                 self.sip_manager()
                     .transport
