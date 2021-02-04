@@ -19,16 +19,17 @@ use std::sync::Arc;
 use std::time::Duration;
 
 async fn setup() -> Arc<SipManager> {
-    SipBuilder::new::<CoreSnitch, Transaction, TransportSnitch>()
-        .expect("sip manager failed")
-        .manager
+    let builder =
+        SipBuilder::new::<CoreSnitch, Transaction, TransportSnitch>().expect("sip manager failed");
+    builder.run().await;
+
+    builder.manager
 }
 
 #[tokio::test]
 async fn if_peer_not_responding() {
     let sip_manager = setup().await;
     let transaction = sip_manager.transaction.clone();
-    tokio::spawn(async move { transaction.run().await });
 
     as_downcasted!(
         sip_manager,
@@ -53,7 +54,7 @@ async fn if_peer_not_responding() {
     assert!(result.is_ok(), format!("result is error: {:?}", result));
 
     assert_eq!(transport.messages.len().await, 1);
-    assert_eq!(transaction.uac_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
             .is_uac_calling(request.transaction_id().expect("response transaction id"))
@@ -73,7 +74,7 @@ async fn if_peer_not_responding() {
     assert_eq!(transport.messages.len().await, 7);
     advance_for(Duration::from_millis(50000)).await;
     assert_eq!(transport.messages.len().await, 7);
-    assert_eq!(transaction.uac_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
             .is_uac_terminated(request.transaction_id().expect("response transaction id"))
@@ -85,7 +86,6 @@ async fn if_peer_not_responding() {
 async fn with_trying_goes_through_proceeding() {
     let sip_manager = setup().await;
     let transaction = sip_manager.transaction.clone();
-    tokio::spawn(async move { transaction.run().await });
 
     as_downcasted!(
         sip_manager,
@@ -111,7 +111,7 @@ async fn with_trying_goes_through_proceeding() {
 
     assert_eq!(transport.messages.len().await, 1);
     assert_eq!(core.messages.len().await, 0);
-    assert_eq!(transaction.uac_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
             .is_uac_calling(request.transaction_id().expect("response transaction id"))
@@ -131,7 +131,7 @@ async fn with_trying_goes_through_proceeding() {
     assert_eq!(core.messages.len().await, 1);
     //assert_eq!(core.messages.lock().await.len(), 1);
 
-    assert_eq!(transaction.uac_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
             .is_uac_proceeding(request.transaction_id().expect("response transaction id"))
@@ -151,7 +151,7 @@ async fn with_trying_goes_through_proceeding() {
     assert_eq!(core.messages.len().await, 2);
     //assert_eq!(core.messages.lock().await.len(), 1);
 
-    assert_eq!(transaction.uac_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
             .is_uac_accepted(request.transaction_id().expect("response transaction id"))
@@ -171,7 +171,6 @@ async fn with_trying_goes_through_proceeding() {
 async fn request_failure_goes_through_completed() {
     let sip_manager = setup().await;
     let transaction = sip_manager.transaction.clone();
-    tokio::spawn(async move { transaction.run().await });
 
     let transport = sip_manager.transport.clone();
     let transport = as_any!(transport, TransportSnitch);
@@ -195,7 +194,7 @@ async fn request_failure_goes_through_completed() {
     assert_eq!(transport.messages.len().await, 1);
     assert_eq!(core.messages.len().await, 0);
 
-    assert_eq!(transaction.uac_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
             .is_uac_calling(request.transaction_id().expect("response transaction id"))
@@ -215,7 +214,7 @@ async fn request_failure_goes_through_completed() {
     assert_eq!(core.messages.len().await, 1);
     //assert_eq!(core.messages.lock().await.len(), 1);
 
-    assert_eq!(transaction.uac_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
             .is_uac_completed(request.transaction_id().expect("response transaction id"))
@@ -235,7 +234,6 @@ async fn request_failure_goes_through_completed() {
 async fn multiple_request_failure_goes_through_completed() {
     let sip_manager = setup().await;
     let transaction = sip_manager.transaction.clone();
-    tokio::spawn(async move { transaction.run().await });
 
     let transport = sip_manager.transport.clone();
     let transport = as_any!(transport, TransportSnitch);
@@ -259,7 +257,7 @@ async fn multiple_request_failure_goes_through_completed() {
     assert_eq!(transport.messages.len().await, 1);
     assert_eq!(core.messages.len().await, 0);
 
-    assert_eq!(transaction.uac_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
             .is_uac_calling(request.transaction_id().expect("response transaction id"))
@@ -279,7 +277,7 @@ async fn multiple_request_failure_goes_through_completed() {
     assert_eq!(core.messages.len().await, 1);
     //assert_eq!(core.messages.lock().await.len(), 1);
 
-    assert_eq!(transaction.uac_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
             .is_uac_completed(request.transaction_id().expect("response transaction id"))
@@ -301,7 +299,7 @@ async fn multiple_request_failure_goes_through_completed() {
     assert_eq!(core.messages.len().await, 1);
     //assert_eq!(core.messages.lock().await.len(), 1);
 
-    assert_eq!(transaction.uac_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
             .is_uac_completed(response.transaction_id().expect("response transaction id"))
@@ -321,7 +319,6 @@ async fn multiple_request_failure_goes_through_completed() {
 async fn unexpected_failures_when_accepted_goes_to_errored() {
     let sip_manager = setup().await;
     let transaction = sip_manager.transaction.clone();
-    tokio::spawn(async move { transaction.run().await });
 
     let transport = sip_manager.transport.clone();
     let transport = as_any!(transport, TransportSnitch);
@@ -345,7 +342,7 @@ async fn unexpected_failures_when_accepted_goes_to_errored() {
     assert_eq!(transport.messages.len().await, 1);
     assert_eq!(core.messages.len().await, 0);
 
-    assert_eq!(transaction.uac_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
             .is_uac_calling(request.transaction_id().expect("response transaction id"))
@@ -365,7 +362,7 @@ async fn unexpected_failures_when_accepted_goes_to_errored() {
     assert_eq!(core.messages.len().await, 1);
     //assert_eq!(core.messages.lock().await.len(), 1);
 
-    assert_eq!(transaction.uac_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
             .is_uac_proceeding(response.transaction_id().expect("response transaction id"))
@@ -385,7 +382,7 @@ async fn unexpected_failures_when_accepted_goes_to_errored() {
     assert_eq!(core.messages.len().await, 2);
     //assert_eq!(core.messages.lock().await.len(), 1);
 
-    assert_eq!(transaction.uac_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
             .is_uac_accepted(response.transaction_id().expect("response transaction id"))
@@ -413,7 +410,6 @@ async fn unexpected_failures_when_accepted_goes_to_errored() {
 async fn ok_when_completed_goes_to_errored() {
     let sip_manager = setup().await;
     let transaction = sip_manager.transaction.clone();
-    tokio::spawn(async move { transaction.run().await });
 
     let transport = sip_manager.transport.clone();
     let transport = as_any!(transport, TransportSnitch);
@@ -436,7 +432,7 @@ async fn ok_when_completed_goes_to_errored() {
 
     assert_eq!(transport.messages.len().await, 1);
     assert_eq!(core.messages.len().await, 0);
-    assert_eq!(transaction.uac_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
             .is_uac_calling(request.transaction_id().expect("response transaction id"))
@@ -456,7 +452,7 @@ async fn ok_when_completed_goes_to_errored() {
     assert_eq!(core.messages.len().await, 1);
     //assert_eq!(core.messages.lock().await.len(), 1);
 
-    assert_eq!(transaction.uac_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
             .is_uac_proceeding(response.transaction_id().expect("response transaction id"))
@@ -476,7 +472,7 @@ async fn ok_when_completed_goes_to_errored() {
     assert_eq!(core.messages.len().await, 2);
     //assert_eq!(core.messages.lock().await.len(), 1);
 
-    assert_eq!(transaction.uac_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
             .is_uac_completed(response.transaction_id().expect("response transaction id"))

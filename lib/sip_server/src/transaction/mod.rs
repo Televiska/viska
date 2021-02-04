@@ -31,12 +31,16 @@ pub trait TransactionLayer: Send + Sync + Any + Debug {
     async fn has_transaction(&self, transaction_id: &str) -> bool;
     async fn process_incoming_message(&self, msg: TransportMsg);
     async fn send(&self, msg: ResponseMsg) -> Result<(), Error>;
-    async fn run(&self) -> Result<(), Error>;
+    async fn run(&self);
     fn as_any(&self) -> &dyn Any;
 }
 
 #[allow(dead_code)]
 pub struct Transaction {
+    pub inner: Arc<Inner>,
+}
+
+pub struct Inner {
     sip_manager: Weak<SipManager>,
     pub uac_state: RwLock<HashMap<String, Mutex<uac::TrxStateMachine>>>,
     pub uas_state: RwLock<HashMap<String, Mutex<uas::TrxStateMachine>>>,
@@ -46,17 +50,56 @@ pub struct Transaction {
 #[async_trait]
 impl TransactionLayer for Transaction {
     fn new(sip_manager: Weak<SipManager>) -> Self {
-        Self {
+        let inner = Arc::new(Inner {
             sip_manager,
             uac_state: RwLock::new(Default::default()),
             uas_state: RwLock::new(Default::default()),
-        }
+        });
+
+        Self { inner }
+    }
+
+    async fn has_transaction(&self, transaction_id: &str) -> bool {
+        self.inner.has_transaction(transaction_id).await
+    }
+
+    async fn process_incoming_message(&self, msg: TransportMsg) {
+        self.inner.process_incoming_message(msg).await
+    }
+
+    async fn new_uac_invite_transaction(&self, msg: RequestMsg) -> Result<(), Error> {
+        self.inner.new_uac_invite_transaction(msg).await
+    }
+
+    async fn new_uas_invite_transaction(
+        &self,
+        msg: RequestMsg,
+        response: Option<rsip::Response>,
+    ) -> Result<(), Error> {
+        self.inner.new_uas_invite_transaction(msg, response).await
+    }
+
+    async fn send(&self, msg: ResponseMsg) -> Result<(), Error> {
+        self.inner.send(msg).await
+    }
+
+    async fn run(&self) {
+        let inner = self.inner.clone();
+        tokio::spawn(async move {
+            inner.run().await;
+        });
     }
 
     fn sip_manager(&self) -> Arc<SipManager> {
-        self.sip_manager.upgrade().expect("sip manager is missing!")
+        self.inner.sip_manager()
     }
 
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+impl Inner {
     //potential bug if state changes between this and process_incoming_message ?
     async fn has_transaction(&self, transaction_id: &str) -> bool {
         let uas_state = self.uas_state.read().await;
@@ -125,7 +168,7 @@ impl TransactionLayer for Transaction {
         }
     }
 
-    async fn run(&self) -> Result<(), Error> {
+    async fn run(&self) {
         use tokio::time;
 
         let mut ticker = time::interval(time::Duration::from_millis(100));
@@ -136,12 +179,10 @@ impl TransactionLayer for Transaction {
         }
     }
 
-    fn as_any(&self) -> &dyn Any {
-        self
+    fn sip_manager(&self) -> Arc<SipManager> {
+        self.sip_manager.upgrade().expect("sip manager is missing!")
     }
-}
 
-impl Transaction {
     async fn check_transactions(&self) {
         {
             let uac_state = self.uac_state.read().await;
@@ -219,7 +260,7 @@ impl Transaction {
 impl std::fmt::Debug for Transaction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Transaction")
-            .field("state", &self.uac_state)
+            .field("state", &self.inner.uac_state)
             .finish()
     }
 }

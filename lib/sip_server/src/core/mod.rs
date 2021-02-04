@@ -23,24 +23,50 @@ pub trait CoreLayer: Send + Sync + Any + Debug {
         Self: Sized;
     async fn process_incoming_message(&self, msg: TransportMsg);
     async fn send(&self, msg: TransportMsg);
-    fn sip_manager(&self) -> Arc<SipManager>;
+    async fn run(&self);
     fn as_any(&self) -> &dyn Any;
 }
 
 pub struct Core {
-    sip_manager: Weak<SipManager>,
-    processor: Arc<Processor>,
+    inner: Arc<Inner>,
 }
 
 #[async_trait]
 impl CoreLayer for Core {
     fn new(sip_manager: Weak<SipManager>) -> Self {
-        Self {
+        let inner = Arc::new(Inner {
             sip_manager: sip_manager.clone(),
             processor: Arc::new(Processor::new(sip_manager)),
-        }
+        });
+        Self { inner }
     }
 
+    async fn process_incoming_message(&self, msg: TransportMsg) {
+        self.inner.process_incoming_message(msg).await
+    }
+
+    async fn send(&self, msg: TransportMsg) {
+        self.inner.send(msg).await
+    }
+
+    async fn run(&self) {
+        let inner = self.inner.clone();
+        tokio::spawn(async move {
+            inner.run().await;
+        });
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+struct Inner {
+    sip_manager: Weak<SipManager>,
+    processor: Arc<Processor>,
+}
+
+impl Inner {
     //TODO: remove expect and log instead
     async fn process_incoming_message(&self, msg: TransportMsg) {
         let processor = self.processor.clone();
@@ -63,15 +89,13 @@ impl CoreLayer for Core {
         self.sip_manager.upgrade().expect("sip manager is missing!")
     }
 
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
+    async fn run(&self) {}
 }
 
 impl std::fmt::Debug for Core {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Core")
-            .field("processor", &self.processor)
+            .field("processor", &self.inner.processor)
             .finish()
     }
 }

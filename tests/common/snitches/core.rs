@@ -32,11 +32,15 @@ impl CoreLayer for CoreSnitch {
         }
     }
 
-    fn sip_manager(&self) -> Arc<SipManager> {
-        self.sip_manager.upgrade().expect("sip manager is missing!")
-    }
+    async fn run(&self) {}
 
     fn as_any(&self) -> &dyn Any {
         self
+    }
+}
+
+impl CoreSnitch {
+    fn sip_manager(&self) -> Arc<SipManager> {
+        self.sip_manager.upgrade().expect("sip manager is missing!")
     }
 }

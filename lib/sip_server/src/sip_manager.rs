@@ -31,6 +31,8 @@ impl SipBuilder {
     }
 
     pub async fn run(&self) {
-        self.manager.transport.run().await;
+        use common::futures::join;
+
+        join!(self.manager.transaction.run(), self.manager.transport.run());
     }
 }
