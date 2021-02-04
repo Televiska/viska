@@ -5,12 +5,14 @@ async fn main() {
     common::pretty_env_logger::init_timed();
     common::Config::verify();
 
-    let udp = tokio::spawn(async move {
-        let manager =
-            SipBuilder::new::<Core, Transaction, Transport>().expect("sip manager failed");
+    let manager = SipBuilder::new::<Core, Transaction, Transport>().expect("sip manager failed");
+    manager.run().await;
 
-        manager.run().await
-    });
-
-    tokio::try_join!(udp).expect("try join failed");
+    tokio::spawn(async move {
+        loop {
+            std::thread::sleep(std::time::Duration::from_millis(4000))
+        }
+    })
+    .await
+    .expect("sleeping");
 }

@@ -45,8 +45,8 @@ impl TransactionLayer for TransactionEmptySnitch {
         self.sip_manager.upgrade().expect("sip manager is missing!")
     }
 
-    async fn run(&self) -> Result<(), Error> {
-        Ok(())
+    async fn run(&self) {
+        ();
     }
 
     fn as_any(&self) -> &dyn Any {

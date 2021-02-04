@@ -1,15 +1,18 @@
 # Viska
-A SIP server built in Rust.
+A SIP server/framework built in Rust.
 
 **This is a wip, many things will change until it takes the final shape**
 
 ## Why
-Because building a modern SIP service on top of kamailio/asterisk/opensips is a
-pain in the ass. Then there are some other servers like [routr](https://github.com/fonoster/routr), but these are not
+* because building a customized modern SIP service on top of kamailio/asterisk/opensips
+as a developer is not intuitive.
+* because although there are some other servers like [routr](https://github.com/fonoster/routr), but these are not
 made with development in mind, rather they have configuration that you can change.
 For instance you can't manipulate incoming or outgoing requests/responses.
-There is also [nksip](https://github.com/NetComposer/nksip) but that requires you to not only understand how [nkserver](https://github.com/NetComposer/nkserver)
-works but also Erlang and OTP in general. The only real alternative is [pjsip](https://www.pjsip.org/)
+* because although there is [nksip](https://github.com/NetComposer/nksip)
+it requires you to not only understand how [nkserver](https://github.com/NetComposer/nkserver)
+works but also Erlang and OTP in general
+* because the only real alternative is [pjsip](https://www.pjsip.org/)
 and if you are looking to build a SIP service you should probably look into that.
 
 Having worked many years on HTTP frameworks, I really think that we can do

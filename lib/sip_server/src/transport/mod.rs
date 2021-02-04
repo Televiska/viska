@@ -33,14 +33,17 @@ pub trait TransportLayer: Send + Sync + Any + Debug {
     async fn process_incoming_message(&self, udp_tuple: UdpTuple) -> Result<(), Error>;
     async fn send(&self, msg: TransportMsg) -> Result<(), Error>;
     async fn run(&self);
-    fn sip_manager(&self) -> Arc<SipManager>;
     fn as_any(&self) -> &dyn Any;
 }
 
-//with tokio 3.x, the Mutexes will be replaced with an Arc here
 pub struct Transport {
+    inner: Arc<Inner>,
+}
+
+//with tokio 3.x, the Mutexes will be replaced with an Arc here
+struct Inner {
     sip_manager: Weak<SipManager>,
-    pub processor: processor::Processor,
+    processor: processor::Processor,
     udp_sink: Mutex<UdpSink>,
     udp_stream: Mutex<UdpStream>,
 }
@@ -50,12 +53,45 @@ impl TransportLayer for Transport {
     fn new(sip_manager: Weak<SipManager>) -> Result<Self, Error> {
         let (udp_sink, udp_stream) = create_socket()?;
 
-        Ok(Self {
+        let inner = Arc::new(Inner {
             sip_manager,
             processor: processor::Processor::default(),
             udp_sink: Mutex::new(udp_sink),
             udp_stream: Mutex::new(udp_stream),
-        })
+        });
+
+        Ok(Self { inner })
+    }
+
+    async fn process_incoming_message(&self, udp_tuple: UdpTuple) -> Result<(), Error> {
+        self.inner.process_incoming_message(udp_tuple).await
+    }
+
+    async fn send(&self, msg: TransportMsg) -> Result<(), Error> {
+        self.inner.send(msg).await
+    }
+
+    async fn run(&self) {
+        let inner = self.inner.clone();
+        tokio::spawn(async move {
+            inner.run().await;
+        });
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+impl Inner {
+    async fn udp_send(&self, udp_tuple: UdpTuple) -> Result<(), Error> {
+        //debug_message(udp_tuple.bytes.to_vec());
+
+        Ok(self.udp_sink.lock().await.send(udp_tuple.into()).await?)
+    }
+
+    fn sip_manager(&self) -> Arc<SipManager> {
+        self.sip_manager.upgrade().expect("sip manager is missing!")
     }
 
     async fn process_incoming_message(&self, udp_tuple: UdpTuple) -> Result<(), Error> {
@@ -126,30 +162,14 @@ impl TransportLayer for Transport {
             }
         }
     }
-
-    fn sip_manager(&self) -> Arc<SipManager> {
-        self.sip_manager.upgrade().expect("sip manager is missing!")
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
-
-impl Transport {
-    async fn udp_send(&self, udp_tuple: UdpTuple) -> Result<(), Error> {
-        //debug_message(udp_tuple.bytes.to_vec());
-
-        Ok(self.udp_sink.lock().await.send(udp_tuple.into()).await?)
-    }
 }
 
 impl std::fmt::Debug for Transport {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Transport")
-            .field("processor", &self.processor)
-            .field("udp_sink", &self.udp_sink)
-            .field("udp_stream", &self.udp_stream)
+            .field("processor", &self.inner.processor)
+            .field("udp_sink", &self.inner.udp_sink)
+            .field("udp_stream", &self.inner.udp_stream)
             .finish()
     }
 }

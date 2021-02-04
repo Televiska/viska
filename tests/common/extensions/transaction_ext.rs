@@ -17,7 +17,7 @@ pub trait TransactionUacExt {
 #[async_trait]
 impl TransactionUacExt for sip_server::Transaction {
     async fn is_uac_calling(&self, transaction_id: String) -> bool {
-        let state_reader = self.uac_state.read().await;
+        let state_reader = self.inner.uac_state.read().await;
         let transaction_data = state_reader
             .get(&transaction_id)
             .expect("getting transaction from state")
@@ -28,7 +28,7 @@ impl TransactionUacExt for sip_server::Transaction {
     }
 
     async fn is_uac_proceeding(&self, transaction_id: String) -> bool {
-        let state_reader = self.uac_state.read().await;
+        let state_reader = self.inner.uac_state.read().await;
         let transaction_data = state_reader
             .get(&transaction_id)
             .expect("getting transaction from state")
@@ -39,7 +39,7 @@ impl TransactionUacExt for sip_server::Transaction {
     }
 
     async fn is_uac_completed(&self, transaction_id: String) -> bool {
-        let state_reader = self.uac_state.read().await;
+        let state_reader = self.inner.uac_state.read().await;
         let transaction_data = state_reader
             .get(&transaction_id)
             .expect("getting transaction from state")
@@ -50,7 +50,7 @@ impl TransactionUacExt for sip_server::Transaction {
     }
 
     async fn is_uac_accepted(&self, transaction_id: String) -> bool {
-        let state_reader = self.uac_state.read().await;
+        let state_reader = self.inner.uac_state.read().await;
         let transaction_data = state_reader
             .get(&transaction_id)
             .expect("getting transaction from state")
@@ -61,7 +61,7 @@ impl TransactionUacExt for sip_server::Transaction {
     }
 
     async fn is_uac_terminated(&self, transaction_id: String) -> bool {
-        let state_reader = self.uac_state.read().await;
+        let state_reader = self.inner.uac_state.read().await;
         let transaction_data = state_reader
             .get(&transaction_id)
             .expect("getting transaction from state")
@@ -72,7 +72,7 @@ impl TransactionUacExt for sip_server::Transaction {
     }
 
     async fn is_uac_errored(&self, transaction_id: String) -> bool {
-        let state_reader = self.uac_state.read().await;
+        let state_reader = self.inner.uac_state.read().await;
         let transaction_data = state_reader
             .get(&transaction_id)
             .expect("getting transaction from state")
@@ -96,7 +96,7 @@ pub trait TransactionUasExt {
 #[async_trait]
 impl TransactionUasExt for sip_server::Transaction {
     async fn is_uas_proceeding(&self, transaction_id: String) -> bool {
-        let state_reader = self.uas_state.read().await;
+        let state_reader = self.inner.uas_state.read().await;
         let transaction_data = state_reader
             .get(&transaction_id)
             .expect("getting transaction from state")
@@ -107,7 +107,7 @@ impl TransactionUasExt for sip_server::Transaction {
     }
 
     async fn is_uas_completed(&self, transaction_id: String) -> bool {
-        let state_reader = self.uas_state.read().await;
+        let state_reader = self.inner.uas_state.read().await;
         let transaction_data = state_reader
             .get(&transaction_id)
             .expect("getting transaction from state")
@@ -118,7 +118,7 @@ impl TransactionUasExt for sip_server::Transaction {
     }
 
     async fn is_uas_accepted(&self, transaction_id: String) -> bool {
-        let state_reader = self.uas_state.read().await;
+        let state_reader = self.inner.uas_state.read().await;
         let transaction_data = state_reader
             .get(&transaction_id)
             .expect("getting transaction from state")
@@ -129,7 +129,7 @@ impl TransactionUasExt for sip_server::Transaction {
     }
 
     async fn is_uas_confirmed(&self, transaction_id: String) -> bool {
-        let state_reader = self.uas_state.read().await;
+        let state_reader = self.inner.uas_state.read().await;
         let transaction_data = state_reader
             .get(&transaction_id)
             .expect("getting transaction from state")
@@ -140,7 +140,7 @@ impl TransactionUasExt for sip_server::Transaction {
     }
 
     async fn is_uas_terminated(&self, transaction_id: String) -> bool {
-        let state_reader = self.uas_state.read().await;
+        let state_reader = self.inner.uas_state.read().await;
         let transaction_data = state_reader
             .get(&transaction_id)
             .expect("getting transaction from state")
@@ -151,7 +151,7 @@ impl TransactionUasExt for sip_server::Transaction {
     }
 
     async fn is_uas_errored(&self, transaction_id: String) -> bool {
-        let state_reader = self.uas_state.read().await;
+        let state_reader = self.inner.uas_state.read().await;
         let transaction_data = state_reader
             .get(&transaction_id)
             .expect("getting transaction from state")

@@ -19,20 +19,27 @@ use std::sync::Arc;
 use std::time::Duration;
 
 async fn setup() -> Arc<SipManager> {
-    SipBuilder::new::<CoreSnitch, Transaction, TransportSnitch>()
-        .expect("sip manager failed")
-        .manager
+    let builder =
+        SipBuilder::new::<CoreSnitch, Transaction, TransportSnitch>().expect("sip manager failed");
+    builder.run().await;
+
+    builder.manager
+}
+
+async fn setup_with_error_transport() -> Arc<SipManager> {
+    let builder = SipBuilder::new::<CoreSnitch, Transaction, TransportErrorSnitch>()
+        .expect("sip manager failed");
+    builder.run().await;
+
+    builder.manager
 }
 
 /* ##### proceeding state ##### */
 
 #[tokio::test]
 async fn if_peer_not_alive() {
-    let sip_manager = SipBuilder::new::<CoreSnitch, Transaction, TransportErrorSnitch>()
-        .expect("sip manager failed")
-        .manager;
+    let sip_manager = setup_with_error_transport().await;
     let transaction = sip_manager.transaction.clone();
-    tokio::spawn(async move { transaction.run().await });
 
     as_downcasted!(
         sip_manager,
@@ -60,16 +67,13 @@ async fn if_peer_not_alive() {
     assert!(result.is_err());
 
     assert_eq!(transport.messages.len().await, 0);
-    assert_eq!(transaction.uas_state.read().await.len(), 0);
+    assert_eq!(transaction.inner.uas_state.read().await.len(), 0);
 }
 
 #[tokio::test]
 async fn transport_errors_on_second_provisional() {
-    let sip_manager = SipBuilder::new::<CoreSnitch, Transaction, TransportErrorSnitch>()
-        .expect("sip manager failed")
-        .manager;
+    let sip_manager = setup_with_error_transport().await;
     let transaction = sip_manager.transaction.clone();
-    tokio::spawn(async move { transaction.run().await });
 
     as_downcasted!(
         sip_manager,
@@ -97,7 +101,7 @@ async fn transport_errors_on_second_provisional() {
     assert!(result.is_ok());
 
     assert_eq!(transport.messages.len().await, 1);
-    assert_eq!(transaction.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
     //TODO: check state here
 
     transport.turn_fail_switch_on().await;
@@ -119,7 +123,6 @@ async fn transport_errors_on_second_provisional() {
 async fn multiple_invite_on_proceeding() {
     let sip_manager = setup().await;
     let transaction = sip_manager.transaction.clone();
-    tokio::spawn(async move { transaction.run().await });
 
     as_downcasted!(
         sip_manager,
@@ -146,7 +149,7 @@ async fn multiple_invite_on_proceeding() {
     assert!(result.is_ok());
 
     assert_eq!(transport.messages.len().await, 1);
-    assert_eq!(transaction.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
 
     let result = transaction
         .process_incoming_message(
@@ -170,16 +173,13 @@ async fn multiple_invite_on_proceeding() {
         } => (),
         _ => panic!("unexpected message state"),
     };
-    assert_eq!(transaction.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
 }
 
 #[tokio::test]
 async fn with_redirect_response_moves_to_completed() {
-    let sip_manager = SipBuilder::new::<CoreSnitch, Transaction, TransportSnitch>()
-        .expect("sip manager failed")
-        .manager;
+    let sip_manager = setup().await;
     let transaction = sip_manager.transaction.clone();
-    tokio::spawn(async move { transaction.run().await });
 
     as_downcasted!(
         sip_manager,
@@ -206,7 +206,7 @@ async fn with_redirect_response_moves_to_completed() {
     assert!(result.is_ok());
 
     assert_eq!(transport.messages.len().await, 1);
-    assert_eq!(transaction.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
 
     let result = transaction
         .send(ResponseMsg {
@@ -224,11 +224,8 @@ async fn with_redirect_response_moves_to_completed() {
 
 #[tokio::test]
 async fn with_ok_response_moves_to_accepted() {
-    let sip_manager = SipBuilder::new::<CoreSnitch, Transaction, TransportSnitch>()
-        .expect("sip manager failed")
-        .manager;
+    let sip_manager = setup().await;
     let transaction = sip_manager.transaction.clone();
-    tokio::spawn(async move { transaction.run().await });
 
     as_downcasted!(
         sip_manager,
@@ -255,7 +252,7 @@ async fn with_ok_response_moves_to_accepted() {
     assert!(result.is_ok());
 
     assert_eq!(transport.messages.len().await, 1);
-    assert_eq!(transaction.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
 
     let result = transaction
         .send(ResponseMsg {
@@ -276,7 +273,6 @@ async fn with_ok_response_moves_to_accepted() {
 async fn multiple_invites_on_completed_resends_response() {
     let sip_manager = setup().await;
     let transaction = sip_manager.transaction.clone();
-    tokio::spawn(async move { transaction.run().await });
 
     as_downcasted!(
         sip_manager,
@@ -333,14 +329,13 @@ async fn multiple_invites_on_completed_resends_response() {
         } if resp == response => (),
         _ => panic!("unexpected message state"),
     };
-    assert_eq!(transaction.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
 }
 
 #[tokio::test]
 async fn redirect_but_peer_not_responding_with_ack() {
     let sip_manager = setup().await;
     let transaction = sip_manager.transaction.clone();
-    tokio::spawn(async move { transaction.run().await });
 
     as_downcasted!(
         sip_manager,
@@ -415,11 +410,8 @@ async fn redirect_but_peer_not_responding_with_ack() {
 async fn with_ack_moves_to_confirmed() {
     use models::RequestExt;
 
-    let sip_manager = SipBuilder::new::<CoreSnitch, Transaction, TransportSnitch>()
-        .expect("sip manager failed")
-        .manager;
+    let sip_manager = setup().await;
     let transaction = sip_manager.transaction.clone();
-    tokio::spawn(async move { transaction.run().await });
 
     as_downcasted!(
         sip_manager,
@@ -458,7 +450,7 @@ async fn with_ack_moves_to_confirmed() {
     );
     assert_eq!(core.messages.len().await, 0);
     assert_eq!(transport.messages.len().await, 2);
-    assert_eq!(transaction.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
 
     let result = transaction
         .process_incoming_message(
@@ -471,7 +463,7 @@ async fn with_ack_moves_to_confirmed() {
         .await;
     assert_eq!(core.messages.len().await, 0);
     assert_eq!(transport.messages.len().await, 2);
-    assert_eq!(transaction.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
     assert!(
         transaction
             .is_uas_confirmed(request.transaction_id().expect("response transaction id"))
@@ -484,7 +476,6 @@ async fn with_ack_moves_to_confirmed() {
 async fn multiple_invites_on_accepted_resends_response() {
     let sip_manager = setup().await;
     let transaction = sip_manager.transaction.clone();
-    tokio::spawn(async move { transaction.run().await });
 
     as_downcasted!(
         sip_manager,
@@ -541,14 +532,13 @@ async fn multiple_invites_on_accepted_resends_response() {
         } if resp == response => (),
         _ => panic!("unexpected message state"),
     };
-    assert_eq!(transaction.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
 }
 
 #[tokio::test]
 async fn ok_but_peer_not_responding_with_ack() {
     let sip_manager = setup().await;
     let transaction = sip_manager.transaction.clone();
-    tokio::spawn(async move { transaction.run().await });
 
     as_downcasted!(
         sip_manager,
@@ -609,11 +599,8 @@ async fn ok_but_peer_not_responding_with_ack() {
 
 #[tokio::test]
 async fn with_multiple_ok_on_accepted() {
-    let sip_manager = SipBuilder::new::<CoreSnitch, Transaction, TransportSnitch>()
-        .expect("sip manager failed")
-        .manager;
+    let sip_manager = setup().await;
     let transaction = sip_manager.transaction.clone();
-    tokio::spawn(async move { transaction.run().await });
 
     as_downcasted!(
         sip_manager,
@@ -640,7 +627,7 @@ async fn with_multiple_ok_on_accepted() {
         .expect("new uas invite transaction result");
 
     assert_eq!(transport.messages.len().await, 1);
-    assert_eq!(transaction.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
 
     let result = transaction
         .send(ResponseMsg {
@@ -664,16 +651,13 @@ async fn with_multiple_ok_on_accepted() {
         .expect("send transaction result");
 
     assert_eq!(transport.messages.len().await, 3);
-    assert_eq!(transaction.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
 }
 
 #[tokio::test]
 async fn with_error_on_second_ok_on_accepted() {
-    let sip_manager = SipBuilder::new::<CoreSnitch, Transaction, TransportErrorSnitch>()
-        .expect("sip manager failed")
-        .manager;
+    let sip_manager = setup_with_error_transport().await;
     let transaction = sip_manager.transaction.clone();
-    tokio::spawn(async move { transaction.run().await });
 
     as_downcasted!(
         sip_manager,
@@ -700,7 +684,7 @@ async fn with_error_on_second_ok_on_accepted() {
         .expect("new uas invite transaction result");
 
     assert_eq!(transport.messages.len().await, 1);
-    assert_eq!(transaction.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
 
     let result = transaction
         .send(ResponseMsg {
@@ -724,7 +708,7 @@ async fn with_error_on_second_ok_on_accepted() {
         .expect("send transaction result");
 
     assert_eq!(transport.messages.len().await, 3);
-    assert_eq!(transaction.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
     assert!(
         transaction
             .is_uas_accepted(request.transaction_id().expect("response transaction id"))
@@ -740,7 +724,7 @@ async fn with_error_on_second_ok_on_accepted() {
         .await;
 
     assert_eq!(transport.messages.len().await, 3);
-    assert_eq!(transaction.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
 
     assert!(
         transaction
@@ -754,11 +738,8 @@ async fn with_error_on_second_ok_on_accepted() {
 async fn multiple_ack_received_are_forwarded_to_tu() {
     use models::RequestExt;
 
-    let sip_manager = SipBuilder::new::<CoreSnitch, Transaction, TransportSnitch>()
-        .expect("sip manager failed")
-        .manager;
+    let sip_manager = setup().await;
     let transaction = sip_manager.transaction.clone();
-    tokio::spawn(async move { transaction.run().await });
 
     as_downcasted!(
         sip_manager,
@@ -797,7 +778,7 @@ async fn multiple_ack_received_are_forwarded_to_tu() {
     );
     assert_eq!(core.messages.len().await, 0);
     assert_eq!(transport.messages.len().await, 2);
-    assert_eq!(transaction.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
 
     let result = transaction
         .process_incoming_message(
@@ -810,7 +791,7 @@ async fn multiple_ack_received_are_forwarded_to_tu() {
         .await;
     assert_eq!(core.messages.len().await, 1);
     assert_eq!(transport.messages.len().await, 2);
-    assert_eq!(transaction.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
 }
 
 /* ##### confirmed state ##### */
@@ -818,11 +799,8 @@ async fn multiple_ack_received_are_forwarded_to_tu() {
 async fn when_confirmed_acks_have_no_effect() {
     use models::RequestExt;
 
-    let sip_manager = SipBuilder::new::<CoreSnitch, Transaction, TransportSnitch>()
-        .expect("sip manager failed")
-        .manager;
+    let sip_manager = setup().await;
     let transaction = sip_manager.transaction.clone();
-    tokio::spawn(async move { transaction.run().await });
 
     as_downcasted!(
         sip_manager,
@@ -867,7 +845,7 @@ async fn when_confirmed_acks_have_no_effect() {
 
     assert_eq!(core.messages.len().await, 0);
     assert_eq!(transport.messages.len().await, 2);
-    assert_eq!(transaction.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
     assert!(
         transaction
             .is_uas_confirmed(request.transaction_id().expect("response transaction id"))
@@ -895,7 +873,7 @@ async fn when_confirmed_acks_have_no_effect() {
 
     assert_eq!(core.messages.len().await, 0);
     assert_eq!(transport.messages.len().await, 2);
-    assert_eq!(transaction.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
     assert!(
         transaction
             .is_uas_confirmed(request.transaction_id().expect("response transaction id"))
@@ -907,11 +885,8 @@ async fn when_confirmed_acks_have_no_effect() {
 async fn when_confirmed_when_time_i_kicks_in_move_to_terminated() {
     use models::RequestExt;
 
-    let sip_manager = SipBuilder::new::<CoreSnitch, Transaction, TransportSnitch>()
-        .expect("sip manager failed")
-        .manager;
+    let sip_manager = setup().await;
     let transaction = sip_manager.transaction.clone();
-    tokio::spawn(async move { transaction.run().await });
 
     as_downcasted!(
         sip_manager,
@@ -956,7 +931,7 @@ async fn when_confirmed_when_time_i_kicks_in_move_to_terminated() {
 
     assert_eq!(core.messages.len().await, 0);
     assert_eq!(transport.messages.len().await, 2);
-    assert_eq!(transaction.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
     assert!(
         transaction
             .is_uas_confirmed(request.transaction_id().expect("response transaction id"))
@@ -967,7 +942,7 @@ async fn when_confirmed_when_time_i_kicks_in_move_to_terminated() {
 
     assert_eq!(core.messages.len().await, 0);
     assert_eq!(transport.messages.len().await, 2);
-    assert_eq!(transaction.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
     assert!(
         transaction
             .is_uas_terminated(request.transaction_id().expect("response transaction id"))
