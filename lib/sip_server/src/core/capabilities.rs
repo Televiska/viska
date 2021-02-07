@@ -1,7 +1,10 @@
+use super::ReqProcessor;
 pub use crate::{Error, SipManager};
+use common::async_trait::async_trait;
 use models::transport::{RequestMsg, ResponseMsg};
 use rsip::common::uri::HostWithPort;
 use std::{
+    any::Any,
     net::{IpAddr, Ipv4Addr, SocketAddr},
     sync::{Arc, Weak},
 };
@@ -11,13 +14,13 @@ pub struct Capabilities {
     sip_manager: Weak<SipManager>,
 }
 
-#[allow(clippy::new_without_default)]
-impl Capabilities {
-    pub fn new(sip_manager: Weak<SipManager>) -> Self {
+#[async_trait]
+impl ReqProcessor for Capabilities {
+    fn new(sip_manager: Weak<SipManager>) -> Self {
         Self { sip_manager }
     }
 
-    pub async fn process_incoming_request(&self, msg: RequestMsg) -> Result<(), Error> {
+    async fn process_incoming_request(&self, msg: RequestMsg) -> Result<(), Error> {
         apply_default_checks(&msg.sip_request)?;
 
         let response = create_busy_here_from(msg.sip_request.clone())?;
@@ -28,6 +31,12 @@ impl Capabilities {
             .await
     }
 
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+impl Capabilities {
     fn sip_manager(&self) -> Arc<SipManager> {
         self.sip_manager.upgrade().expect("sip manager is missing!")
     }

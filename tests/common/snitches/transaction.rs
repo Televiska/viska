@@ -53,3 +53,49 @@ impl TransactionLayer for TransactionEmptySnitch {
         self
     }
 }
+
+#[derive(Debug)]
+pub struct TransactionPanic;
+
+#[async_trait]
+impl TransactionLayer for TransactionPanic {
+    fn new(sip_manager: Weak<SipManager>) -> Self {
+        Self
+    }
+
+    async fn new_uac_invite_transaction(&self, _: RequestMsg) -> Result<(), Error> {
+        panic!("{:?} panics", self)
+    }
+
+    async fn new_uas_invite_transaction(
+        &self,
+        _: RequestMsg,
+        _: Option<rsip::Response>,
+    ) -> Result<(), Error> {
+        p!(self)
+    }
+
+    async fn has_transaction(&self, _: &str) -> bool {
+        p!(self)
+    }
+
+    async fn process_incoming_message(&self, _: TransportMsg) {
+        p!(self)
+    }
+
+    async fn send(&self, _: ResponseMsg) -> Result<(), Error> {
+        p!(self)
+    }
+
+    fn sip_manager(&self) -> Arc<SipManager> {
+        p!(self)
+    }
+
+    async fn run(&self) {
+        ();
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}

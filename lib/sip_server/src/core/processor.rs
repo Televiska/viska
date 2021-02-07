@@ -1,29 +1,32 @@
-pub use super::{Capabilities, Registrar};
+pub use super::{Capabilities, CoreProcessor, Registrar, ReqProcessor};
 pub use crate::{presets, Error, SipManager};
+use common::async_trait::async_trait;
 use models::transport::ResponseMsg;
 use models::transport::{RequestMsg, TransportMsg};
 use rsip::SipMessage;
-use std::sync::{Arc, Weak};
+use std::{
+    any::Any,
+    sync::{Arc, Weak},
+};
 
 #[derive(Debug)]
-pub struct Processor {
+pub struct Processor<R: ReqProcessor, C: ReqProcessor> {
     sip_manager: Weak<SipManager>,
-    registrar: Registrar,
-    capabilities: Capabilities,
+    registrar: R,
+    capabilities: C,
 }
 
-#[allow(clippy::new_without_default)]
-impl Processor {
-    pub fn new(sip_manager: Weak<SipManager>) -> Self {
+#[async_trait]
+impl<R: ReqProcessor, C: ReqProcessor> CoreProcessor for Processor<R, C> {
+    fn new(sip_manager: Weak<SipManager>) -> Self {
         Self {
-            registrar: Registrar::new(sip_manager.clone()),
-            capabilities: Capabilities::new(sip_manager.clone()),
+            registrar: R::new(sip_manager.clone()),
+            capabilities: C::new(sip_manager.clone()),
             sip_manager,
         }
     }
 
-    //TODO: Fix me
-    pub async fn process_message(&self, msg: TransportMsg) -> Result<(), Error> {
+    async fn process_incoming_message(&self, msg: TransportMsg) -> Result<(), Error> {
         let sip_message = msg.sip_message;
 
         match sip_message {
@@ -37,11 +40,21 @@ impl Processor {
         Ok(())
     }
 
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+impl<R: ReqProcessor, C: ReqProcessor> Processor<R, C> {
     async fn handle_request(&self, msg: RequestMsg) -> Result<(), Error> {
         use rsip::common::Method;
 
         match msg.sip_request.method {
-            Method::Register => self.registrar.process_incoming_request(msg).await?,
+            Method::Register => {
+                self.registrar
+                    .process_incoming_request(self.with_auth(msg).await?)
+                    .await?
+            }
             Method::Options => self.capabilities.process_incoming_request(msg).await?,
             _ => {
                 self.sip_manager()
@@ -63,5 +76,25 @@ impl Processor {
 
     fn sip_manager(&self) -> Arc<SipManager> {
         self.sip_manager.upgrade().expect("sip manager is missing!")
+    }
+
+    async fn with_auth(&self, msg: RequestMsg) -> Result<RequestMsg, Error> {
+        match msg.sip_request.authorization_header() {
+            Some(_) => Ok(msg),
+            None => {
+                self.sip_manager()
+                    .transport
+                    .send(
+                        ResponseMsg::from((
+                            presets::create_unauthorized_from(msg.sip_request)?,
+                            msg.peer,
+                            msg.transport,
+                        ))
+                        .into(),
+                    )
+                    .await?;
+                Err(Error::from("missing auth header"))
+            }
+        }
     }
 }

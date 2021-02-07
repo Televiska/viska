@@ -1,7 +1,10 @@
-pub use crate::{Error, SipManager};
+use super::ReqProcessor;
+use crate::{Error, SipManager};
+use common::async_trait::async_trait;
 use models::transport::{RequestMsg, ResponseMsg};
 use rsip::common::uri::HostWithPort;
 use std::{
+    any::Any,
     convert::TryInto,
     net::{IpAddr, Ipv4Addr, SocketAddr},
     sync::{Arc, Weak},
@@ -12,13 +15,13 @@ pub struct Registrar {
     sip_manager: Weak<SipManager>,
 }
 
-#[allow(clippy::new_without_default)]
-impl Registrar {
-    pub fn new(sip_manager: Weak<SipManager>) -> Self {
+#[async_trait]
+impl ReqProcessor for Registrar {
+    fn new(sip_manager: Weak<SipManager>) -> Self {
         Self { sip_manager }
     }
 
-    pub async fn process_incoming_request(&self, msg: RequestMsg) -> Result<(), Error> {
+    async fn process_incoming_request(&self, msg: RequestMsg) -> Result<(), Error> {
         use rsip::message::HeadersExt;
 
         apply_default_checks(&msg.sip_request)?;
@@ -29,6 +32,12 @@ impl Registrar {
         }
     }
 
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+impl Registrar {
     fn sip_manager(&self) -> Arc<SipManager> {
         self.sip_manager.upgrade().expect("sip manager is missing!")
     }

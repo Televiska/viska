@@ -1,20 +1,19 @@
 mod capabilities;
+#[allow(clippy::module_inception)]
+mod core;
 mod processor;
 mod registrar;
 
+pub use self::core::Core;
 pub use capabilities::Capabilities;
 pub use processor::Processor;
 pub use registrar::Registrar;
 
 use common::async_trait::async_trait;
-use std::{
-    any::Any,
-    fmt::Debug,
-    sync::{Arc, Weak},
-};
+use std::{any::Any, fmt::Debug, sync::Weak};
 
 use crate::SipManager;
-use models::transport::TransportMsg;
+use models::transport::{RequestMsg, TransportMsg};
 
 #[async_trait]
 pub trait CoreLayer: Send + Sync + Any + Debug {
@@ -27,75 +26,20 @@ pub trait CoreLayer: Send + Sync + Any + Debug {
     fn as_any(&self) -> &dyn Any;
 }
 
-pub struct Core {
-    inner: Arc<Inner>,
+#[async_trait]
+pub trait CoreProcessor: Send + Sync + Any + Debug {
+    fn new(sip_manager: Weak<SipManager>) -> Self
+    where
+        Self: Sized;
+    async fn process_incoming_message(&self, msg: TransportMsg) -> Result<(), crate::Error>;
+    fn as_any(&self) -> &dyn Any;
 }
 
 #[async_trait]
-impl CoreLayer for Core {
-    fn new(sip_manager: Weak<SipManager>) -> Self {
-        let inner = Arc::new(Inner {
-            sip_manager: sip_manager.clone(),
-            processor: Arc::new(Processor::new(sip_manager)),
-        });
-        Self { inner }
-    }
-
-    async fn process_incoming_message(&self, msg: TransportMsg) {
-        self.inner.process_incoming_message(msg).await
-    }
-
-    async fn send(&self, msg: TransportMsg) {
-        self.inner.send(msg).await
-    }
-
-    async fn run(&self) {
-        let inner = self.inner.clone();
-        tokio::spawn(async move {
-            inner.run().await;
-        });
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
-
-struct Inner {
-    sip_manager: Weak<SipManager>,
-    processor: Arc<Processor>,
-}
-
-impl Inner {
-    //TODO: remove expect and log instead
-    async fn process_incoming_message(&self, msg: TransportMsg) {
-        let processor = self.processor.clone();
-        tokio::spawn(async move {
-            processor
-                .process_message(msg)
-                .await
-                .expect("process message");
-        });
-    }
-
-    async fn send(&self, msg: TransportMsg) {
-        match self.sip_manager().transport.send(msg).await {
-            Ok(_) => (),
-            Err(err) => common::log::error!("failed to send message: {:?}", err),
-        }
-    }
-
-    fn sip_manager(&self) -> Arc<SipManager> {
-        self.sip_manager.upgrade().expect("sip manager is missing!")
-    }
-
-    async fn run(&self) {}
-}
-
-impl std::fmt::Debug for Core {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Core")
-            .field("processor", &self.inner.processor)
-            .finish()
-    }
+pub trait ReqProcessor: Send + Sync + Any + Debug {
+    fn new(sip_manager: Weak<SipManager>) -> Self
+    where
+        Self: Sized;
+    async fn process_incoming_request(&self, msg: RequestMsg) -> Result<(), crate::Error>;
+    fn as_any(&self) -> &dyn Any;
 }

@@ -24,7 +24,9 @@
   * ~~implement remove bindings with expire = 0~~
     * ~~add contact_uri in db~~
   * ~~fix parsing contact errors~~
-* add capabilities
+* ~~add capabilities~~
+* ~~add auth~~
+* add config from yaml/env
 * start on dialogs
   * dialog id
   * local sequence number
