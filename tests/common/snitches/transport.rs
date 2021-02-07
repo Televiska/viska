@@ -90,3 +90,27 @@ impl TransportErrorSnitch {
         *switch = true;
     }
 }
+
+#[derive(Debug)]
+pub struct TransportPanic;
+
+#[async_trait]
+impl TransportLayer for TransportPanic {
+    fn new(sip_manager: Weak<SipManager>) -> Result<Self, Error> {
+        Ok(Self)
+    }
+
+    async fn process_incoming_message(&self, _: UdpTuple) -> Result<(), Error> {
+        p!(self)
+    }
+
+    async fn send(&self, msg: TransportMsg) -> Result<(), Error> {
+        p!(self)
+    }
+
+    async fn run(&self) {}
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}

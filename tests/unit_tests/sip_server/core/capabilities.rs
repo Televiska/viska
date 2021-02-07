@@ -5,7 +5,10 @@ use crate::common::{
 };
 use ::common::ipnetwork::IpNetwork;
 use models::transport::RequestMsg;
-use sip_server::{core::Capabilities, Core, CoreLayer, SipBuilder, SipManager, Transaction};
+use sip_server::{
+    core::{Capabilities, ReqProcessor},
+    Core, CoreLayer, SipBuilder, SipManager, Transaction,
+};
 use std::sync::Arc;
 
 async fn setup() -> (Capabilities, Arc<SipManager>) {

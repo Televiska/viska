@@ -1,4 +1,4 @@
-use super::Messages;
+use crate::common::snitches::Messages;
 use common::async_trait::async_trait;
 use models::{server::UdpTuple, transport::TransportMsg};
 use sip_server::{CoreLayer, SipBuilder, SipManager, Transaction, Transport};
@@ -42,5 +42,29 @@ impl CoreLayer for CoreSnitch {
 impl CoreSnitch {
     fn sip_manager(&self) -> Arc<SipManager> {
         self.sip_manager.upgrade().expect("sip manager is missing!")
+    }
+}
+
+#[derive(Debug)]
+pub struct CorePanic;
+
+#[async_trait]
+impl CoreLayer for CorePanic {
+    fn new(sip_manager: Weak<SipManager>) -> Self {
+        Self
+    }
+
+    async fn process_incoming_message(&self, msg: TransportMsg) {
+        p!(self)
+    }
+
+    async fn send(&self, msg: TransportMsg) {
+        p!(self)
+    }
+
+    async fn run(&self) {}
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }

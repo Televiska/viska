@@ -41,7 +41,7 @@ extension or service that is needed (like Registrar, Auth, Push notifications
 - [x] Core (tu) layer trait + impl
   - [x] Registrar
   - [x] Capabilities
-  - [ ] Authentication
+  - [x] Authentication
   - [ ] Dialogs
   - [ ] Sessions
     - [ ] Initiate a session
