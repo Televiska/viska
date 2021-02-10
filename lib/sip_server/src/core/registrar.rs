@@ -2,11 +2,9 @@ use super::ReqProcessor;
 use crate::{Error, SipManager};
 use common::async_trait::async_trait;
 use models::transport::{RequestMsg, ResponseMsg};
-use rsip::common::uri::HostWithPort;
 use std::{
     any::Any,
     convert::TryInto,
-    net::{IpAddr, Ipv4Addr, SocketAddr},
     sync::{Arc, Weak},
 };
 
@@ -107,7 +105,7 @@ fn has_same_from_to_header_uris(
 }
 
 fn has_correct_request_uri(request_uri: &rsip::common::Uri) -> Result<(), Error> {
-    if request_uri.host_with_port == default_request_uri() {
+    if request_uri.host_with_port == common::CONFIG.default_socket_addr().into() {
         Ok(())
     } else {
         Err(Error::from("invalid request uri"))
@@ -115,7 +113,7 @@ fn has_correct_request_uri(request_uri: &rsip::common::Uri) -> Result<(), Error>
 }
 
 fn has_correct_to_request_uri(to_header: &rsip::headers::To) -> Result<(), Error> {
-    if to_header.0.uri.host_with_port == default_request_uri() {
+    if to_header.0.uri.host_with_port == common::CONFIG.default_socket_addr().into() {
         Ok(())
     } else {
         Err(Error::from("record not found!"))
@@ -124,13 +122,6 @@ fn has_correct_to_request_uri(to_header: &rsip::headers::To) -> Result<(), Error
 
 fn extensions_are_supported() -> Result<(), Error> {
     Ok(())
-}
-
-fn default_request_uri() -> HostWithPort {
-    HostWithPort::SocketAddr(SocketAddr::new(
-        IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
-        5060,
-    ))
 }
 
 fn create_registration_ok_from(

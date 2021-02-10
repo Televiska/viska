@@ -1,11 +1,6 @@
 use crate::Error;
-use rsip::{
-    common::{uri::HostWithPort, Transport},
-    headers::Via,
-    message::HeadersExt,
-    Request, Response, SipMessage,
-};
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use rsip::{common::Transport, headers::Via, message::HeadersExt, Request, Response, SipMessage};
+use std::net::SocketAddr;
 
 //outgoing
 pub fn apply_request_defaults(
@@ -60,12 +55,12 @@ pub fn apply_via_ttl(via_header: &mut Via, peer: &SocketAddr) {
 
 pub fn apply_via_sent_by(via_header: &mut Via) {
     let mut uri = via_header.uri.clone();
-    uri.host_with_port = default_listen_address();
+    uri.host_with_port = common::CONFIG.default_socket_addr().into();
     via_header.uri = uri;
 }
 
 pub fn assert_sent_by_value(via_header: &Via) -> Result<(), Error> {
-    if via_header.uri.host_with_port == default_listen_address() {
+    if via_header.uri.host_with_port == common::CONFIG.default_socket_addr().into() {
         Ok(())
     } else {
         Err(Error::custom(format!(
@@ -73,13 +68,4 @@ pub fn assert_sent_by_value(via_header: &Via) -> Result<(), Error> {
             via_header.uri.host_with_port,
         )))
     }
-}
-
-//TODO: take domain from config/yaml
-//TODO: add a config
-fn default_listen_address() -> HostWithPort {
-    HostWithPort::SocketAddr(SocketAddr::new(
-        IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
-        5060,
-    ))
 }

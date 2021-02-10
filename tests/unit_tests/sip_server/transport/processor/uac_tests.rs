@@ -175,8 +175,7 @@ async fn outgoing_transaction_request_applies_sent_by() {
         .expect("transport msg to request");
     let via_uri = &request.via_header().expect("via header").uri;
 
-    //TODO: this should be configurable through env/yaml config
-    assert_eq!(via_uri.host_with_port.to_string(), "127.0.0.1:5060");
+    assert_eq!(via_uri.host_with_port, common::CONFIG.default_socket_addr().into());
 }
 
 #[tokio::test]
@@ -294,6 +293,5 @@ async fn outgoing_core_request_applies_sent_by() {
         .expect("transport msg to request");
     let via_uri = &request.via_header().expect("via header").uri;
 
-    //TODO: this should be configurable through env/yaml config
-    assert_eq!(via_uri.host_with_port.to_string(), "127.0.0.1:5060");
+    assert_eq!(via_uri.host_with_port, common::CONFIG.default_socket_addr().into());
 }

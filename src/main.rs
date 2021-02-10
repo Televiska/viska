@@ -6,7 +6,9 @@ use sip_server::{
 #[tokio::main]
 async fn main() {
     common::pretty_env_logger::init_timed();
-    common::Config::verify();
+    let config = common::Config::new();
+
+    println!("{:?}", config);
 
     let manager =
         SipBuilder::new::<Core<Processor<Registrar, Capabilities>>, Transaction, Transport>()

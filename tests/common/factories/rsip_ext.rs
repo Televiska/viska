@@ -1,11 +1,11 @@
 use crate::common::factories::prelude::*;
-use rsip::{common::*, headers::*, Header, Headers};
+use rsip::{common::uri::*, common::*, headers::*, Header, Headers};
 
 impl Randomized for rsip::Request {
     fn default() -> Self {
         Self {
             method: Method::default(),
-            uri: Uri::default().sips(),
+            uri: common::CONFIG.default_socket_addr().into(),
             version: Default::default(),
             headers: Randomized::default(),
             body: vec![],
@@ -23,7 +23,7 @@ impl Randomized for Headers {
     fn default() -> Self {
         let mut headers: Headers = Default::default();
 
-        let base_uri = Uri::default().sips();
+        let base_uri: Uri = common::CONFIG.default_socket_addr().into();
 
         let from_uri = base_uri.clone().with_username("filippos");
         let to_uri = base_uri.clone().with_username("fil").with_port(5090);

@@ -2,10 +2,8 @@ use super::ReqProcessor;
 pub use crate::{Error, SipManager};
 use common::async_trait::async_trait;
 use models::transport::{RequestMsg, ResponseMsg};
-use rsip::common::uri::HostWithPort;
 use std::{
     any::Any,
-    net::{IpAddr, Ipv4Addr, SocketAddr},
     sync::{Arc, Weak},
 };
 
@@ -49,18 +47,11 @@ fn apply_default_checks(request: &rsip::Request) -> Result<(), Error> {
 }
 
 fn has_correct_request_uri(request_uri: &rsip::common::Uri) -> Result<(), Error> {
-    if request_uri.host_with_port == default_request_uri() {
+    if request_uri.host_with_port == common::CONFIG.default_socket_addr().into() {
         Ok(())
     } else {
         Err(Error::from("invalid request uri"))
     }
-}
-
-fn default_request_uri() -> HostWithPort {
-    HostWithPort::SocketAddr(SocketAddr::new(
-        IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
-        5060,
-    ))
 }
 
 fn create_busy_here_from(request: rsip::Request) -> Result<rsip::Response, crate::Error> {

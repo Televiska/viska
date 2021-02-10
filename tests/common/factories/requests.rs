@@ -48,7 +48,7 @@ pub fn register_query_request() -> rsip::Request {
     let mut headers: Headers = Randomized::default();
     headers.unique_push(CSeq::from((1, Method::Register)).into());
 
-    let base_uri = Uri::default().sips();
+    let base_uri: Uri = common::CONFIG.default_socket_addr().into();
     let from_uri = base_uri.clone().with_username("filippos");
     let to_uri = from_uri.clone();
 
@@ -75,7 +75,7 @@ pub fn register_request() -> rsip::Request {
 
     rsip::Request {
         method: Method::Register,
-        uri: from_header.0.uri.stripped().sips(),
+        uri: from_header.0.uri.stripped(),
         headers,
         ..Randomized::default()
     }
@@ -93,7 +93,7 @@ pub fn register_delete_request_with_uri(uri: Uri) -> rsip::Request {
 
     rsip::Request {
         method: Method::Register,
-        uri: from_header.0.uri.stripped().sips(),
+        uri: from_header.0.uri.stripped(),
         headers,
         ..Randomized::default()
     }
@@ -103,7 +103,7 @@ pub fn options_request() -> rsip::Request {
     let mut headers: Headers = Randomized::default();
     headers.unique_push(CSeq::from((1, Method::Options)).into());
 
-    let base_uri = Uri::default().sips();
+    let base_uri: Uri = common::CONFIG.default_socket_addr().into();
     let to_uri = base_uri.clone().with_username("filippos");
 
     headers.unique_push(To::from(to_uri.clone()).into());
