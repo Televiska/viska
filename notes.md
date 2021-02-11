@@ -26,7 +26,7 @@
   * ~~fix parsing contact errors~~
 * ~~add capabilities~~
 * ~~add auth~~
-* add config from yaml/env
+* ~~add config from yaml/env~~
 * start on dialogs
   * dialog id
   * local sequence number

@@ -1,4 +1,4 @@
-pub use super::{Capabilities, CoreProcessor, Registrar, ReqProcessor};
+pub use super::{Capabilities, CoreProcessor, DialogsProcessor, Registrar, ReqProcessor};
 pub use crate::{presets, Error, SipManager};
 use common::{
     async_trait::async_trait,
@@ -12,18 +12,20 @@ use std::{
 };
 
 #[derive(Debug)]
-pub struct Processor<R: ReqProcessor, C: ReqProcessor> {
+pub struct Processor<R: ReqProcessor, C: ReqProcessor, D: DialogsProcessor> {
     sip_manager: Weak<SipManager>,
     registrar: R,
     capabilities: C,
+    dialogs: D,
 }
 
 #[async_trait]
-impl<R: ReqProcessor, C: ReqProcessor> CoreProcessor for Processor<R, C> {
+impl<R: ReqProcessor, C: ReqProcessor, D: DialogsProcessor> CoreProcessor for Processor<R, C, D> {
     fn new(sip_manager: Weak<SipManager>) -> Self {
         Self {
             registrar: R::new(sip_manager.clone()),
             capabilities: C::new(sip_manager.clone()),
+            dialogs: D::new(sip_manager.clone()),
             sip_manager,
         }
     }
@@ -42,12 +44,20 @@ impl<R: ReqProcessor, C: ReqProcessor> CoreProcessor for Processor<R, C> {
         Ok(())
     }
 
+    async fn send(&self, req: rsip::Request) -> Result<(), Error> {
+        use rsip::common::Method;
+
+        match req.method {
+            Method::Invite => 
+        Ok(())
+    }
+
     fn as_any(&self) -> &dyn Any {
         self
     }
 }
 
-impl<R: ReqProcessor, C: ReqProcessor> Processor<R, C> {
+impl<R: ReqProcessor, C: ReqProcessor, D: DialogsProcessor> Processor<R, C, D> {
     async fn handle_request(&self, msg: RequestMsg) -> Result<(), Error> {
         use rsip::Method;
 

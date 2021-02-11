@@ -28,8 +28,8 @@ impl<P: CoreProcessor> CoreLayer for Core<P> {
         self.inner.process_incoming_message(msg).await
     }
 
-    async fn send(&self, msg: TransportMsg) {
-        self.inner.send(msg).await
+    async fn send(&self, request: rsip::Request) -> Result<(), Error> {
+        Ok(self.inner.send(request).await?)
     }
 
     async fn run(&self) {
@@ -50,7 +50,7 @@ struct Inner<P: CoreProcessor> {
 }
 
 impl<P: CoreProcessor> Inner<P> {
-    //TODO: remove expect and log instead
+    //TODO: the spawning here should go inside the processor
     async fn process_incoming_message(&self, msg: TransportMsg) {
         let processor = self.processor.clone();
         tokio::spawn(async move {
@@ -61,11 +61,16 @@ impl<P: CoreProcessor> Inner<P> {
         });
     }
 
-    async fn send(&self, msg: TransportMsg) {
-        match self.sip_manager().transport.send(msg).await {
-            Ok(_) => (),
-            Err(err) => common::log::error!("failed to send message: {:?}", err),
-        }
+    async fn send(&self, request: rsip::Request) -> Result<(), Error> {
+        let processor = self.processor.clone();
+        tokio::spawn(async move {
+            match processor.send(request).await {
+                Ok(()) => (),
+                Err(err) => common::log::warn!("processor failed to send message: {:?}", err),
+            }
+        });
+
+        Ok(())
     }
 
     fn sip_manager(&self) -> Arc<SipManager> {
