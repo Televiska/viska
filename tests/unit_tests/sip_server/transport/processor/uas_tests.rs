@@ -54,7 +54,7 @@ async fn incoming_request_with_same_sent_by_param() {
         requests::request(Some(Uri::default()), Some(Uri::default().with_port(5090)));
     let server_msg = models::server::UdpTuple {
         bytes: request.into(),
-        peer: (IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 5060).into(),
+        peer: common::CONFIG.default_socket_addr().into(),
     };
 
     let message = processor
