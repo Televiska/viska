@@ -32,7 +32,7 @@ async fn with_no_records_returns_empty_list() {
             ..Randomized::default()
         })
         .await;
-    assert!(res.is_ok(), format!("returns: {:?}", res));
+    assert!(res.is_ok(), "returns: {:?}", res);
     assert_eq!(transport.messages.len().await, 1);
     assert_eq!(transport.messages.first_response().await.code, 200.into());
     assert!(transport
@@ -60,7 +60,7 @@ async fn with_records_returns_a_list_of_contacts() {
             ..Randomized::default()
         })
         .await;
-    assert!(res.is_ok(), format!("returns: {:?}", res));
+    assert!(res.is_ok(), "returns: {:?}", res);
     assert_eq!(transport.messages.len().await, 1);
     assert_eq!(transport.messages.first_response().await.code, 200.into());
     assert_eq!(
@@ -90,7 +90,7 @@ async fn with_new_register_request_saves_the_contact() {
             ..Randomized::default()
         })
         .await;
-    assert!(res.is_ok(), format!("returns: {:?}", res));
+    assert!(res.is_ok(), "returns: {:?}", res);
     assert_eq!(transport.messages.len().await, 1);
     assert_eq!(transport.messages.first_response().await.code, 200.into());
     assert_eq!(
@@ -130,7 +130,7 @@ async fn with_wrong_from_to_register() {
             ..Randomized::default()
         })
         .await;
-    assert!(res.is_err(), format!("returns: {:?}", res));
+    assert!(res.is_err(), "returns: {:?}", res);
     assert_eq!(transport.messages.len().await, 0);
 }
 
@@ -149,7 +149,7 @@ async fn delete_registration() {
             ..Randomized::default()
         })
         .await;
-    assert!(res.is_ok(), format!("returns: {:?}", res));
+    assert!(res.is_ok(), "returns: {:?}", res);
     assert_eq!(transport.messages.len().await, 1);
     assert_eq!(transport.messages.first_response().await.code, 200.into());
     assert_eq!(

@@ -34,7 +34,7 @@ async fn sending_an_options_request_receives_busy() {
             ..Randomized::default()
         })
         .await;
-    assert!(res.is_ok(), format!("returns: {:?}", res));
+    assert!(res.is_ok(), "returns: {:?}", res);
     assert_eq!(transport.messages.len().await, 1);
     assert_eq!(transport.messages.first_response().await.code, 486.into());
 }

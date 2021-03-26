@@ -175,7 +175,10 @@ async fn outgoing_transaction_request_applies_sent_by() {
         .expect("transport msg to request");
     let via_uri = &request.via_header().expect("via header").uri;
 
-    assert_eq!(via_uri.host_with_port, common::CONFIG.default_socket_addr().into());
+    assert_eq!(
+        via_uri.host_with_port,
+        common::CONFIG.default_socket_addr().into()
+    );
 }
 
 #[tokio::test]
@@ -293,5 +296,8 @@ async fn outgoing_core_request_applies_sent_by() {
         .expect("transport msg to request");
     let via_uri = &request.via_header().expect("via header").uri;
 
-    assert_eq!(via_uri.host_with_port, common::CONFIG.default_socket_addr().into());
+    assert_eq!(
+        via_uri.host_with_port,
+        common::CONFIG.default_socket_addr().into()
+    );
 }

@@ -51,7 +51,7 @@ async fn if_peer_not_responding() {
             ..Randomized::default()
         })
         .await;
-    assert!(result.is_ok(), format!("result is error: {:?}", result));
+    assert!(result.is_ok(), "returns: {:?}", result);
 
     assert_eq!(transport.messages.len().await, 1);
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
@@ -107,7 +107,7 @@ async fn with_trying_goes_through_proceeding() {
             ..Randomized::default()
         })
         .await;
-    assert!(result.is_ok(), format!("result is error: {:?}", result));
+    assert!(result.is_ok(), "returns: {:?}", result);
 
     assert_eq!(transport.messages.len().await, 1);
     assert_eq!(core.messages.len().await, 0);
@@ -189,7 +189,7 @@ async fn request_failure_goes_through_completed() {
             ..Randomized::default()
         })
         .await;
-    assert!(result.is_ok(), format!("result is error: {:?}", result));
+    assert!(result.is_ok(), "result is error: {:?}", result);
 
     assert_eq!(transport.messages.len().await, 1);
     assert_eq!(core.messages.len().await, 0);
@@ -252,7 +252,7 @@ async fn multiple_request_failure_goes_through_completed() {
             ..Randomized::default()
         })
         .await;
-    assert!(result.is_ok(), format!("result is error: {:?}", result));
+    assert!(result.is_ok(), "result is error: {:?}", result);
 
     assert_eq!(transport.messages.len().await, 1);
     assert_eq!(core.messages.len().await, 0);
@@ -337,7 +337,7 @@ async fn unexpected_failures_when_accepted_goes_to_errored() {
             ..Randomized::default()
         })
         .await;
-    assert!(result.is_ok(), format!("result is error: {:?}", result));
+    assert!(result.is_ok(), "result is error: {:?}", result);
 
     assert_eq!(transport.messages.len().await, 1);
     assert_eq!(core.messages.len().await, 0);
@@ -428,7 +428,7 @@ async fn ok_when_completed_goes_to_errored() {
             ..Randomized::default()
         })
         .await;
-    assert!(result.is_ok(), format!("result is error: {:?}", result));
+    assert!(result.is_ok(), "result is error: {:?}", result);
 
     assert_eq!(transport.messages.len().await, 1);
     assert_eq!(core.messages.len().await, 0);
