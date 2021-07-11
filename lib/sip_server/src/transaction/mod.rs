@@ -2,12 +2,8 @@ pub mod uac;
 pub mod uas;
 
 use crate::{error::TransactionError, Error, SipManager};
-use common::async_trait::async_trait;
-use models::{
-    transport::{RequestMsg, ResponseMsg, TransportMsg},
-    SipMessageExt,
-};
-use rsip::SipMessage;
+use common::{async_trait::async_trait, rsip::prelude::*};
+use models::transport::{RequestMsg, ResponseMsg, TransportMsg};
 use std::collections::HashMap;
 use std::{
     any::Any,
@@ -208,11 +204,11 @@ impl Inner {
         let sip_message = msg.sip_message;
 
         match sip_message {
-            SipMessage::Request(request) => {
+            rsip::SipMessage::Request(request) => {
                 self.process_incoming_request(RequestMsg::new(request, msg.peer, msg.transport))
                     .await?
             }
-            SipMessage::Response(response) => {
+            rsip::SipMessage::Response(response) => {
                 self.process_incoming_response(ResponseMsg::new(response, msg.peer, msg.transport))
                     .await?
             }

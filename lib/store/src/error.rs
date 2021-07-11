@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use common::rsip;
 use std::{error::Error as StdError, fmt};
 
 #[derive(Debug)]

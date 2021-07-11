@@ -1,6 +1,9 @@
 use crate::schema::responses;
 use crate::{db_conn, Error};
-use common::chrono::{DateTime, Utc};
+use common::{
+    chrono::{DateTime, Utc},
+    rsip::prelude::*,
+};
 use diesel::prelude::*;
 
 #[derive(Queryable, AsChangeset, Insertable, Debug, Clone)]
@@ -87,7 +90,7 @@ impl Response {
 impl From<rsip::Response> for DirtyResponse {
     fn from(model: rsip::Response) -> DirtyResponse {
         DirtyResponse {
-            code: Some(Into::<u16>::into(*model.code()) as i16),
+            code: Some(Into::<u16>::into(model.status_code.clone()) as i16),
             headers: Some(format!("{:?}", model.headers())),
             body: Some(String::from_utf8_lossy(&model.body()).to_string()),
             ..Default::default()

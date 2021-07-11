@@ -1,10 +1,9 @@
 use super::ReqProcessor;
 use crate::{Error, SipManager};
-use common::async_trait::async_trait;
+use common::{async_trait::async_trait, rsip::prelude::*};
 use models::transport::{RequestMsg, ResponseMsg};
 use std::{
     any::Any,
-    convert::TryInto,
     sync::{Arc, Weak},
 };
 
@@ -20,8 +19,6 @@ impl ReqProcessor for Registrar {
     }
 
     async fn process_incoming_request(&self, msg: RequestMsg) -> Result<(), Error> {
-        use rsip::message::HeadersExt;
-
         apply_default_checks(&msg.sip_request)?;
 
         match msg.sip_request.contact_header() {
@@ -41,13 +38,14 @@ impl Registrar {
     }
 
     async fn handle_update(&self, msg: RequestMsg) -> Result<(), Error> {
-        use rsip::message::{ExpiresExt, HeadersExt};
         use std::convert::TryFrom;
 
         for contact_header in msg.sip_request.contact_headers() {
-            match expires_value_for(contact_header, msg.sip_request.expires_header()) {
+            let typed_contact_header = contact_header.typed()?;
+
+            match expires_value_for(contact_header, msg.sip_request.expires_header())? {
                 0 => {
-                    store::Registration::delete_by_uri(contact_header.0.uri.to_string())?;
+                    store::Registration::delete_by_uri(typed_contact_header.uri.to_string())?;
                 }
                 _ => {
                     store::Registration::upsert(store::DirtyRegistration::try_from(msg.clone())?)?;
@@ -63,8 +61,8 @@ impl Registrar {
             msg.sip_request.clone(),
             store::Registration::search(Default::default())?
                 .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<Vec<rsip::headers::Contact>, rsip::Error>>()?,
+                .map(Into::into)
+                .collect::<Vec<rsip::headers::Contact>>(),
         )?;
         self.sip_manager()
             .transport
@@ -74,8 +72,6 @@ impl Registrar {
 }
 
 fn apply_default_checks(request: &rsip::Request) -> Result<(), Error> {
-    use rsip::message::HeadersExt;
-
     let to_header = request.to_header()?;
     let from_header = request.from_header()?;
 
@@ -91,11 +87,14 @@ fn has_same_from_to_header_uris(
     from_header: &rsip::headers::From,
     to_header: &rsip::headers::To,
 ) -> Result<(), Error> {
-    if from_header.0.uri != to_header.0.uri {
+    let typed_from_header = from_header.typed()?;
+    let typed_to_header = to_header.typed()?;
+
+    if typed_from_header.uri != typed_to_header.uri {
         return Err(Error::from("mismatch between to and from header uris!"));
     }
 
-    if from_header.0.display_name != to_header.0.display_name {
+    if typed_from_header.display_name != typed_to_header.display_name {
         return Err(Error::from(
             "mismatch between to and from header display names!",
         ));
@@ -105,7 +104,7 @@ fn has_same_from_to_header_uris(
 }
 
 fn has_correct_request_uri(request_uri: &rsip::common::Uri) -> Result<(), Error> {
-    if request_uri.host_with_port == common::CONFIG.default_socket_addr().into() {
+    if common::CONFIG.contains_addr(&request_uri.host_with_port) {
         Ok(())
     } else {
         Err(Error::from("invalid request uri"))
@@ -113,7 +112,9 @@ fn has_correct_request_uri(request_uri: &rsip::common::Uri) -> Result<(), Error>
 }
 
 fn has_correct_to_request_uri(to_header: &rsip::headers::To) -> Result<(), Error> {
-    if to_header.0.uri.host_with_port == common::CONFIG.default_socket_addr().into() {
+    let typed_to_header = to_header.typed()?;
+
+    if common::CONFIG.contains_addr(&typed_to_header.uri.host_with_port) {
         Ok(())
     } else {
         Err(Error::from("record not found!"))
@@ -128,12 +129,7 @@ fn create_registration_ok_from(
     request: rsip::Request,
     contacts: Vec<rsip::headers::Contact>,
 ) -> Result<rsip::Response, crate::Error> {
-    use rsip::{
-        common::Method,
-        headers::{Header, NamedParam},
-        message::HeadersExt,
-        Headers,
-    };
+    use rsip::{common::Method, headers::*, Headers};
 
     if *request.method() != Method::Register {
         return Err(crate::Error::custom(format!(
@@ -147,17 +143,17 @@ fn create_registration_ok_from(
     headers.push(request.call_id_header()?.clone().into());
     headers.push(request.cseq_header()?.clone().into());
     headers.push(request.via_header()?.clone().into());
-    let mut to = request.to_header()?.clone();
-    to.0.add_param(NamedParam::Tag(Default::default()));
-    headers.push(to.into());
-    headers.push(Header::ContentLength(Default::default()));
-    headers.push(Header::Server(Default::default()));
+    let mut typed_to_header = request.to_header()?.typed()?;
+    typed_to_header.with_tag(Default::default());
+    headers.push(typed_to_header.into());
+    headers.push(ContentLength::default().into());
+    headers.push(Server::default().into());
     for contact in contacts {
         headers.push(contact.into());
     }
 
     Ok(rsip::Response {
-        code: 200.into(),
+        status_code: 200.into(),
         headers,
         ..Default::default()
     })
@@ -165,13 +161,16 @@ fn create_registration_ok_from(
 
 fn expires_value_for(
     contact_header: &rsip::headers::Contact,
-    expires_header: Result<&rsip::headers::Expires, rsip::Error>,
-) -> u32 {
-    match contact_header.expires() {
-        Ok(Some(expire)) => expire,
-        _ => match expires_header {
-            Ok(header) => header.0,
-            _ => 600,
+    expires_header: Option<&rsip::headers::Expires>,
+) -> Result<u32, Error> {
+    let typed_contact_header = contact_header.typed()?;
+    let typed_expires_header = expires_header.map(|e| e.typed()).transpose()?;
+
+    match typed_contact_header.expires() {
+        Some(expire) => Ok(expire.seconds()?),
+        _ => match typed_expires_header {
+            Some(header) => Ok(*header.value()),
+            _ => Ok(600),
         },
     }
 }

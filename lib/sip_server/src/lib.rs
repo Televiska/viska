@@ -3,7 +3,6 @@
 pub mod error;
 pub mod helpers;
 pub mod presets;
-//mod transactions;
 
 pub mod core;
 pub mod sip_manager;

@@ -4,11 +4,11 @@ pub use states::{Accepted, Calling, Completed, Errored, Proceeding, Terminated};
 
 use crate::Error;
 use crate::SipManager;
+use common::rsip::prelude::*;
 use models::{
     transport::{RequestMsg, ResponseMsg},
     RequestExt,
 };
-use rsip::common::StatusCodeKind;
 use std::sync::Arc;
 use tokio::time::Instant;
 
@@ -53,8 +53,6 @@ impl std::fmt::Display for TrxState {
 
 impl TrxStateMachine {
     pub fn new(sip_manager: Arc<SipManager>, msg: RequestMsg) -> Result<Self, Error> {
-        use models::SipMessageExt;
-
         Ok(Self {
             id: msg.sip_request.transaction_id()?,
             state: TrxState::Calling(Default::default()),
@@ -80,13 +78,7 @@ impl TrxStateMachine {
     }
 
     pub fn is_active(&self) -> bool {
-        match self.state {
-            TrxState::Errored(_) => false,
-            TrxState::Terminated(_) => false,
-            //potential bug here if between is_active and next(Some(req)), state is changed with
-            //next(None)
-            _ => true,
-        }
+        !matches!(self.state, TrxState::Errored(_) | TrxState::Terminated(_))
     }
 
     async fn next_step(&mut self) -> Result<(), Error> {
@@ -121,7 +113,9 @@ impl TrxStateMachine {
     }
 
     async fn next_step_with(&mut self, response: rsip::Response) -> Result<(), Error> {
-        match (&self.state, response.code.kind()) {
+        use rsip::common::StatusCodeKind;
+
+        match (&self.state, response.status_code.kind()) {
             (TrxState::Calling(_), StatusCodeKind::Provisional) => {
                 self.sip_manager
                     .core
@@ -181,7 +175,7 @@ impl TrxStateMachine {
                 self.error(
                     format!(
                         "unknown match: {}, {} for transaction {}",
-                        response.code, self.state, self.id
+                        response.status_code, self.state, self.id
                     ),
                     Some(response),
                 );

@@ -12,16 +12,16 @@ futures-util = "0.3.4"
 chrono = { version = "0.4.11", features = ["serde"] }
 log = { version = "0.4.8" }
 pretty_env_logger = { version = "0.4.0" }
-nom = { version = "6.0.0-alpha1" }
 rand = { version = "0.7" }
 rand_chacha = { version = "0.2.2" }
 uuid = { version = "0.8.1", features = ["serde", "v4"] }
 ipnetwork = "0.16.0"
 envconfig = "0.9.1"
 envconfig_derive = "0.9.1"
-delegate = "0.4.3"
+delegate = "0.5.2"
 md5 = "0.7.0"
 async-trait = "0.1.40"
 pnet = "0.27.2"
 once_cell = "1.5.2"
-
+lexical-core = "0.7.6"
+rsip = { path = "../../rsip" }

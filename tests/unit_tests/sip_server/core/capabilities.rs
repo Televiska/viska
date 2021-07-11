@@ -4,6 +4,7 @@ use crate::common::{
     snitches::{CoreSnitch, TransportSnitch},
 };
 use ::common::ipnetwork::IpNetwork;
+use ::common::rsip::prelude::*;
 use models::transport::RequestMsg;
 use sip_server::{
     core::{Capabilities, ReqProcessor},
@@ -36,5 +37,8 @@ async fn sending_an_options_request_receives_busy() {
         .await;
     assert!(res.is_ok(), "returns: {:?}", res);
     assert_eq!(transport.messages.len().await, 1);
-    assert_eq!(transport.messages.first_response().await.code, 486.into());
+    assert_eq!(
+        transport.messages.first_response().await.status_code,
+        486.into()
+    );
 }

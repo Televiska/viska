@@ -4,6 +4,7 @@ pub use states::{Accepted, Completed, Confirmed, Errored, Proceeding, Terminated
 
 use crate::Error;
 use crate::SipManager;
+use common::rsip::prelude::*;
 use models::transport::{RequestMsg, ResponseMsg};
 use std::sync::Arc;
 use tokio::time::Instant;
@@ -62,7 +63,6 @@ impl TrxStateMachine {
         response: Option<rsip::Response>,
     ) -> Result<Self, Error> {
         use models::RequestExt;
-        use models::SipMessageExt;
 
         let RequestMsg {
             sip_request,
@@ -85,13 +85,7 @@ impl TrxStateMachine {
     }
 
     pub fn is_active(&self) -> bool {
-        match self.state {
-            TrxState::Errored(_) => false,
-            TrxState::Terminated(_) => false,
-            //potential bug here if between is_active and next(Some(req)), state is changed with
-            //next(None)
-            _ => true,
-        }
+        !matches!(self.state, TrxState::Errored(_) | TrxState::Terminated(_))
     }
 
     pub async fn next(&mut self, sip_message: Option<rsip::SipMessage>) -> Result<(), Error> {
@@ -207,7 +201,7 @@ impl TrxStateMachine {
     ) -> Result<(), Error> {
         use rsip::common::StatusCodeKind;
 
-        match (&self.state, response.code.kind()) {
+        match (&self.state, response.status_code.kind()) {
             (TrxState::Proceeding(_), StatusCodeKind::Provisional) => {
                 self.response = response.clone();
                 self.sip_manager
@@ -240,7 +234,7 @@ impl TrxStateMachine {
             _ => self.error(
                 format!(
                     "unknown transition for {} and {}",
-                    self.state, response.code
+                    self.state, response.status_code
                 ),
                 Some(response.into()),
             ),

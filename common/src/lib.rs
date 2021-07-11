@@ -6,7 +6,7 @@ pub use config::Config;
 use once_cell::sync::Lazy;
 use std::sync::Arc;
 
-pub static CONFIG: Lazy<Arc<Config>> = Lazy::new(|| Arc::new(config::Config::new()));
+pub static CONFIG: Lazy<Arc<Config>> = Lazy::new(|| Arc::new(config::Config::default()));
 
 pub use async_trait;
 pub use bytes;
@@ -17,11 +17,11 @@ pub use futures_util;
 pub use ipnetwork;
 pub use log;
 pub use md5;
-pub use nom;
 pub use once_cell;
 pub use pnet;
 pub use pretty_env_logger;
 pub use rand;
 pub use rand_chacha;
+pub use rsip;
 pub use tokio_util;
 pub use uuid;

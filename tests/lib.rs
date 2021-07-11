@@ -37,5 +37,4 @@ macro_rules! p {
 }
 
 pub mod common;
-//pub mod integration;
 pub mod unit_tests;

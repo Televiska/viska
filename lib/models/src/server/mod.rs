@@ -1,3 +1,4 @@
+use crate::transport::{RequestMsg, ResponseMsg, TransportMsg};
 use common::bytes::Bytes;
 use std::net::SocketAddr;
 
@@ -16,8 +17,35 @@ impl From<(Bytes, SocketAddr)> for UdpTuple {
     }
 }
 
-impl Into<(Bytes, SocketAddr)> for UdpTuple {
-    fn into(self) -> (Bytes, SocketAddr) {
-        (self.bytes, self.peer)
+impl From<UdpTuple> for (Bytes, SocketAddr) {
+    fn from(udp_tuple: UdpTuple) -> Self {
+        (udp_tuple.bytes, udp_tuple.peer)
+    }
+}
+
+impl From<RequestMsg> for UdpTuple {
+    fn from(from: RequestMsg) -> Self {
+        UdpTuple {
+            bytes: from.sip_request.into(),
+            peer: from.peer,
+        }
+    }
+}
+
+impl From<ResponseMsg> for UdpTuple {
+    fn from(from: ResponseMsg) -> Self {
+        Self {
+            bytes: from.sip_response.into(),
+            peer: from.peer,
+        }
+    }
+}
+
+impl From<TransportMsg> for UdpTuple {
+    fn from(from: TransportMsg) -> Self {
+        UdpTuple {
+            bytes: from.sip_message.into(),
+            peer: from.peer,
+        }
     }
 }

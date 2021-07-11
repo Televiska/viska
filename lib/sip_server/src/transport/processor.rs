@@ -1,6 +1,6 @@
 use crate::Error;
+use common::rsip::prelude::*;
 use models::transport::TransportMsg;
-use rsip::SipMessage;
 
 //transport processor
 
@@ -18,8 +18,10 @@ impl Processor {
         } = msg;
 
         let sip_message = match sip_message {
-            SipMessage::Request(request) => uas::apply_request_defaults(request, peer, transport)?,
-            SipMessage::Response(response) => {
+            rsip::SipMessage::Request(request) => {
+                uas::apply_request_defaults(request, peer, transport)?
+            }
+            rsip::SipMessage::Response(response) => {
                 uac::apply_response_defaults(response, peer, transport)?
             }
         };
@@ -31,7 +33,7 @@ impl Processor {
         })
     }
 
-    pub fn process_outgoing_message(&self, msg: TransportMsg) -> TransportMsg {
+    pub fn process_outgoing_message(&self, msg: TransportMsg) -> Result<TransportMsg, Error> {
         use super::{uac, uas};
 
         let TransportMsg {
@@ -41,16 +43,18 @@ impl Processor {
         } = msg;
 
         let sip_message = match sip_message {
-            SipMessage::Request(request) => uac::apply_request_defaults(request, peer, transport),
-            SipMessage::Response(response) => {
+            rsip::SipMessage::Request(request) => {
+                uac::apply_request_defaults(request, peer, transport)?
+            }
+            rsip::SipMessage::Response(response) => {
                 uas::apply_response_defaults(response, peer, transport)
             }
         };
 
-        TransportMsg {
+        Ok(TransportMsg {
             sip_message,
             peer,
             transport,
-        }
+        })
     }
 }

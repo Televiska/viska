@@ -6,9 +6,10 @@ use crate::common::{
 };
 use common::futures_util::stream::StreamExt;
 use common::log::Level;
+use common::rsip::prelude::*;
 use models::{
     transport::{RequestMsg, ResponseMsg, TransportMsg},
-    RequestExt, SipMessageExt,
+    RequestExt,
 };
 use sip_server::{
     transaction::uas::{TrxState, TrxStateMachine, TIMER_G},
@@ -165,7 +166,7 @@ async fn multiple_invite_on_proceeding() {
         TransportMsg {
             sip_message:
                 rsip::SipMessage::Response(rsip::Response {
-                    code: rsip::common::StatusCode::Ringing,
+                    status_code: rsip::common::StatusCode::Ringing,
                     ..
                 }),
             peer: _,

@@ -1,6 +1,9 @@
 use crate::schema::requests;
 use crate::{db_conn, Error};
-use common::chrono::{DateTime, Utc};
+use common::{
+    chrono::{DateTime, Utc},
+    rsip::prelude::*,
+};
 use diesel::prelude::*;
 
 #[derive(Queryable, AsChangeset, Insertable, Debug, Clone)]

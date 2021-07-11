@@ -5,6 +5,7 @@ use crate::{
 };
 use common::{
     chrono::{DateTime, Utc},
+    rsip::prelude::*,
     uuid::Uuid,
 };
 use diesel::{
@@ -14,7 +15,6 @@ use diesel::{
     serialize::{Output, ToSql},
     sql_types::Text,
 };
-use rsip::Request;
 use std::{
     convert::{TryFrom, TryInto},
     fmt::{self, Debug},
@@ -186,16 +186,15 @@ impl Dialog {
     }
 
     pub fn find_with_transaction(computed_id: String) -> Result<DialogWithTransaction, Error> {
-        Ok(Self::query_with_transactions()
+        Self::query_with_transactions()
             .computed_id(Some(computed_id))
             .order_by_created_at()
-            .first()?)
+            .first()
     }
 
-    pub fn find_or_create_dialog(request: Request) -> Result<DialogWithTransaction, Error> {
-        use rsip::message::HeadersExt;
+    pub fn find_or_create_dialog(request: rsip::Request) -> Result<DialogWithTransaction, Error> {
         //request.debug_with(request.dialog_id().map(|s| s.to_string()));
-        match request.dialog_id() {
+        match request.dialog_id()? {
             Some(dialog_id) => Ok(Self::find_with_transaction(dialog_id)?),
             None => Ok(Self::create_with_transaction(request)?),
         }
@@ -219,7 +218,7 @@ impl Dialog {
         })?;
 
         let connection = db_conn()?;
-        Ok(connection.transaction::<_, Error, _>(|| {
+        connection.transaction::<_, Error, _>(|| {
             let dialog: Self = insert_into(dialogs::table)
                 .values(dirty_struct.dialog)
                 .get_result(&connection)?;
@@ -231,7 +230,7 @@ impl Dialog {
                 .get_result(&connection)?;
 
             Ok(DialogWithTransaction::from((dialog, transaction)))
-        })?)
+        })
     }
 
     pub fn update(record: impl Into<DirtyDialog>, id: i64) -> Result<Self, Error> {
@@ -289,12 +288,11 @@ impl TryFrom<rsip::Request> for DirtyDialogWithTransaction {
     type Error = crate::Error;
 
     fn try_from(model: rsip::Request) -> Result<DirtyDialogWithTransaction, Self::Error> {
-        use rsip::message::HeadersExt;
         //use store::{DialogFlow, RegistrationFlow};
         let call_id: String = model.call_id_header()?.clone().into();
         let from_tag: String = model
             .from_header()?
-            .clone()
+            .typed()?
             .tag()
             .ok_or("missing call id")?
             .clone()
@@ -302,6 +300,7 @@ impl TryFrom<rsip::Request> for DirtyDialogWithTransaction {
 
         let branch_id: String = model
             .via_header()?
+            .typed()?
             .branch()
             .ok_or("missing branch id")?
             .clone()
@@ -327,6 +326,7 @@ impl TryFrom<rsip::Request> for DirtyDialogWithTransaction {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<models::Dialog> for DialogWithTransaction {
     fn into(self) -> models::Dialog {
         models::Dialog {

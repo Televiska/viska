@@ -1,28 +1,35 @@
 use crate::common::factories::prelude::*;
-use rsip::{common::*, headers::*, Header, Headers};
+use common::rsip::prelude::*;
+use rsip::{
+    common::{Method, Uri, Version},
+    headers::*,
+};
 use std::{convert::TryInto, net::IpAddr as StdIpAddr};
 
 pub fn request(from_uri: Option<Uri>, to_uri: Option<Uri>) -> rsip::Request {
     let mut headers: Headers = Randomized::default();
     if let Some(from_uri) = from_uri {
-        let mut from_header: From = rsip::header_opt!(headers.iter(), Header::From)
+        let mut typed_from_header = rsip::header_opt!(headers.iter(), Header::From)
             .expect("from header")
-            .clone();
-        headers.unique_push(from_header.with_uri(from_uri).into());
+            .typed()
+            .expect("typed from header");
+        headers.unique_push(typed_from_header.with_uri(from_uri).into());
     }
     if let Some(to_uri) = to_uri {
-        let mut to_header: To = rsip::header_opt!(headers.iter(), Header::To)
+        let mut typed_to_header = rsip::header_opt!(headers.iter(), Header::To)
             .expect("to header")
-            .clone();
-        headers.unique_push(to_header.with_uri(to_uri).into());
+            .typed()
+            .expect("typed to header");
+        headers.unique_push(typed_to_header.with_uri(to_uri).into());
     }
-    let to_header: To = rsip::header_opt!(headers.iter(), Header::To)
+    let to_header = rsip::header_opt!(headers.iter(), Header::To)
         .expect("to header")
-        .clone();
+        .typed()
+        .expect("typed to header");
 
     rsip::Request {
         method: Method::Register,
-        uri: to_header.0.uri.stripped(),
+        uri: to_header.uri.stripped(),
         version: Version::V2,
         headers,
         body: vec![],
@@ -31,14 +38,15 @@ pub fn request(from_uri: Option<Uri>, to_uri: Option<Uri>) -> rsip::Request {
 
 pub fn invite_request() -> rsip::Request {
     let mut headers: Headers = Randomized::default();
-    headers.unique_push(CSeq::from((1, Method::Invite)).into());
-    let mut to_header: To = rsip::header_opt!(headers.iter(), Header::To)
+    headers.unique_push(cseq::typed::CSeq::from((1, Method::Invite)).into());
+    let typed_to_header = rsip::header_opt!(headers.iter(), Header::To)
         .expect("to header")
-        .clone();
+        .typed()
+        .expect("typed to header");
 
     rsip::Request {
         method: Method::Invite,
-        uri: to_header.0.uri.stripped(),
+        uri: typed_to_header.uri.stripped(),
         headers,
         ..Randomized::default()
     }
@@ -46,14 +54,14 @@ pub fn invite_request() -> rsip::Request {
 
 pub fn register_query_request() -> rsip::Request {
     let mut headers: Headers = Randomized::default();
-    headers.unique_push(CSeq::from((1, Method::Register)).into());
+    headers.unique_push(cseq::typed::CSeq::from((1, Method::Register)).into());
 
-    let base_uri: Uri = common::CONFIG.default_socket_addr().into();
+    let base_uri: Uri = common::CONFIG.default_addr().into();
     let from_uri = base_uri.clone().with_username("filippos");
     let to_uri = from_uri.clone();
 
-    headers.unique_push(From::from(from_uri).into());
-    headers.unique_push(To::from(to_uri.clone()).into());
+    headers.unique_push(from::typed::From::from(from_uri).into());
+    headers.unique_push(to::typed::To::from(to_uri.clone()).into());
     headers.retain(|h| !matches!(h, Header::Contact(_)));
 
     rsip::Request {
@@ -68,14 +76,13 @@ pub fn register_request() -> rsip::Request {
     let request = register_query_request();
     let mut headers = request.headers.clone();
 
-    let from_header = rsip::header_opt!(headers.iter(), Header::From)
-        .expect("from header")
-        .clone();
-    headers.unique_push(Contact::from(from_header.0.uri.clone()).into());
+    let from_header = rsip::header_opt!(headers.iter(), Header::From).expect("from header");
+    let typed_from_header = from_header.typed().expect("typed from header");
+    headers.unique_push(contact::typed::Contact::from(typed_from_header.uri.clone()).into());
 
     rsip::Request {
         method: Method::Register,
-        uri: from_header.0.uri.stripped(),
+        uri: typed_from_header.uri.stripped(),
         headers,
         ..Randomized::default()
     }
@@ -85,15 +92,14 @@ pub fn register_delete_request_with_uri(uri: Uri) -> rsip::Request {
     let request = register_query_request();
     let mut headers = request.headers.clone();
 
-    let from_header = rsip::header_opt!(headers.iter(), Header::From)
-        .expect("from header")
-        .clone();
-    headers.unique_push(Contact::from(uri).into());
-    headers.unique_push(Expires::from(0).into());
+    let from_header = rsip::header_opt!(headers.iter(), Header::From).expect("from header");
+    let typed_from_header = from_header.typed().expect("typed from header");
+    headers.unique_push(contact::typed::Contact::from(uri).into());
+    headers.unique_push(Expires::new("0").into());
 
     rsip::Request {
         method: Method::Register,
-        uri: from_header.0.uri.stripped(),
+        uri: typed_from_header.uri.stripped(),
         headers,
         ..Randomized::default()
     }
@@ -101,12 +107,12 @@ pub fn register_delete_request_with_uri(uri: Uri) -> rsip::Request {
 
 pub fn options_request() -> rsip::Request {
     let mut headers: Headers = Randomized::default();
-    headers.unique_push(CSeq::from((1, Method::Options)).into());
+    headers.unique_push(cseq::typed::CSeq::from((1, Method::Options)).into());
 
-    let base_uri: Uri = common::CONFIG.default_socket_addr().into();
+    let base_uri: Uri = common::CONFIG.default_addr().into();
     let to_uri = base_uri.clone().with_username("filippos");
 
-    headers.unique_push(To::from(to_uri.clone()).into());
+    headers.unique_push(to::typed::To::from(to_uri.clone()).into());
     headers.retain(|h| !matches!(h, Header::Contact(_)));
 
     rsip::Request {

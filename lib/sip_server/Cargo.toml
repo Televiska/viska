@@ -12,4 +12,3 @@ common = { path = "../../common" }
 models = { path = "../models" }
 store = { path = "../store" }
 helpers = { path = "../helpers" }
-rsip = { path = "../rsip" }

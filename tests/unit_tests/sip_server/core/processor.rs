@@ -4,6 +4,7 @@ use crate::common::{
     snitches::{CorePanic, RegistrarSnitch, ReqProcessorPanic, TransactionPanic, TransportSnitch},
 };
 use ::common::ipnetwork::IpNetwork;
+use ::common::rsip::prelude::*;
 use models::transport::RequestMsg;
 use sip_server::{
     core::{CoreProcessor, Processor, ReqProcessor},
@@ -44,5 +45,8 @@ async fn sending_an_options_request_receives_busy() {
     //TODO: we need to do somethng with auth returning an Error
     //assert!(res.is_ok(), format!("returns: {:?}", res));
     assert_eq!(transport.messages.len().await, 1);
-    assert_eq!(transport.messages.first_response().await.code, 401.into());
+    assert_eq!(
+        transport.messages.first_response().await.status_code,
+        401.into()
+    );
 }

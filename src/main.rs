@@ -6,7 +6,7 @@ use sip_server::{
 #[tokio::main]
 async fn main() {
     common::pretty_env_logger::init_timed();
-    let config = common::Config::new();
+    let config = common::Config::default();
 
     println!("{:?}", config);
 

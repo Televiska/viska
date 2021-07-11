@@ -1,71 +1,82 @@
 use crate::Error;
-use rsip::{common::Transport, headers::Via, message::HeadersExt, Request, Response, SipMessage};
+use common::rsip::prelude::*;
 use std::net::SocketAddr;
 
 //outgoing
 pub fn apply_request_defaults(
-    mut request: Request,
+    mut request: rsip::Request,
     peer: SocketAddr,
-    _transport: Transport,
-) -> SipMessage {
+    _transport: rsip::common::Transport,
+) -> Result<rsip::SipMessage, Error> {
     apply_via_maddr_address(
         request.via_header_mut().expect("via header is missing!"),
         &peer,
-    );
+    )?;
     apply_via_ttl(
         request.via_header_mut().expect("via header is missing!"),
         &peer,
-    );
-    apply_via_sent_by(request.via_header_mut().expect("via header is missing!"));
+    )?;
+    apply_via_sent_by(request.via_header_mut().expect("via header is missing!"))?;
 
-    request.into()
+    Ok(request.into())
 }
 
 //incoming
 pub fn apply_response_defaults(
-    response: Response,
+    response: rsip::Response,
     _peer: SocketAddr,
-    _transport: Transport,
-) -> Result<SipMessage, Error> {
+    _transport: rsip::common::Transport,
+) -> Result<rsip::SipMessage, Error> {
     assert_sent_by_value(response.via_header().expect("via header missing"))?;
     Ok(response.into())
 }
 
-pub fn apply_via_maddr_address(via_header: &mut Via, peer: &SocketAddr) {
-    use rsip::common::uri::Param;
+pub fn apply_via_maddr_address(
+    via_header: &mut rsip::header::Via,
+    peer: &SocketAddr,
+) -> Result<(), Error> {
+    use rsip::common::uri::{Maddr, Param};
 
     if peer.ip().is_multicast() {
-        let mut uri = via_header.uri.clone();
-        uri.params
-            .push(Param::Other("maddr".into(), Some(peer.ip().to_string())));
-        via_header.uri = uri;
+        via_header.replace(
+            via_header
+                .typed()?
+                .with_param(Param::Maddr(Maddr::new(peer.ip().to_string()))),
+        );
     }
+
+    Ok(())
 }
 
-pub fn apply_via_ttl(via_header: &mut Via, peer: &SocketAddr) {
-    use rsip::common::uri::Param;
+pub fn apply_via_ttl(via_header: &mut rsip::header::Via, peer: &SocketAddr) -> Result<(), Error> {
+    use rsip::common::uri::{Param, Ttl};
 
     if peer.ip().is_ipv4() {
-        let mut uri = via_header.uri.clone();
-        uri.params
-            .push(Param::Other("ttl".into(), Some("1".into())));
-        via_header.uri = uri;
+        via_header.replace(via_header.typed()?.with_param(Param::Ttl(Ttl::new("1"))));
     }
+
+    Ok(())
 }
 
-pub fn apply_via_sent_by(via_header: &mut Via) {
-    let mut uri = via_header.uri.clone();
-    uri.host_with_port = common::CONFIG.default_socket_addr().into();
-    via_header.uri = uri;
+pub fn apply_via_sent_by(via_header: &mut rsip::header::Via) -> Result<(), Error> {
+    let typed_via_header = via_header.typed()?;
+
+    let mut uri = typed_via_header.uri.clone();
+    uri.host_with_port = common::CONFIG.default_addr();
+    via_header.replace(typed_via_header.to_string());
+
+    Ok(())
 }
 
-pub fn assert_sent_by_value(via_header: &Via) -> Result<(), Error> {
-    if via_header.uri.host_with_port == common::CONFIG.default_socket_addr().into() {
+pub fn assert_sent_by_value(via_header: &rsip::header::Via) -> Result<(), Error> {
+    let typed_via_header = via_header.typed()?;
+
+    if common::CONFIG.contains_addr(&typed_via_header.uri.host_with_port) {
         Ok(())
     } else {
         Err(Error::custom(format!(
             "sent-by address ({:?}) is different from listen address",
-            via_header.uri.host_with_port,
+            typed_via_header.uri.host_with_port,
         )))
     }
 }

@@ -1,24 +1,30 @@
 use crate::common::factories::prelude::*;
-use rsip::{common::*, headers::*, Header, Headers};
+use common::rsip::prelude::*;
+use rsip::{
+    common::{Method, Uri, Version},
+    headers::*,
+};
 use std::{convert::TryInto, net::IpAddr as StdIpAddr};
 
 pub fn response(from_uri: Option<Uri>, to_uri: Option<Uri>) -> rsip::Response {
-    let mut headers: Headers = Randomized::default();
+    let mut headers: rsip::Headers = Randomized::default();
     if let Some(from_uri) = from_uri {
-        let mut from_header: From = rsip::header_opt!(headers.iter(), Header::From)
+        let mut typed_from_header = rsip::header_opt!(headers.iter(), Header::From)
             .expect("from header")
-            .clone();
-        headers.unique_push(from_header.with_uri(from_uri).into());
+            .typed()
+            .expect("typed from header");
+        headers.unique_push(typed_from_header.with_uri(from_uri).into());
     }
     if let Some(to_uri) = to_uri {
-        let mut to_header: To = rsip::header_opt!(headers.iter(), Header::To)
+        let mut typed_to_header = rsip::header_opt!(headers.iter(), Header::To)
             .expect("to header")
-            .clone();
-        headers.unique_push(to_header.with_uri(to_uri).into());
+            .typed()
+            .expect("typed to header");
+        headers.unique_push(typed_to_header.with_uri(to_uri).into());
     }
 
     rsip::Response {
-        code: 200.into(),
+        status_code: 200.into(),
         version: Version::V2,
         headers,
         body: vec![],
@@ -26,12 +32,10 @@ pub fn response(from_uri: Option<Uri>, to_uri: Option<Uri>) -> rsip::Response {
 }
 
 pub fn trying_response_from(request: rsip::Request) -> rsip::Response {
-    use rsip::{common::*, headers::*, message::HeadersExt, Headers};
-
-    let mut headers: Headers = Default::default();
+    let mut headers: rsip::Headers = Default::default();
     headers.push(request.via_header().expect("via header").clone().into());
-    headers.push(From(request.to_header().expect("to header").clone().0).into());
-    headers.push(To(request.from_header().expect("from header").clone().0).into());
+    headers.push(From::new(request.to_header().expect("to header").clone()).into());
+    headers.push(To::new(request.from_header().expect("from header").clone()).into());
     headers.push(
         request
             .call_id_header()
@@ -40,8 +44,13 @@ pub fn trying_response_from(request: rsip::Request) -> rsip::Response {
             .into(),
     );
     headers.push(
-        CSeq::from((
-            request.cseq_header().expect("cseq header").seq,
+        cseq::typed::CSeq::from((
+            request
+                .cseq_header()
+                .expect("cseq header")
+                .typed()
+                .expect("cseq typed header")
+                .seq,
             request.method,
         ))
         .into(),
@@ -49,7 +58,7 @@ pub fn trying_response_from(request: rsip::Request) -> rsip::Response {
     headers.push(MaxForwards::default().into());
 
     rsip::Response {
-        code: StatusCode::Trying,
+        status_code: 100.into(),
         headers,
         version: Default::default(),
         body: Default::default(),
@@ -57,12 +66,10 @@ pub fn trying_response_from(request: rsip::Request) -> rsip::Response {
 }
 
 pub fn ok_response_from(request: rsip::Request) -> rsip::Response {
-    use rsip::{common::*, headers::*, message::HeadersExt, Headers};
-
-    let mut headers: Headers = Default::default();
+    let mut headers: rsip::Headers = Default::default();
     headers.push(request.via_header().expect("via header").clone().into());
-    headers.push(From(request.to_header().expect("to header").clone().0).into());
-    headers.push(To(request.from_header().expect("from header").clone().0).into());
+    headers.push(From::new(request.to_header().expect("to header").clone()).into());
+    headers.push(To::new(request.from_header().expect("from header").clone()).into());
     headers.push(
         request
             .call_id_header()
@@ -71,8 +78,13 @@ pub fn ok_response_from(request: rsip::Request) -> rsip::Response {
             .into(),
     );
     headers.push(
-        CSeq::from((
-            request.cseq_header().expect("cseq header").seq,
+        cseq::typed::CSeq::from((
+            request
+                .cseq_header()
+                .expect("cseq header")
+                .typed()
+                .expect("typed cseq header")
+                .seq,
             request.method,
         ))
         .into(),
@@ -80,7 +92,7 @@ pub fn ok_response_from(request: rsip::Request) -> rsip::Response {
     headers.push(MaxForwards::default().into());
 
     rsip::Response {
-        code: StatusCode::OK,
+        status_code: 200.into(),
         headers,
         version: Default::default(),
         body: Default::default(),
@@ -88,12 +100,10 @@ pub fn ok_response_from(request: rsip::Request) -> rsip::Response {
 }
 
 pub fn request_failure_response_from(request: rsip::Request) -> rsip::Response {
-    use rsip::{common::*, headers::*, message::HeadersExt, Headers};
-
-    let mut headers: Headers = Default::default();
+    let mut headers: rsip::Headers = Default::default();
     headers.push(request.via_header().expect("via header").clone().into());
-    headers.push(From(request.to_header().expect("to header").clone().0).into());
-    headers.push(To(request.from_header().expect("from header").clone().0).into());
+    headers.push(From::new(request.to_header().expect("to header").clone()).into());
+    headers.push(To::new(request.from_header().expect("from header").clone()).into());
     headers.push(
         request
             .call_id_header()
@@ -102,8 +112,13 @@ pub fn request_failure_response_from(request: rsip::Request) -> rsip::Response {
             .into(),
     );
     headers.push(
-        CSeq::from((
-            request.cseq_header().expect("cseq header").seq,
+        cseq::typed::CSeq::from((
+            request
+                .cseq_header()
+                .expect("cseq header")
+                .typed()
+                .expect("cseq typed header")
+                .seq,
             request.method,
         ))
         .into(),
@@ -111,7 +126,7 @@ pub fn request_failure_response_from(request: rsip::Request) -> rsip::Response {
     headers.push(MaxForwards::default().into());
 
     rsip::Response {
-        code: StatusCode::NotFound,
+        status_code: 404.into(),
         headers,
         version: Default::default(),
         body: Default::default(),
@@ -119,12 +134,10 @@ pub fn request_failure_response_from(request: rsip::Request) -> rsip::Response {
 }
 
 pub fn redirection_response_from(request: rsip::Request) -> rsip::Response {
-    use rsip::{common::*, headers::*, message::HeadersExt, Headers};
-
-    let mut headers: Headers = Default::default();
+    let mut headers: rsip::Headers = Default::default();
     headers.push(request.via_header().expect("via header").clone().into());
-    headers.push(From(request.to_header().expect("to header").clone().0).into());
-    headers.push(To(request.from_header().expect("from header").clone().0).into());
+    headers.push(From::new(request.to_header().expect("to header").clone()).into());
+    headers.push(To::new(request.from_header().expect("from header").clone()).into());
     headers.push(
         request
             .call_id_header()
@@ -133,8 +146,13 @@ pub fn redirection_response_from(request: rsip::Request) -> rsip::Response {
             .into(),
     );
     headers.push(
-        CSeq::from((
-            request.cseq_header().expect("cseq header").seq,
+        cseq::typed::CSeq::from((
+            request
+                .cseq_header()
+                .expect("cseq header")
+                .typed()
+                .expect("cseq typed header")
+                .seq,
             request.method,
         ))
         .into(),
@@ -142,7 +160,7 @@ pub fn redirection_response_from(request: rsip::Request) -> rsip::Response {
     headers.push(MaxForwards::default().into());
 
     rsip::Response {
-        code: StatusCode::MovedPermanently,
+        status_code: 301.into(),
         headers,
         version: Default::default(),
         body: Default::default(),
