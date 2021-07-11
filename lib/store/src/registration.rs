@@ -3,6 +3,7 @@ use crate::{db_conn, Error};
 use common::{
     chrono::{DateTime, Duration, Utc},
     ipnetwork::IpNetwork,
+    rsip::prelude::*,
 };
 use diesel::{
     deserialize::FromSql,
@@ -13,7 +14,7 @@ use diesel::{
 };
 use models::transport::RequestMsg;
 use std::{
-    convert::{TryFrom, TryInto},
+    convert::TryFrom,
     fmt::{self, Debug},
     io::Write,
     net::{IpAddr, Ipv4Addr},
@@ -158,11 +159,13 @@ impl Registration {
     }
 }
 
-#[derive(FromSqlRow, AsExpression, Copy, Clone, PartialEq, Debug)]
+#[derive(FromSqlRow, AsExpression, Clone, PartialEq, Debug)]
 #[sql_type = "Text"]
 pub enum Transport {
     Tcp,
     Udp,
+    Tls,
+    Sctp,
 }
 impl fmt::Display for Transport {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -191,16 +194,21 @@ impl std::str::FromStr for Transport {
         match s {
             s if s.eq_ignore_ascii_case("tcp") => Ok(Transport::Tcp),
             s if s.eq_ignore_ascii_case("udp") => Ok(Transport::Udp),
-            s => Err(format!("invalid Transport `{}`", s)),
+            s if s.eq_ignore_ascii_case("tls") => Ok(Transport::Tls),
+            s if s.eq_ignore_ascii_case("sctp") => Ok(Transport::Sctp),
+            s => Err(format!("failed to parse transport {}", s)),
         }
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<rsip::common::Transport> for Transport {
     fn into(self) -> rsip::common::Transport {
         match self {
             Transport::Tcp => rsip::common::Transport::Tcp,
             Transport::Udp => rsip::common::Transport::Udp,
+            Transport::Tls => rsip::common::Transport::Tls,
+            Transport::Sctp => rsip::common::Transport::Sctp,
         }
     }
 }
@@ -210,6 +218,8 @@ impl From<rsip::common::Transport> for Transport {
         match model {
             rsip::common::Transport::Tcp => Transport::Tcp,
             rsip::common::Transport::Udp => Transport::Udp,
+            rsip::common::Transport::Tls => Transport::Tls,
+            rsip::common::Transport::Sctp => Transport::Sctp,
         }
     }
 }
@@ -218,62 +228,68 @@ impl TryFrom<RequestMsg> for DirtyRegistration {
     type Error = crate::Error;
 
     fn try_from(msg: RequestMsg) -> Result<Self, Self::Error> {
-        use rsip::{
-            common::Method,
-            message::{ExpiresExt, HeadersExt},
-        };
-
         let request = msg.sip_request;
 
-        if request.method != Method::Register {
+        if request.method != rsip::common::Method::Register {
             return Err(Self::Error::custom(format!(
                 "cannot create registration from {} method",
                 request.method
             )));
         }
-        let expires = match (request.contact_header_expires()?, request.expires_header()) {
+        let expires = match (
+            request
+                .contact_header()?
+                .typed()?
+                .expires()
+                .map(|s| s.seconds())
+                .transpose()?,
+            request
+                .expires_header()
+                .map(|h| h.typed())
+                .transpose()?
+                .map(|h| *h.value()),
+        ) {
             (Some(expire), _) => expire,
-            (None, Ok(rsip::headers::Expires(expire))) => *expire,
+            (None, Some(expire)) => expire,
             _ => 3600,
         } as i64;
 
         let contact_header = request.contact_header()?;
+        let typed_contact_header = contact_header.typed()?;
 
         Ok(Self {
             username: Some(
                 request
                     .from_header()?
-                    .0
+                    .typed()?
                     .uri
                     .username()
-                    .ok_or("missing username in from header")?,
+                    .ok_or("missing username in from header")?
+                    .into(),
             ),
-            domain: Some(request.from_header()?.clone().0.uri.domain()),
-            contact: Some(
-                Into::<rsip::Header>::into(contact_header.clone())
-                    .to_string()
-                    .splitn(2, ':')
-                    .last()
-                    .expect("contact header value part")
-                    .to_owned(),
-            ),
+            domain: Some(request.from_header()?.typed()?.uri.host().to_string()),
+            contact: Some(contact_header.value().into()),
             expires: Some(Utc::now() + Duration::seconds(expires)),
-            call_id: Some(request.call_id_header()?.clone().0),
-            cseq: Some(request.cseq_header()?.seq as i32),
-            user_agent: Some(request.user_agent_header()?.clone().0),
-            instance: request.contact_header()?.sip_instance(),
+            call_id: Some(request.call_id_header()?.clone().into()),
+            cseq: Some(request.cseq_header()?.typed()?.seq as i32),
+            user_agent: Some(request.user_agent_header()?.clone().into()),
+            instance: Some("something".into()),
             ip_address: Some(IpAddr::V4(Ipv4Addr::new(192, 168, 0, 3)).into()),
-            port: Some(request.from_header()?.clone().0.uri.port() as i16),
-            contact_uri: Some(contact_header.0.uri.to_string()),
+            port: request
+                .from_header()?
+                .typed()?
+                .uri
+                .port()
+                .map(|s| *s.value() as i16),
+            contact_uri: Some(typed_contact_header.uri.to_string()),
             transport: Some(Transport::Udp),
         })
     }
 }
 
-impl TryInto<rsip::headers::Contact> for Registration {
-    type Error = rsip::Error;
-
-    fn try_into(self) -> Result<rsip::headers::Contact, Self::Error> {
-        Ok(self.contact.try_into()?)
+#[allow(clippy::from_over_into)]
+impl Into<rsip::headers::Contact> for Registration {
+    fn into(self) -> rsip::headers::Contact {
+        self.contact.into()
     }
 }

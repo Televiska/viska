@@ -30,7 +30,7 @@ type PgConn = PgConnection;
 pub type DbConn = diesel::r2d2::PooledConnection<diesel::r2d2::ConnectionManager<PgConn>>;
 
 static DB_POOL: Lazy<Arc<Pool<diesel::r2d2::ConnectionManager<PgConn>>>> = Lazy::new(|| {
-    let config = common::Config::new();
+    let config = common::Config::default();
     let manager = ConnectionManager::<PgConn>::new(config.database_url);
 
     Arc::new(

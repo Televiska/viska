@@ -1,6 +1,7 @@
 use super::SocketAddrBuilder;
 use crate::common::factories::RandomizedBuilder;
-use rsip::common::uri::{Auth, Domain, HostWithPort, Param, Schema, Uri};
+use common::rsip::prelude::*;
+use rsip::common::uri::{Auth, Host, HostWithPort, Param, Schema, Uri};
 use std::net::SocketAddr;
 
 pub trait UriExt {
@@ -51,38 +52,17 @@ impl UriExt for Uri {
         self
     }
     fn with_host(mut self, host_with_port: impl Into<HostWithPort>) -> Self {
-        let port = self.host_with_port.port();
-        let host_with_port = match host_with_port.into() {
-            HostWithPort::Domain(domain) => Domain {
-                host: domain.host,
-                port: Some(port),
-            }
-            .into(),
-            HostWithPort::SocketAddr(mut socket_addr) => {
-                socket_addr.set_port(port);
-                socket_addr
-            }
-            .into(),
-            HostWithPort::IpAddr(ip_addr) => ip_addr.into(),
+        self.host_with_port = HostWithPort {
+            host: host_with_port.into().host,
+            port: self.host_with_port.port,
         };
-        self.host_with_port = host_with_port;
         self
     }
     fn with_port(mut self, port: u16) -> Self {
-        let host_with_port = match self.host_with_port {
-            HostWithPort::Domain(domain) => Domain {
-                host: domain.host,
-                port: Some(port),
-            }
-            .into(),
-            HostWithPort::SocketAddr(mut socket_addr) => {
-                socket_addr.set_port(port);
-                socket_addr
-            }
-            .into(),
-            HostWithPort::IpAddr(ip_addr) => { SocketAddr::new(ip_addr, port) }.into(),
+        self.host_with_port = HostWithPort {
+            host: self.host_with_port.host,
+            port: Some(port.into()),
         };
-        self.host_with_port = host_with_port;
         self
     }
     fn with_param(mut self, param: Param) -> Self {
@@ -94,14 +74,16 @@ impl UriExt for Uri {
         self
     }
 }
-
 pub trait HostWithPortExt {
     fn localhost_with_port(port: u16) -> HostWithPort;
 }
 
 impl HostWithPortExt for HostWithPort {
-    fn localhost_with_port(port: u16) -> HostWithPort {
-        HostWithPort::SocketAddr(SocketAddrBuilder::localhost_with_port(port).into())
+    fn localhost_with_port(port: u16) -> Self {
+        Self {
+            port: Some(port.into()),
+            ..Default::default()
+        }
     }
 }
 

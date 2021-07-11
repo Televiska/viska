@@ -116,6 +116,7 @@ impl AuthRequest {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<models::AuthRequest> for AuthRequest {
     fn into(self) -> models::AuthRequest {
         models::AuthRequest {

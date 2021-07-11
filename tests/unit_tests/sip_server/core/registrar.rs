@@ -4,6 +4,7 @@ use crate::common::{
     snitches::{CoreSnitch, TransportSnitch},
 };
 use ::common::ipnetwork::IpNetwork;
+use ::common::rsip::prelude::*;
 use models::transport::RequestMsg;
 use sip_server::core::ReqProcessor;
 use sip_server::{core::Registrar, Core, CoreLayer, SipBuilder, SipManager, Transaction};
@@ -34,7 +35,10 @@ async fn with_no_records_returns_empty_list() {
         .await;
     assert!(res.is_ok(), "returns: {:?}", res);
     assert_eq!(transport.messages.len().await, 1);
-    assert_eq!(transport.messages.first_response().await.code, 200.into());
+    assert_eq!(
+        transport.messages.first_response().await.status_code,
+        200.into()
+    );
     assert!(transport
         .messages
         .first_response()
@@ -62,7 +66,10 @@ async fn with_records_returns_a_list_of_contacts() {
         .await;
     assert!(res.is_ok(), "returns: {:?}", res);
     assert_eq!(transport.messages.len().await, 1);
-    assert_eq!(transport.messages.first_response().await.code, 200.into());
+    assert_eq!(
+        transport.messages.first_response().await.status_code,
+        200.into()
+    );
     assert_eq!(
         transport
             .messages
@@ -92,7 +99,10 @@ async fn with_new_register_request_saves_the_contact() {
         .await;
     assert!(res.is_ok(), "returns: {:?}", res);
     assert_eq!(transport.messages.len().await, 1);
-    assert_eq!(transport.messages.first_response().await.code, 200.into());
+    assert_eq!(
+        transport.messages.first_response().await.status_code,
+        200.into()
+    );
     assert_eq!(
         transport
             .messages
@@ -113,7 +123,7 @@ async fn with_new_register_request_saves_the_contact() {
 
 #[tokio::test]
 async fn with_wrong_from_to_register() {
-    use rsip::{common::Uri, headers::To};
+    use rsip::{common::Uri, headers::to};
 
     let _ = common::setup();
     let (registrar, sip_manager) = setup().await;
@@ -122,7 +132,7 @@ async fn with_wrong_from_to_register() {
     let mut request = requests::register_request();
     request
         .headers
-        .unique_push(To::from(Uri::default().with_username("another")).into());
+        .unique_push(to::typed::To::from(Uri::default().with_username("another")).into());
 
     let res = registrar
         .process_incoming_request(RequestMsg {
@@ -151,7 +161,10 @@ async fn delete_registration() {
         .await;
     assert!(res.is_ok(), "returns: {:?}", res);
     assert_eq!(transport.messages.len().await, 1);
-    assert_eq!(transport.messages.first_response().await.code, 200.into());
+    assert_eq!(
+        transport.messages.first_response().await.status_code,
+        200.into()
+    );
     assert_eq!(
         transport
             .messages
@@ -180,12 +193,13 @@ fn create_registration() -> (store::Registration, rsip::common::Uri) {
 
     let uri = rsip::common::Uri {
         schema: Some(rsip::common::uri::Schema::default()),
-        host_with_port: rsip::common::uri::HostWithPort::IpAddr(ip_address.clone().ip()),
+        host_with_port: rsip::common::uri::HostWithPort::from(ip_address.clone().ip()),
         auth: Some(rsip::common::uri::Auth {
             username: username.clone(),
             password: None,
         }),
         params: vec![],
+        headers: vec![].into(),
     };
 
     //TODO: should impl Randomized default
@@ -193,9 +207,9 @@ fn create_registration() -> (store::Registration, rsip::common::Uri) {
         username: Some(username),
         domain: Some("localhost".into()),
         expires: Some(Utc::now() + Duration::minutes(100)),
-        call_id: Some(rsip::headers::CallId::default().0),
-        cseq: Some(rsip::headers::CSeq::default().seq as i32),
-        user_agent: Some(rsip::headers::UserAgent::default().0),
+        call_id: Some(rsip::headers::CallId::default().value().into()),
+        cseq: Some(1),
+        user_agent: Some(rsip::headers::UserAgent::default().value().into()),
         instance: None,
         ip_address: Some(ip_address),
         port: Some(5060),
@@ -204,15 +218,16 @@ fn create_registration() -> (store::Registration, rsip::common::Uri) {
         contact_uri: Some(uri.to_string()),
     };
 
-    let contact_header = rsip::headers::Contact(rsip::headers::NamedHeader {
-        display_name: None,
-        uri: uri.clone(),
-        params: Default::default(),
-    });
-    let rsip_header: rsip::headers::Header = contact_header.into();
+    let contact_header: rsip::Header =
+        rsip::headers::Contact::new(rsip::headers::contact::typed::Contact {
+            display_name: None,
+            uri: uri.clone(),
+            params: Default::default(),
+        })
+        .into();
 
     new_registration.contact = Some(
-        rsip_header
+        contact_header
             .to_string()
             .splitn(2, ':')
             .last()

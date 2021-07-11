@@ -1,5 +1,6 @@
-use crate::{server::UdpTuple, Error, SipMessageExt};
-use rsip::common::Transport;
+use crate::transport::{RequestMsg, ResponseMsg};
+use crate::{server::UdpTuple, Error};
+use common::rsip::{common::Transport, prelude::*};
 use std::convert::{TryFrom, TryInto};
 use std::net::SocketAddr;
 
@@ -13,7 +14,7 @@ pub struct TransportMsg {
 
 impl TransportMsg {
     pub fn transaction_id(&self) -> Result<String, Error> {
-        SipMessageExt::transaction_id(&self.sip_message)
+        Ok(self.sip_message.transaction_id()?)
     }
 }
 
@@ -27,15 +28,6 @@ impl From<(rsip::SipMessage, SocketAddr, Transport)> for TransportMsg {
     }
 }
 
-impl Into<UdpTuple> for TransportMsg {
-    fn into(self) -> UdpTuple {
-        UdpTuple {
-            bytes: self.sip_message.into(),
-            peer: self.peer,
-        }
-    }
-}
-
 impl TryFrom<UdpTuple> for TransportMsg {
     type Error = crate::Error;
 
@@ -45,5 +37,25 @@ impl TryFrom<UdpTuple> for TransportMsg {
             peer: udp_tuple.peer,
             transport: Transport::Udp,
         })
+    }
+}
+
+impl From<RequestMsg> for TransportMsg {
+    fn from(from: RequestMsg) -> Self {
+        TransportMsg {
+            sip_message: from.sip_request.into(),
+            peer: from.peer,
+            transport: from.transport,
+        }
+    }
+}
+
+impl From<ResponseMsg> for TransportMsg {
+    fn from(from: ResponseMsg) -> Self {
+        TransportMsg {
+            sip_message: from.sip_response.into(),
+            peer: from.peer,
+            transport: from.transport,
+        }
     }
 }

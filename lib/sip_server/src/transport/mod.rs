@@ -85,7 +85,7 @@ impl TransportLayer for Transport {
 
 impl Inner {
     async fn udp_send(&self, udp_tuple: UdpTuple) -> Result<(), Error> {
-        //debug_message(udp_tuple.bytes.to_vec());
+        debug_message(udp_tuple.bytes.to_vec());
 
         Ok(self.udp_sink.lock().await.send(udp_tuple.into()).await?)
     }
@@ -134,10 +134,10 @@ impl Inner {
     }
 
     async fn send(&self, msg: TransportMsg) -> Result<(), Error> {
-        common::log::debug!("{:?}", msg);
+        //common::log::debug!("{:?}", msg);
 
         Ok(self
-            .udp_send(self.processor.process_outgoing_message(msg).into())
+            .udp_send(self.processor.process_outgoing_message(msg)?.into())
             .await?)
     }
 
@@ -145,7 +145,7 @@ impl Inner {
         loop {
             match self.udp_stream.lock().await.next().await {
                 Some(Ok((request, addr))) => {
-                    //debug_message(request.to_vec());
+                    debug_message(request.clone().freeze().to_vec());
 
                     match self
                         .process_incoming_message((request.freeze(), addr).into())
@@ -184,6 +184,12 @@ fn create_socket() -> Result<(UdpSink, UdpStream), crate::Error> {
 #[allow(dead_code)]
 fn debug_message(bytes: Vec<u8>) {
     let separator = "########################################################################";
-    let message = String::from_utf8(bytes).expect("utf bytes to string");
-    println!("{}\n{}\n{}", separator, message, separator);
+    println!(
+        "{}\n{}\n{}",
+        separator,
+        String::from_utf8_lossy(&bytes),
+        separator
+    );
+    //let message = String::from_utf8(bytes).expect("utf bytes to string");
+    //println!("{}\n{}\n{}", separator, message, separator);
 }

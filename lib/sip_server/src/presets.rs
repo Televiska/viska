@@ -1,80 +1,86 @@
-use common::uuid::Uuid;
-use rsip::{
-    headers::{Authorization, Headers, WwwAuthenticate},
-    message::HeadersExt,
-    Request, Response,
-};
+use common::rsip::prelude::*;
 
-pub fn create_unauthorized_from(request: Request) -> Result<Response, crate::Error> {
-    use rsip::headers::{Header, NamedParam};
-
-    let mut headers: Headers = Default::default();
+pub fn create_unauthorized_from(request: rsip::Request) -> Result<rsip::Response, crate::Error> {
+    let mut headers: rsip::Headers = Default::default();
     headers.push(request.via_header()?.clone().into());
     headers.push(request.from_header()?.clone().into());
-    let mut to = request.to_header()?.clone();
-    to.0.add_param(NamedParam::Tag(Default::default()));
+    let mut to = request.to_header()?.typed()?;
+    to.with_tag(rsip::common::param::Tag::default());
     headers.push(to.into());
     headers.push(request.call_id_header()?.clone().into());
     headers.push(request.cseq_header()?.clone().into());
-    headers.push(Header::ContentLength(Default::default()));
-    headers.push(Header::Server(Default::default()));
-    headers.push(Header::WwwAuthenticate(www_authenticate_header_value()?));
+    headers.push(rsip::Header::ContentLength(Default::default()));
+    headers.push(rsip::Header::Server(Default::default()));
+    headers.push(rsip::Header::WwwAuthenticate(
+        www_authenticate_header_value()?,
+    ));
 
-    Ok(Response {
-        code: 401.into(),
+    Ok(rsip::Response {
+        status_code: 401.into(),
         headers,
         ..Default::default()
     })
 }
 
-pub fn create_404_from(request: Request) -> Result<Response, crate::Error> {
-    use rsip::headers::{Header, NamedParam};
-
-    let mut headers: Headers = Default::default();
+pub fn create_404_from(request: rsip::Request) -> Result<rsip::Response, crate::Error> {
+    let mut headers: rsip::Headers = Default::default();
     headers.push(request.via_header()?.clone().into());
     headers.push(request.from_header()?.clone().into());
-    let mut to = request.to_header()?.clone();
-    to.0.add_param(NamedParam::Tag(Default::default()));
+    let mut to = request.to_header()?.typed()?;
+    to.with_tag(rsip::common::param::Tag::default());
     headers.push(to.into());
     headers.push(request.call_id_header()?.clone().into());
     headers.push(request.cseq_header()?.clone().into());
-    headers.push(Header::ContentLength(Default::default()));
-    headers.push(Header::Server(Default::default()));
+    headers.push(rsip::Header::ContentLength(Default::default()));
+    headers.push(rsip::Header::Server(Default::default()));
 
-    Ok(Response {
+    Ok(rsip::Response {
         headers,
-        code: 404.into(),
+        status_code: 404.into(),
         ..Default::default()
     })
 }
 
-pub fn create_405_from(request: Request) -> Result<Response, crate::Error> {
-    use rsip::headers::{Header, NamedParam};
-
-    let mut headers: Headers = Default::default();
+pub fn create_405_from(request: rsip::Request) -> Result<rsip::Response, crate::Error> {
+    let mut headers: rsip::Headers = Default::default();
     headers.push(request.via_header()?.clone().into());
     headers.push(request.from_header()?.clone().into());
-    let mut to = request.to_header()?.clone();
-    to.0.add_param(NamedParam::Tag(Default::default()));
+    let mut to = request.to_header()?.clone().typed()?;
+    to.with_tag(rsip::common::param::Tag::default());
     headers.push(to.into());
     headers.push(request.call_id_header()?.clone().into());
     headers.push(request.cseq_header()?.clone().into());
-    headers.push(Header::ContentLength(Default::default()));
-    headers.push(Header::Server(Default::default()));
+    headers.push(rsip::Header::ContentLength(Default::default()));
+    headers.push(rsip::Header::Server(Default::default()));
 
-    Ok(Response {
+    Ok(rsip::Response {
         headers,
-        code: 405.into(),
+        status_code: 405.into(),
         ..Default::default()
     })
 }
 
-fn www_authenticate_header_value() -> Result<WwwAuthenticate, crate::Error> {
-    //let nonce = store::AuthRequest::create(store::DirtyAuthRequest::default())?.nonce;
-    let nonce = Uuid::new_v4().to_string();
-    Ok(WwwAuthenticate::new("127.0.0.1".into(), nonce))
+fn www_authenticate_header_value() -> Result<rsip::header::WwwAuthenticate, crate::Error> {
+    use rsip::common::auth;
+
+    let nonce = store::AuthRequest::create(store::DirtyAuthRequest::default())?.nonce;
+
+    Ok(rsip::header::www_authenticate::typed::WwwAuthenticate {
+        realm: "192.168.1.157".into(),
+        nonce,
+        algorithm: Some(auth::Algorithm::Md5),
+        qop: Some(auth::Qop::Auth),
+        stale: Some("FALSE".into()),
+        opaque: Some("".into()),
+        ..Default::default()
+    }
+    .into())
 }
 
-pub fn is_authorized(offer: Authorization) -> Result<bool, crate::Error> {
-    Ok(offer.verify_for("123123123".into())?)
+pub fn is_authorized(offer: rsip::header::Authorization) -> Result<bool, crate::Error> {
+    let offer = offer.typed()?;
+    Ok(
+        rsip::services::DigestGenerator::from(&offer, "123123123", &rsip::common::Method::Register)
+            .verify(&offer.response),
+    )
 }

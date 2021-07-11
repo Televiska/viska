@@ -1,5 +1,5 @@
 use super::Messages;
-use common::async_trait::async_trait;
+use common::{async_trait::async_trait, rsip::prelude::*};
 use models::transport::{RequestMsg, ResponseMsg, TransportMsg};
 use sip_server::{Error, SipManager, TransactionLayer};
 use std::any::Any;

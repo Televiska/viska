@@ -1,9 +1,8 @@
 pub use super::{Capabilities, CoreProcessor, Registrar, ReqProcessor};
 pub use crate::{presets, Error, SipManager};
-use common::async_trait::async_trait;
+use common::{async_trait::async_trait, rsip::prelude::*};
 use models::transport::ResponseMsg;
 use models::transport::{RequestMsg, TransportMsg};
-use rsip::SipMessage;
 use std::{
     any::Any,
     sync::{Arc, Weak},
@@ -30,11 +29,11 @@ impl<R: ReqProcessor, C: ReqProcessor> CoreProcessor for Processor<R, C> {
         let sip_message = msg.sip_message;
 
         match sip_message {
-            SipMessage::Request(request) => {
+            rsip::SipMessage::Request(request) => {
                 self.handle_request(RequestMsg::new(request, msg.peer, msg.transport))
                     .await
             }
-            SipMessage::Response(_) => Err(Error::from("we don't support responses yet")),
+            rsip::SipMessage::Response(_) => Err(Error::from("we don't support responses yet")),
         }?;
 
         Ok(())

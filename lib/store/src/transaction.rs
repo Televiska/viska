@@ -148,6 +148,7 @@ impl std::str::FromStr for TransactionState {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<models::transactions::NotFound> for Transaction {
     fn into(self) -> models::transactions::NotFound {
         use models::transactions::{not_found::TransactionData, NotFound};
@@ -191,6 +192,7 @@ impl From<models::transactions::NotFound> for DirtyTransaction {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<models::transactions::Registration> for Transaction {
     fn into(self) -> models::transactions::Registration {
         use models::transactions::{registration::TransactionData, Registration};

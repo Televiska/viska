@@ -1,18 +1,13 @@
 use crate::Error;
-use rsip::{
-    common::{uri::HostWithPort, Transport},
-    headers::Via,
-    message::HeadersExt,
-    Request, Response, SipMessage,
-};
+use common::rsip::prelude::*;
 use std::net::SocketAddr;
 
 //incoming
 pub fn apply_request_defaults(
-    mut request: Request,
+    mut request: rsip::Request,
     peer: SocketAddr,
-    _transport: Transport,
-) -> Result<SipMessage, Error> {
+    _transport: rsip::common::Transport,
+) -> Result<rsip::SipMessage, Error> {
     use super::uas::*;
 
     apply_received_value(request.via_header_mut().expect("via header missing"), &peer)?;
@@ -21,34 +16,49 @@ pub fn apply_request_defaults(
 
 //outgoing
 pub fn apply_response_defaults(
-    response: Response,
+    response: rsip::Response,
     _peer: SocketAddr,
-    _transport: Transport,
-) -> SipMessage {
+    _transport: rsip::common::Transport,
+) -> rsip::SipMessage {
     response.into()
 }
 
-pub fn apply_received_value(via_header: &mut Via, peer: &SocketAddr) -> Result<(), Error> {
-    use rsip::common::uri::Param;
+pub fn apply_received_value(
+    via_header: &mut rsip::header::Via,
+    peer: &SocketAddr,
+) -> Result<(), Error> {
+    use rsip::common::uri::{Host, HostWithPort, Param, Received};
 
-    match (via_header.uri.host_with_port.clone(), peer) {
-        (HostWithPort::Domain(_), _) => {
-            let mut uri = via_header.uri.clone();
-            uri.params.push(Param::Received(peer.clone().into()));
-            via_header.uri = uri;
-        }
-        (HostWithPort::SocketAddr(listen_addr), SocketAddr::V4(_))
-            if (listen_addr.ip() != peer.ip()) || (listen_addr.port() != peer.port()) =>
-        {
-            let mut uri = via_header.uri.clone();
-            uri.params.push(Param::Received(peer.clone().into()));
-            via_header.uri = uri;
-        }
-        (HostWithPort::IpAddr(_), _) => {
-            let mut uri = via_header.uri.clone();
-            uri.params.push(Param::Received(peer.clone().into()));
-            via_header.uri = uri;
-        }
+    let typed_via_header = via_header.typed()?;
+
+    match (typed_via_header.uri.host_with_port.clone(), peer) {
+        (
+            HostWithPort {
+                host: Host::Domain(_),
+                ..
+            },
+            _,
+        ) => via_header.replace(
+            typed_via_header.with_param(Param::Received(Received::new(peer.clone().to_string()))),
+        ),
+        (
+            HostWithPort {
+                host: Host::IpAddr(listen_addr),
+                port: Some(port),
+            },
+            _,
+        ) if (listen_addr != peer.ip()) || (*port.value() != peer.port()) => via_header.replace(
+            typed_via_header.with_param(Param::Received(Received::new(peer.clone().to_string()))),
+        ),
+        (
+            HostWithPort {
+                host: Host::IpAddr(listen_addr),
+                port: None,
+            },
+            _,
+        ) if listen_addr != peer.ip() => via_header.replace(
+            typed_via_header.with_param(Param::Received(Received::new(peer.clone().to_string()))),
+        ),
         (_, _) => (),
     }
 
