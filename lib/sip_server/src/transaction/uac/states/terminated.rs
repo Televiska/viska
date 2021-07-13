@@ -1,5 +1,4 @@
-use common::rsip::prelude::*;
-use tokio::time::Instant;
+use common::{rsip::prelude::*, tokio::time::Instant};
 
 #[derive(Debug)]
 pub struct Terminated {

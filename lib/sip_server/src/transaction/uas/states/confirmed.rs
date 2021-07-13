@@ -1,6 +1,5 @@
-use common::rsip::prelude::*;
+use common::{rsip::prelude::*, tokio::time::Instant};
 use std::time::Duration;
-use tokio::time::Instant;
 
 use super::super::TIMER_I;
 

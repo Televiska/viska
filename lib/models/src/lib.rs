@@ -13,6 +13,6 @@ pub use dialog::{Dialog, DialogFlow};
 pub use error::Error;
 pub use sip_message_ext::RequestExt;
 
-use tokio::sync::mpsc::{Receiver, Sender};
+use common::tokio::sync::mpsc::{Receiver, Sender};
 
 pub type ChannelOf<T> = (Sender<T>, Receiver<T>);

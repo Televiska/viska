@@ -2,7 +2,14 @@ pub mod uac;
 pub mod uas;
 
 use crate::{error::TransactionError, Error, SipManager};
-use common::{async_trait::async_trait, rsip::prelude::*};
+use common::{
+    async_trait::async_trait,
+    rsip::prelude::*,
+    tokio::{
+        self,
+        sync::{Mutex, RwLock},
+    },
+};
 use models::transport::{RequestMsg, ResponseMsg, TransportMsg};
 use std::collections::HashMap;
 use std::{
@@ -10,7 +17,6 @@ use std::{
     fmt::Debug,
     sync::{Arc, Weak},
 };
-use tokio::sync::{Mutex, RwLock};
 
 #[async_trait]
 pub trait TransactionLayer: Send + Sync + Any + Debug {
