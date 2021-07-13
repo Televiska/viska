@@ -1,6 +1,6 @@
 use super::CoreLayer;
 use crate::core::CoreProcessor;
-use common::async_trait::async_trait;
+use common::{async_trait::async_trait, tokio};
 use std::{
     any::Any,
     sync::{Arc, Weak},

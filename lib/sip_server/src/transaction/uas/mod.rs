@@ -4,10 +4,9 @@ pub use states::{Accepted, Completed, Confirmed, Errored, Proceeding, Terminated
 
 use crate::Error;
 use crate::SipManager;
-use common::rsip::prelude::*;
+use common::{rsip::prelude::*, tokio::time::Instant};
 use models::transport::{RequestMsg, ResponseMsg};
 use std::sync::Arc;
-use tokio::time::Instant;
 
 static TIMED_OUT: bool = true;
 static DID_NOT_TIME_OUT: bool = false;

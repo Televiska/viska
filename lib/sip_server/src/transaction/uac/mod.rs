@@ -4,13 +4,12 @@ pub use states::{Accepted, Calling, Completed, Errored, Proceeding, Terminated};
 
 use crate::Error;
 use crate::SipManager;
-use common::rsip::prelude::*;
+use common::{rsip::prelude::*, tokio::time::Instant};
 use models::{
     transport::{RequestMsg, ResponseMsg},
     RequestExt,
 };
 use std::sync::Arc;
-use tokio::time::Instant;
 
 //should come from config
 pub static TIMER_T1: u64 = 500;

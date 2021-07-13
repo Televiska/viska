@@ -275,12 +275,15 @@ impl TryFrom<RequestMsg> for DirtyRegistration {
             user_agent: Some(request.user_agent_header()?.clone().into()),
             instance: Some("something".into()),
             ip_address: Some(IpAddr::V4(Ipv4Addr::new(192, 168, 0, 3)).into()),
-            port: request
-                .from_header()?
-                .typed()?
-                .uri
-                .port()
-                .map(|s| *s.value() as i16),
+            port: Some(
+                request
+                    .from_header()?
+                    .typed()?
+                    .uri
+                    .port()
+                    .map(|s| *s.value() as i16)
+                    .unwrap_or(5060),
+            ),
             contact_uri: Some(typed_contact_header.uri.to_string()),
             transport: Some(Transport::Udp),
         })

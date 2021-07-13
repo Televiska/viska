@@ -1,5 +1,5 @@
+use common::tokio::time::Instant;
 use std::time::Duration;
-use tokio::time::Instant;
 
 use super::super::{TIMER_B, TIMER_T1};
 

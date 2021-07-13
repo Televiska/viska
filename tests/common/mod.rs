@@ -78,5 +78,5 @@ pub async fn advance_for(duration: Duration) {
 }
 
 pub async fn delay_for(duration: Duration) {
-    tokio::time::delay_for(duration).await;
+    tokio::time::sleep(duration).await;
 }
