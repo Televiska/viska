@@ -60,12 +60,12 @@ pub fn create_405_from(request: rsip::Request) -> Result<rsip::Response, crate::
     })
 }
 
-fn www_authenticate_header_value() -> Result<rsip::header::WwwAuthenticate, crate::Error> {
+fn www_authenticate_header_value() -> Result<rsip::headers::WwwAuthenticate, crate::Error> {
     use rsip::common::auth;
 
     let nonce = store::AuthRequest::create(store::DirtyAuthRequest::default())?.nonce;
 
-    Ok(rsip::header::www_authenticate::typed::WwwAuthenticate {
+    Ok(rsip::typed::WwwAuthenticate {
         realm: "192.168.1.157".into(),
         nonce,
         algorithm: Some(auth::Algorithm::Md5),
@@ -77,7 +77,7 @@ fn www_authenticate_header_value() -> Result<rsip::header::WwwAuthenticate, crat
     .into())
 }
 
-pub fn is_authorized(offer: rsip::header::Authorization) -> Result<bool, crate::Error> {
+pub fn is_authorized(offer: rsip::headers::Authorization) -> Result<bool, crate::Error> {
     let offer = offer.typed()?;
     Ok(
         rsip::services::DigestGenerator::from(&offer, "123123123", &rsip::common::Method::Register)

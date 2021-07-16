@@ -32,10 +32,10 @@ impl Randomized for Headers {
         let from_uri = base_uri.clone().with_username("filippos");
         let to_uri = base_uri.clone().with_username("fil").with_port(5090);
 
-        headers.push(to::typed::To::from(to_uri.clone()).into());
-        headers.push(from::typed::From::from(from_uri.clone()).into());
+        headers.push(typed::To::from(to_uri.clone()).into());
+        headers.push(typed::From::from(from_uri.clone()).into());
         headers.push(
-            cseq::typed::CSeq {
+            typed::CSeq {
                 seq: 1,
                 method: Method::Register,
             }
@@ -43,7 +43,7 @@ impl Randomized for Headers {
         );
         headers.push(CallId::default().into());
         headers.push(MaxForwards::default().into());
-        headers.push(via::typed::Via::from(base_uri.clone().stripped()).into());
+        headers.push(typed::Via::from(base_uri.clone().stripped()).into());
         headers.push(ContentLength::default().into());
         headers.push(UserAgent::default().into());
 

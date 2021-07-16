@@ -314,7 +314,7 @@ impl TryFrom<rsip::Request> for DirtyDialogWithTransaction {
                 call_id: Some(call_id),
                 from_tag: Some(from_tag),
                 to_tag: Some(to_tag.to_string()),
-                flow: Some(flow_for_method(model.method().clone())?),
+                flow: Some(flow_for_method(*model.method())?),
                 ..Default::default()
             },
             transaction: crate::DirtyTransaction {

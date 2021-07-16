@@ -123,7 +123,7 @@ async fn with_new_register_request_saves_the_contact() {
 
 #[tokio::test]
 async fn with_wrong_from_to_register() {
-    use rsip::{common::Uri, headers::to};
+    use rsip::common::Uri;
 
     let _ = common::setup();
     let (registrar, sip_manager) = setup().await;
@@ -132,7 +132,7 @@ async fn with_wrong_from_to_register() {
     let mut request = requests::register_request();
     request
         .headers
-        .unique_push(to::typed::To::from(Uri::default().with_username("another")).into());
+        .unique_push(rsip::typed::To::from(Uri::default().with_username("another")).into());
 
     let res = registrar
         .process_incoming_request(RequestMsg {
@@ -218,13 +218,12 @@ fn create_registration() -> (store::Registration, rsip::common::Uri) {
         contact_uri: Some(uri.to_string()),
     };
 
-    let contact_header: rsip::Header =
-        rsip::headers::Contact::new(rsip::headers::contact::typed::Contact {
-            display_name: None,
-            uri: uri.clone(),
-            params: Default::default(),
-        })
-        .into();
+    let contact_header: rsip::Header = rsip::headers::Contact::new(rsip::typed::Contact {
+        display_name: None,
+        uri: uri.clone(),
+        params: Default::default(),
+    })
+    .into();
 
     new_registration.contact = Some(
         contact_header

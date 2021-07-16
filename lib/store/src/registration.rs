@@ -243,11 +243,7 @@ impl TryFrom<RequestMsg> for DirtyRegistration {
                 .expires()
                 .map(|s| s.seconds())
                 .transpose()?,
-            request
-                .expires_header()
-                .map(|h| h.typed())
-                .transpose()?
-                .map(|h| *h.value()),
+            request.expires_header().map(|h| h.seconds()).transpose()?,
         ) {
             (Some(expire), _) => expire,
             (None, Some(expire)) => expire,

@@ -38,7 +38,7 @@ pub fn request(from_uri: Option<Uri>, to_uri: Option<Uri>) -> rsip::Request {
 
 pub fn invite_request() -> rsip::Request {
     let mut headers: Headers = Randomized::default();
-    headers.unique_push(cseq::typed::CSeq::from((1, Method::Invite)).into());
+    headers.unique_push(typed::CSeq::from((1, Method::Invite)).into());
     let typed_to_header = rsip::header_opt!(headers.iter(), Header::To)
         .expect("to header")
         .typed()
@@ -54,14 +54,14 @@ pub fn invite_request() -> rsip::Request {
 
 pub fn register_query_request() -> rsip::Request {
     let mut headers: Headers = Randomized::default();
-    headers.unique_push(cseq::typed::CSeq::from((1, Method::Register)).into());
+    headers.unique_push(typed::CSeq::from((1, Method::Register)).into());
 
     let base_uri: Uri = common::CONFIG.default_addr().into();
     let from_uri = base_uri.clone().with_username("filippos");
     let to_uri = from_uri.clone();
 
-    headers.unique_push(from::typed::From::from(from_uri).into());
-    headers.unique_push(to::typed::To::from(to_uri.clone()).into());
+    headers.unique_push(typed::From::from(from_uri).into());
+    headers.unique_push(typed::To::from(to_uri.clone()).into());
     headers.retain(|h| !matches!(h, Header::Contact(_)));
 
     rsip::Request {
@@ -78,7 +78,7 @@ pub fn register_request() -> rsip::Request {
 
     let from_header = rsip::header_opt!(headers.iter(), Header::From).expect("from header");
     let typed_from_header = from_header.typed().expect("typed from header");
-    headers.unique_push(contact::typed::Contact::from(typed_from_header.uri.clone()).into());
+    headers.unique_push(typed::Contact::from(typed_from_header.uri.clone()).into());
 
     rsip::Request {
         method: Method::Register,
@@ -94,7 +94,7 @@ pub fn register_delete_request_with_uri(uri: Uri) -> rsip::Request {
 
     let from_header = rsip::header_opt!(headers.iter(), Header::From).expect("from header");
     let typed_from_header = from_header.typed().expect("typed from header");
-    headers.unique_push(contact::typed::Contact::from(uri).into());
+    headers.unique_push(typed::Contact::from(uri).into());
     headers.unique_push(Expires::new("0").into());
 
     rsip::Request {
@@ -107,12 +107,12 @@ pub fn register_delete_request_with_uri(uri: Uri) -> rsip::Request {
 
 pub fn options_request() -> rsip::Request {
     let mut headers: Headers = Randomized::default();
-    headers.unique_push(cseq::typed::CSeq::from((1, Method::Options)).into());
+    headers.unique_push(typed::CSeq::from((1, Method::Options)).into());
 
     let base_uri: Uri = common::CONFIG.default_addr().into();
     let to_uri = base_uri.clone().with_username("filippos");
 
-    headers.unique_push(to::typed::To::from(to_uri.clone()).into());
+    headers.unique_push(typed::To::from(to_uri.clone()).into());
     headers.retain(|h| !matches!(h, Header::Contact(_)));
 
     rsip::Request {

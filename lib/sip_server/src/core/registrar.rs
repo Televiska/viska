@@ -165,12 +165,11 @@ fn expires_value_for(
     expires_header: Option<&rsip::headers::Expires>,
 ) -> Result<u32, Error> {
     let typed_contact_header = contact_header.typed()?;
-    let typed_expires_header = expires_header.map(|e| e.typed()).transpose()?;
 
     match typed_contact_header.expires() {
         Some(expire) => Ok(expire.seconds()?),
-        _ => match typed_expires_header {
-            Some(header) => Ok(*header.value()),
+        _ => match expires_header {
+            Some(header) => Ok(header.seconds()?),
             _ => Ok(600),
         },
     }

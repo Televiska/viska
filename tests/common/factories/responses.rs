@@ -44,7 +44,7 @@ pub fn trying_response_from(request: rsip::Request) -> rsip::Response {
             .into(),
     );
     headers.push(
-        cseq::typed::CSeq::from((
+        typed::CSeq::from((
             request
                 .cseq_header()
                 .expect("cseq header")
@@ -78,7 +78,7 @@ pub fn ok_response_from(request: rsip::Request) -> rsip::Response {
             .into(),
     );
     headers.push(
-        cseq::typed::CSeq::from((
+        typed::CSeq::from((
             request
                 .cseq_header()
                 .expect("cseq header")
@@ -112,7 +112,7 @@ pub fn request_failure_response_from(request: rsip::Request) -> rsip::Response {
             .into(),
     );
     headers.push(
-        cseq::typed::CSeq::from((
+        typed::CSeq::from((
             request
                 .cseq_header()
                 .expect("cseq header")
@@ -146,7 +146,7 @@ pub fn redirection_response_from(request: rsip::Request) -> rsip::Response {
             .into(),
     );
     headers.push(
-        cseq::typed::CSeq::from((
+        typed::CSeq::from((
             request
                 .cseq_header()
                 .expect("cseq header")

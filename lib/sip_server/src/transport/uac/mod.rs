@@ -32,7 +32,7 @@ pub fn apply_response_defaults(
 }
 
 pub fn apply_via_maddr_address(
-    via_header: &mut rsip::header::Via,
+    via_header: &mut rsip::headers::Via,
     peer: &SocketAddr,
 ) -> Result<(), Error> {
     use rsip::common::uri::{Maddr, Param};
@@ -48,7 +48,7 @@ pub fn apply_via_maddr_address(
     Ok(())
 }
 
-pub fn apply_via_ttl(via_header: &mut rsip::header::Via, peer: &SocketAddr) -> Result<(), Error> {
+pub fn apply_via_ttl(via_header: &mut rsip::headers::Via, peer: &SocketAddr) -> Result<(), Error> {
     use rsip::common::uri::{Param, Ttl};
 
     if peer.ip().is_ipv4() {
@@ -58,7 +58,7 @@ pub fn apply_via_ttl(via_header: &mut rsip::header::Via, peer: &SocketAddr) -> R
     Ok(())
 }
 
-pub fn apply_via_sent_by(via_header: &mut rsip::header::Via) -> Result<(), Error> {
+pub fn apply_via_sent_by(via_header: &mut rsip::headers::Via) -> Result<(), Error> {
     let typed_via_header = via_header.typed()?;
 
     let mut uri = typed_via_header.uri.clone();
@@ -68,7 +68,7 @@ pub fn apply_via_sent_by(via_header: &mut rsip::header::Via) -> Result<(), Error
     Ok(())
 }
 
-pub fn assert_sent_by_value(via_header: &rsip::header::Via) -> Result<(), Error> {
+pub fn assert_sent_by_value(via_header: &rsip::headers::Via) -> Result<(), Error> {
     let typed_via_header = via_header.typed()?;
 
     if common::CONFIG.contains_addr(&typed_via_header.uri.host_with_port) {

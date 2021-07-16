@@ -24,7 +24,7 @@ pub fn apply_response_defaults(
 }
 
 pub fn apply_received_value(
-    via_header: &mut rsip::header::Via,
+    via_header: &mut rsip::headers::Via,
     peer: &SocketAddr,
 ) -> Result<(), Error> {
     use rsip::common::uri::{Host, HostWithPort, Param, Received};

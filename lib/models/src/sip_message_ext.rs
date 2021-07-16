@@ -39,7 +39,7 @@ impl RequestExt for rsip::Request {
         headers.push(self.from_header().expect("to header").clone().into());
 
         headers.push(
-            cseq::typed::CSeq::from((
+            typed::CSeq::from((
                 self.cseq_header()
                     .expect("cseq header")
                     .typed()
