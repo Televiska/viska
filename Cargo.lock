@@ -52,12 +52,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8aac770f1885fd7e387acedd76065302551364496e46b3dd00860b2f8359b9d"
 
 [[package]]
-name = "base64"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
-
-[[package]]
 name = "bigdecimal"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -616,16 +610,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "macros"
-version = "0.1.0"
-dependencies = [
- "darling 0.13.0",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "md-5"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1061,17 +1045,24 @@ checksum = "26412eb97c6b088a6997e05f69403a802a92d520de2f8e63c2b65f9e0f47c4e8"
 
 [[package]]
 name = "rsip"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
- "base64",
  "bytes",
- "generic-array",
- "log 0.4.11",
- "macros",
  "md-5",
  "nom",
+ "rsip-derives",
  "sha2",
  "uuid",
+]
+
+[[package]]
+name = "rsip-derives"
+version = "0.1.0"
+dependencies = [
+ "darling 0.13.0",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

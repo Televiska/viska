@@ -6,7 +6,7 @@ use crate::common::{
 };
 use common::futures_util::stream::StreamExt;
 use common::log::Level;
-use common::rsip::prelude::*;
+use common::rsip::{self, prelude::*};
 use models::transport::{RequestMsg, TransportMsg};
 use sip_server::{
     transaction::uac::{TrxState, TrxStateMachine, TIMER_M},

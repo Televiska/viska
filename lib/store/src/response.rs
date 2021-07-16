@@ -2,7 +2,7 @@ use crate::schema::responses;
 use crate::{db_conn, Error};
 use common::{
     chrono::{DateTime, Utc},
-    rsip::prelude::*,
+    rsip::{self, prelude::*},
 };
 use diesel::prelude::*;
 

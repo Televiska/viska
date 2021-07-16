@@ -1,7 +1,7 @@
 use crate::common::{delay_for, factories::prelude::*};
 use common::futures_util::stream::StreamExt;
 use common::log::Level;
-use common::rsip::prelude::*;
+use common::rsip::{self, prelude::*};
 use models::transport::TransportMsg;
 use sip_server::transport::processor::Processor as TransportProcessor;
 use std::any::Any;
@@ -10,7 +10,7 @@ use std::net::{IpAddr, Ipv4Addr};
 
 #[tokio::test]
 async fn incoming_response_asserts_with_wrong_sent_by() -> Result<(), sip_server::Error> {
-    use rsip::common::Uri;
+    use rsip::Uri;
 
     let processor = TransportProcessor::default();
 
@@ -43,7 +43,7 @@ async fn incoming_response_asserts_with_wrong_sent_by() -> Result<(), sip_server
 
 #[tokio::test]
 async fn incoming_response_asserts_with_correct_sent_by() -> Result<(), sip_server::Error> {
-    use rsip::common::Uri;
+    use rsip::Uri;
 
     let processor = TransportProcessor::default();
 
@@ -64,7 +64,7 @@ async fn incoming_response_asserts_with_correct_sent_by() -> Result<(), sip_serv
 
 #[tokio::test]
 async fn outgoing_transaction_request_applies_maddr() -> Result<(), sip_server::Error> {
-    use rsip::common::uri::{Maddr, Param, Uri};
+    use rsip::{param::Maddr, Param, Uri};
 
     let processor = TransportProcessor::default();
 
@@ -102,7 +102,7 @@ async fn outgoing_transaction_request_applies_maddr() -> Result<(), sip_server::
 
 #[tokio::test]
 async fn outgoing_transaction_request_applies_ttl() -> Result<(), sip_server::Error> {
-    use rsip::common::uri::{Param, Ttl, Uri};
+    use rsip::{param::Ttl, Param, Uri};
 
     let processor = TransportProcessor::default();
 
@@ -137,7 +137,7 @@ async fn outgoing_transaction_request_applies_ttl() -> Result<(), sip_server::Er
 
 #[tokio::test]
 async fn outgoing_transaction_request_applies_sent_by() -> Result<(), sip_server::Error> {
-    use rsip::common::uri::Uri;
+    use rsip::Uri;
 
     let processor = TransportProcessor::default();
 
@@ -168,7 +168,7 @@ async fn outgoing_transaction_request_applies_sent_by() -> Result<(), sip_server
 
 #[tokio::test]
 async fn outgoing_core_request_applies_maddr() -> Result<(), sip_server::Error> {
-    use rsip::common::uri::{Maddr, Param, Uri};
+    use rsip::{param::Maddr, Param, Uri};
 
     let processor = TransportProcessor::default();
 
@@ -205,7 +205,7 @@ async fn outgoing_core_request_applies_maddr() -> Result<(), sip_server::Error> 
 
 #[tokio::test]
 async fn outgoing_core_request_applies_ttl() -> Result<(), sip_server::Error> {
-    use rsip::common::uri::{Param, Ttl, Uri};
+    use rsip::{param::Ttl, Param, Uri};
 
     let processor = TransportProcessor::default();
 
@@ -239,7 +239,7 @@ async fn outgoing_core_request_applies_ttl() -> Result<(), sip_server::Error> {
 
 #[tokio::test]
 async fn outgoing_core_request_applies_sent_by() -> Result<(), sip_server::Error> {
-    use rsip::common::uri::Uri;
+    use rsip::Uri;
 
     let processor = TransportProcessor::default();
 

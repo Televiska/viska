@@ -4,7 +4,7 @@ pub mod uas;
 use crate::{error::TransactionError, Error, SipManager};
 use common::{
     async_trait::async_trait,
-    rsip::prelude::*,
+    rsip::{self, prelude::*},
     tokio::{
         self,
         sync::{Mutex, RwLock},

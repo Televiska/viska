@@ -1,7 +1,7 @@
 use crate::common::{delay_for, factories::prelude::*};
 use common::futures_util::stream::StreamExt;
 use common::log::Level;
-use common::rsip::prelude::*;
+use common::rsip::{self, prelude::*};
 use models::transport::TransportMsg;
 use sip_server::transport::processor::Processor as TransportProcessor;
 use std::convert::{TryFrom, TryInto};
@@ -10,7 +10,7 @@ use std::net::{IpAddr, Ipv4Addr};
 #[tokio::test]
 async fn incoming_request_with_other_sent_by_adds_received_param() -> Result<(), sip_server::Error>
 {
-    use rsip::common::{uri::Param, Uri};
+    use rsip::{Param, Uri};
 
     let processor = TransportProcessor::default();
 
@@ -37,7 +37,7 @@ async fn incoming_request_with_other_sent_by_adds_received_param() -> Result<(),
 
 #[tokio::test]
 async fn incoming_request_with_same_sent_by_param() -> Result<(), sip_server::Error> {
-    use rsip::common::{uri::Param, Uri};
+    use rsip::{Param, Uri};
 
     let processor = TransportProcessor::default();
 

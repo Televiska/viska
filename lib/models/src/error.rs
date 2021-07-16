@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use common::{ipnetwork, rsip::prelude::*};
+use common::{ipnetwork, rsip};
 use std::{error::Error as StdError, fmt};
 
 #[derive(Debug)]

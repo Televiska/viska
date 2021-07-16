@@ -6,7 +6,7 @@ use crate::common::{
 };
 use common::futures_util::stream::StreamExt;
 use common::log::Level;
-use common::rsip::prelude::*;
+use common::rsip::{self, prelude::*};
 use models::{
     transport::{RequestMsg, ResponseMsg, TransportMsg},
     RequestExt,
@@ -166,7 +166,7 @@ async fn multiple_invite_on_proceeding() {
         TransportMsg {
             sip_message:
                 rsip::SipMessage::Response(rsip::Response {
-                    status_code: rsip::common::StatusCode::Ringing,
+                    status_code: rsip::StatusCode::Ringing,
                     ..
                 }),
             peer: _,

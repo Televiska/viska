@@ -1,6 +1,9 @@
 use super::ReqProcessor;
 pub use crate::{Error, SipManager};
-use common::{async_trait::async_trait, rsip::prelude::*};
+use common::{
+    async_trait::async_trait,
+    rsip::{self, prelude::*},
+};
 use models::transport::{RequestMsg, ResponseMsg};
 use std::{
     any::Any,
@@ -46,7 +49,7 @@ fn apply_default_checks(request: &rsip::Request) -> Result<(), Error> {
     Ok(())
 }
 
-fn has_correct_request_uri(request_uri: &rsip::common::Uri) -> Result<(), Error> {
+fn has_correct_request_uri(request_uri: &rsip::Uri) -> Result<(), Error> {
     if common::CONFIG.contains_addr(&request_uri.host_with_port) {
         Ok(())
     } else {
@@ -55,7 +58,7 @@ fn has_correct_request_uri(request_uri: &rsip::common::Uri) -> Result<(), Error>
 }
 
 fn create_busy_here_from(request: rsip::Request) -> Result<rsip::Response, crate::Error> {
-    use rsip::{common::Method, headers::*, Headers};
+    use rsip::{headers::*, Headers, Method};
 
     if *request.method() != Method::Options {
         return Err(crate::Error::custom(format!(

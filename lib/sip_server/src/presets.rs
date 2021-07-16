@@ -1,11 +1,11 @@
-use common::rsip::prelude::*;
+use common::rsip::{self, prelude::*};
 
 pub fn create_unauthorized_from(request: rsip::Request) -> Result<rsip::Response, crate::Error> {
     let mut headers: rsip::Headers = Default::default();
     headers.push(request.via_header()?.clone().into());
     headers.push(request.from_header()?.clone().into());
     let mut to = request.to_header()?.typed()?;
-    to.with_tag(rsip::common::param::Tag::default());
+    to.with_tag(rsip::param::Tag::default());
     headers.push(to.into());
     headers.push(request.call_id_header()?.clone().into());
     headers.push(request.cseq_header()?.clone().into());
@@ -27,7 +27,7 @@ pub fn create_404_from(request: rsip::Request) -> Result<rsip::Response, crate::
     headers.push(request.via_header()?.clone().into());
     headers.push(request.from_header()?.clone().into());
     let mut to = request.to_header()?.typed()?;
-    to.with_tag(rsip::common::param::Tag::default());
+    to.with_tag(rsip::param::Tag::default());
     headers.push(to.into());
     headers.push(request.call_id_header()?.clone().into());
     headers.push(request.cseq_header()?.clone().into());
@@ -46,7 +46,7 @@ pub fn create_405_from(request: rsip::Request) -> Result<rsip::Response, crate::
     headers.push(request.via_header()?.clone().into());
     headers.push(request.from_header()?.clone().into());
     let mut to = request.to_header()?.clone().typed()?;
-    to.with_tag(rsip::common::param::Tag::default());
+    to.with_tag(rsip::param::Tag::default());
     headers.push(to.into());
     headers.push(request.call_id_header()?.clone().into());
     headers.push(request.cseq_header()?.clone().into());
@@ -61,7 +61,7 @@ pub fn create_405_from(request: rsip::Request) -> Result<rsip::Response, crate::
 }
 
 fn www_authenticate_header_value() -> Result<rsip::headers::WwwAuthenticate, crate::Error> {
-    use rsip::common::auth;
+    use rsip::headers::auth;
 
     let nonce = store::AuthRequest::create(store::DirtyAuthRequest::default())?.nonce;
 
@@ -80,7 +80,7 @@ fn www_authenticate_header_value() -> Result<rsip::headers::WwwAuthenticate, cra
 pub fn is_authorized(offer: rsip::headers::Authorization) -> Result<bool, crate::Error> {
     let offer = offer.typed()?;
     Ok(
-        rsip::services::DigestGenerator::from(&offer, "123123123", &rsip::common::Method::Register)
+        rsip::services::DigestGenerator::from(&offer, "123123123", &rsip::Method::Register)
             .verify(&offer.response),
     )
 }

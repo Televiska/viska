@@ -1,18 +1,14 @@
-use common::rsip::prelude::*;
+use common::rsip::{self, prelude::*};
 
 pub trait RequestExt {
     fn ack_request_with(&self, response: rsip::Response) -> rsip::Request;
-    fn provisional_of(&self, code: impl Into<rsip::common::StatusCode>) -> rsip::Response;
+    fn provisional_of(&self, code: impl Into<rsip::StatusCode>) -> rsip::Response;
 }
 
 impl RequestExt for rsip::Request {
     //TODO: should probably pass headers or just To and Route header
     fn ack_request_with(&self, response: rsip::Response) -> rsip::Request {
-        use rsip::{
-            common::{param::Tag, Method},
-            headers::*,
-            Headers,
-        };
+        use rsip::{headers::*, param::Tag, Headers, Method};
 
         let mut headers: Headers = Default::default();
         headers.push(
@@ -62,8 +58,8 @@ impl RequestExt for rsip::Request {
         }
     }
 
-    fn provisional_of(&self, status_code: impl Into<rsip::common::StatusCode>) -> rsip::Response {
-        use rsip::{common::param::Tag, headers::*, Headers};
+    fn provisional_of(&self, status_code: impl Into<rsip::StatusCode>) -> rsip::Response {
+        use rsip::{headers::*, param::Tag, Headers};
 
         let mut headers: Headers = Default::default();
         headers.push(

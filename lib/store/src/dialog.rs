@@ -5,7 +5,7 @@ use crate::{
 };
 use common::{
     chrono::{DateTime, Utc},
-    rsip::prelude::*,
+    rsip::{self, prelude::*},
     uuid::Uuid,
 };
 use diesel::{
@@ -378,8 +378,8 @@ fn computed_id_for(call_id: &str, from_tag: &str, to_tag: &Uuid) -> String {
     format!("{}-{}-{}", call_id, from_tag, to_tag)
 }
 
-fn flow_for_method(method: rsip::common::Method) -> Result<DialogFlow, String> {
-    use rsip::common::Method;
+fn flow_for_method(method: rsip::Method) -> Result<DialogFlow, String> {
+    use rsip::Method;
 
     match method {
         Method::Register => Ok(DialogFlow::Registration),

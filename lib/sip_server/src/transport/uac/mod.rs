@@ -1,12 +1,12 @@
 use crate::Error;
-use common::rsip::prelude::*;
+use common::rsip::{self, prelude::*};
 use std::net::SocketAddr;
 
 //outgoing
 pub fn apply_request_defaults(
     mut request: rsip::Request,
     peer: SocketAddr,
-    _transport: rsip::common::Transport,
+    _transport: rsip::Transport,
 ) -> Result<rsip::SipMessage, Error> {
     apply_via_maddr_address(
         request.via_header_mut().expect("via header is missing!"),
@@ -25,7 +25,7 @@ pub fn apply_request_defaults(
 pub fn apply_response_defaults(
     response: rsip::Response,
     _peer: SocketAddr,
-    _transport: rsip::common::Transport,
+    _transport: rsip::Transport,
 ) -> Result<rsip::SipMessage, Error> {
     assert_sent_by_value(response.via_header().expect("via header missing"))?;
     Ok(response.into())
@@ -35,7 +35,7 @@ pub fn apply_via_maddr_address(
     via_header: &mut rsip::headers::Via,
     peer: &SocketAddr,
 ) -> Result<(), Error> {
-    use rsip::common::uri::{Maddr, Param};
+    use rsip::{param::Maddr, Param};
 
     if peer.ip().is_multicast() {
         via_header.replace(
@@ -49,7 +49,7 @@ pub fn apply_via_maddr_address(
 }
 
 pub fn apply_via_ttl(via_header: &mut rsip::headers::Via, peer: &SocketAddr) -> Result<(), Error> {
-    use rsip::common::uri::{Param, Ttl};
+    use rsip::{param::Ttl, Param};
 
     if peer.ip().is_ipv4() {
         via_header.replace(via_header.typed()?.with_param(Param::Ttl(Ttl::new("1"))));

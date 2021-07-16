@@ -3,7 +3,7 @@ use crate::{db_conn, Error};
 use common::{
     chrono::{DateTime, Duration, Utc},
     ipnetwork::IpNetwork,
-    rsip::prelude::*,
+    rsip::{self, prelude::*},
 };
 use diesel::{
     deserialize::FromSql,
@@ -202,24 +202,24 @@ impl std::str::FromStr for Transport {
 }
 
 #[allow(clippy::from_over_into)]
-impl Into<rsip::common::Transport> for Transport {
-    fn into(self) -> rsip::common::Transport {
+impl Into<rsip::Transport> for Transport {
+    fn into(self) -> rsip::Transport {
         match self {
-            Transport::Tcp => rsip::common::Transport::Tcp,
-            Transport::Udp => rsip::common::Transport::Udp,
-            Transport::Tls => rsip::common::Transport::Tls,
-            Transport::Sctp => rsip::common::Transport::Sctp,
+            Transport::Tcp => rsip::Transport::Tcp,
+            Transport::Udp => rsip::Transport::Udp,
+            Transport::Tls => rsip::Transport::Tls,
+            Transport::Sctp => rsip::Transport::Sctp,
         }
     }
 }
 
-impl From<rsip::common::Transport> for Transport {
-    fn from(model: rsip::common::Transport) -> Transport {
+impl From<rsip::Transport> for Transport {
+    fn from(model: rsip::Transport) -> Transport {
         match model {
-            rsip::common::Transport::Tcp => Transport::Tcp,
-            rsip::common::Transport::Udp => Transport::Udp,
-            rsip::common::Transport::Tls => Transport::Tls,
-            rsip::common::Transport::Sctp => Transport::Sctp,
+            rsip::Transport::Tcp => Transport::Tcp,
+            rsip::Transport::Udp => Transport::Udp,
+            rsip::Transport::Tls => Transport::Tls,
+            rsip::Transport::Sctp => Transport::Sctp,
         }
     }
 }
@@ -230,7 +230,7 @@ impl TryFrom<RequestMsg> for DirtyRegistration {
     fn try_from(msg: RequestMsg) -> Result<Self, Self::Error> {
         let request = msg.sip_request;
 
-        if request.method != rsip::common::Method::Register {
+        if request.method != rsip::Method::Register {
             return Err(Self::Error::custom(format!(
                 "cannot create registration from {} method",
                 request.method

@@ -1,6 +1,9 @@
 pub use super::{Capabilities, CoreProcessor, Registrar, ReqProcessor};
 pub use crate::{presets, Error, SipManager};
-use common::{async_trait::async_trait, rsip::prelude::*};
+use common::{
+    async_trait::async_trait,
+    rsip::{self, prelude::*},
+};
 use models::transport::ResponseMsg;
 use models::transport::{RequestMsg, TransportMsg};
 use std::{
@@ -46,7 +49,7 @@ impl<R: ReqProcessor, C: ReqProcessor> CoreProcessor for Processor<R, C> {
 
 impl<R: ReqProcessor, C: ReqProcessor> Processor<R, C> {
     async fn handle_request(&self, msg: RequestMsg) -> Result<(), Error> {
-        use rsip::common::Method;
+        use rsip::Method;
 
         match msg.sip_request.method {
             Method::Register => {

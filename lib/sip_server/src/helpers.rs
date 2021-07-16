@@ -1,4 +1,4 @@
-use common::rsip::prelude::*;
+use common::rsip::{self};
 
 pub fn trace_sip_message(sip_message: rsip::SipMessage) -> Result<(), crate::Error> {
     match sip_message.clone() {

@@ -1,7 +1,6 @@
 use super::SocketAddrBuilder;
 use crate::common::factories::RandomizedBuilder;
-use common::rsip::prelude::*;
-use rsip::common::uri::{Auth, Host, HostWithPort, Param, Schema, Uri};
+use common::rsip::{prelude::*, Auth, Host, HostWithPort, Param, Schema, Uri};
 use std::net::SocketAddr;
 
 pub trait UriExt {

@@ -1,12 +1,12 @@
 use crate::Error;
-use common::rsip::prelude::*;
+use common::rsip::{self, prelude::*};
 use std::net::SocketAddr;
 
 //incoming
 pub fn apply_request_defaults(
     mut request: rsip::Request,
     peer: SocketAddr,
-    _transport: rsip::common::Transport,
+    _transport: rsip::Transport,
 ) -> Result<rsip::SipMessage, Error> {
     use super::uas::*;
 
@@ -18,7 +18,7 @@ pub fn apply_request_defaults(
 pub fn apply_response_defaults(
     response: rsip::Response,
     _peer: SocketAddr,
-    _transport: rsip::common::Transport,
+    _transport: rsip::Transport,
 ) -> rsip::SipMessage {
     response.into()
 }
@@ -27,7 +27,7 @@ pub fn apply_received_value(
     via_header: &mut rsip::headers::Via,
     peer: &SocketAddr,
 ) -> Result<(), Error> {
-    use rsip::common::uri::{Host, HostWithPort, Param, Received};
+    use rsip::{param::Received, Host, HostWithPort, Param};
 
     let typed_via_header = via_header.typed()?;
 

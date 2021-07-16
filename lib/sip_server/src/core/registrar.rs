@@ -1,6 +1,9 @@
 use super::ReqProcessor;
 use crate::{Error, SipManager};
-use common::{async_trait::async_trait, rsip::prelude::*};
+use common::{
+    async_trait::async_trait,
+    rsip::{self, prelude::*},
+};
 use models::transport::{RequestMsg, ResponseMsg};
 use std::{
     any::Any,
@@ -104,7 +107,7 @@ fn has_same_from_to_header_uris(
     Ok(())
 }
 
-fn has_correct_request_uri(request_uri: &rsip::common::Uri) -> Result<(), Error> {
+fn has_correct_request_uri(request_uri: &rsip::Uri) -> Result<(), Error> {
     if common::CONFIG.contains_addr(&request_uri.host_with_port) {
         Ok(())
     } else {
@@ -130,7 +133,7 @@ fn create_registration_ok_from(
     request: rsip::Request,
     contacts: Vec<rsip::headers::Contact>,
 ) -> Result<rsip::Response, crate::Error> {
-    use rsip::{common::Method, headers::*, Headers};
+    use rsip::{headers::*, Headers, Method};
 
     if *request.method() != Method::Register {
         return Err(crate::Error::custom(format!(

@@ -4,7 +4,7 @@ use crate::common::{
     snitches::{CoreSnitch, TransportSnitch},
 };
 use ::common::ipnetwork::IpNetwork;
-use ::common::rsip::prelude::*;
+use ::common::rsip::{self, prelude::*};
 use models::transport::RequestMsg;
 use sip_server::core::ReqProcessor;
 use sip_server::{core::Registrar, Core, CoreLayer, SipBuilder, SipManager, Transaction};
@@ -123,7 +123,7 @@ async fn with_new_register_request_saves_the_contact() {
 
 #[tokio::test]
 async fn with_wrong_from_to_register() {
-    use rsip::common::Uri;
+    use rsip::Uri;
 
     let _ = common::setup();
     let (registrar, sip_manager) = setup().await;
@@ -183,7 +183,7 @@ async fn delete_registration() {
     )
 }
 
-fn create_registration() -> (store::Registration, rsip::common::Uri) {
+fn create_registration() -> (store::Registration, rsip::Uri) {
     use ::common::chrono::{Duration, Utc};
     use std::convert::TryInto;
     use std::net::{IpAddr, Ipv4Addr, SocketAddr};
@@ -191,10 +191,10 @@ fn create_registration() -> (store::Registration, rsip::common::Uri) {
     let ip_address: IpNetwork = IpAddrBuilder::localhost().into();
     let username: String = "filippos".into();
 
-    let uri = rsip::common::Uri {
-        schema: Some(rsip::common::uri::Schema::default()),
-        host_with_port: rsip::common::uri::HostWithPort::from(ip_address.clone().ip()),
-        auth: Some(rsip::common::uri::Auth {
+    let uri = rsip::Uri {
+        schema: Some(rsip::Schema::default()),
+        host_with_port: rsip::HostWithPort::from(ip_address.clone().ip()),
+        auth: Some(rsip::Auth {
             username: username.clone(),
             password: None,
         }),
@@ -213,7 +213,7 @@ fn create_registration() -> (store::Registration, rsip::common::Uri) {
         instance: None,
         ip_address: Some(ip_address),
         port: Some(5060),
-        transport: Some(rsip::common::Transport::default().into()),
+        transport: Some(rsip::Transport::default().into()),
         contact: None,
         contact_uri: Some(uri.to_string()),
     };

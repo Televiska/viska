@@ -1,9 +1,5 @@
 use crate::common::factories::prelude::*;
-use common::rsip::prelude::*;
-use rsip::{
-    common::{Method, Uri, Version},
-    headers::*,
-};
+use common::rsip::{self, headers::*, prelude::*, Method, Uri, Version};
 use std::{convert::TryInto, net::IpAddr as StdIpAddr};
 
 pub fn response(from_uri: Option<Uri>, to_uri: Option<Uri>) -> rsip::Response {

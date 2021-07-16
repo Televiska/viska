@@ -1,5 +1,5 @@
 use envconfig::Envconfig;
-use rsip::common::uri::HostWithPort;
+use rsip::HostWithPort;
 use std::convert::TryInto;
 use std::net::IpAddr;
 

@@ -1,5 +1,5 @@
 use crate::{server::UdpTuple, transport::TransportMsg, Error};
-use common::rsip::{common::Transport, prelude::*};
+use common::rsip::{self, prelude::*, Transport};
 use std::convert::{TryFrom, TryInto};
 use std::net::SocketAddr;
 

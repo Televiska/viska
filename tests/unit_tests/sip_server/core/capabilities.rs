@@ -4,7 +4,7 @@ use crate::common::{
     snitches::{CoreSnitch, TransportSnitch},
 };
 use ::common::ipnetwork::IpNetwork;
-use ::common::rsip::prelude::*;
+use ::common::rsip::{self, prelude::*};
 use models::transport::RequestMsg;
 use sip_server::{
     core::{Capabilities, ReqProcessor},

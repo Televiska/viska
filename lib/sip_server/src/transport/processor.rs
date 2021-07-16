@@ -1,5 +1,5 @@
 use crate::Error;
-use common::rsip::prelude::*;
+use common::rsip::{self};
 use models::transport::TransportMsg;
 
 //transport processor
