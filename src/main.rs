@@ -1,5 +1,5 @@
 use sip_server::{
-    core::{Capabilities, Core, Dialogs, Processor, Registrar},
+    core::{Capabilities, Core, Dialogs, Registrar},
     SipBuilder, Transaction, Transport,
 };
 
@@ -10,12 +10,9 @@ async fn main() {
 
     println!("{:?}", config);
 
-    let manager = SipBuilder::new::<
-        Core<Processor<Registrar, Capabilities, Dialogs>>,
-        Transaction,
-        Transport,
-    >()
-    .expect("sip manager failed");
+    let manager =
+        SipBuilder::new::<Core<Registrar, Capabilities, Dialogs>, Transaction, Transport>()
+            .expect("sip manager failed");
     manager.run().await;
 
     tokio::spawn(async move {

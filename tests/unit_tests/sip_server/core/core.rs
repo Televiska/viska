@@ -10,23 +10,23 @@ use ::common::ipnetwork::IpNetwork;
 use ::common::rsip::{self, prelude::*};
 use models::transport::RequestMsg;
 use sip_server::{
-    core::{CoreProcessor, Processor, ReqProcessor},
+    core::{Core, CoreLayer, ReqProcessor},
     SipBuilder, SipManager,
 };
 use std::sync::Arc;
 
 async fn setup() -> (
-    Processor<RegistrarSnitch, ReqProcessorPanic, DialogsSnitch>,
+    Core<RegistrarSnitch, ReqProcessorPanic, DialogsSnitch>,
     Arc<SipManager>,
 ) {
     let sip_manager = SipBuilder::new::<CorePanic, TransactionPanic, TransportSnitch>()
         .expect("sip manager failed")
         .manager;
 
-    let processor: Processor<RegistrarSnitch, ReqProcessorPanic, DialogsSnitch> =
-        Processor::new(Arc::downgrade(&sip_manager));
+    let core: Core<RegistrarSnitch, ReqProcessorPanic, DialogsSnitch> =
+        Core::new(Arc::downgrade(&sip_manager));
 
-    (processor, sip_manager)
+    (core, sip_manager)
 }
 
 #[tokio::test]

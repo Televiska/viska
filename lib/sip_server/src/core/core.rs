@@ -1,26 +1,25 @@
-use super::CoreLayer;
-use crate::core::CoreProcessor;
-use common::{async_trait::async_trait, tokio};
+pub use super::{Capabilities, CoreLayer, DialogsProcessor, Registrar, ReqProcessor};
+use common::{
+    async_trait::async_trait,
+    rsip::{self, prelude::*},
+};
 use std::{
     any::Any,
     sync::{Arc, Weak},
 };
 
-use crate::{Error, SipManager};
-use models::transport::{RequestMsg, TransportMsg};
+pub use crate::{presets, Error, SipManager};
+use models::transport::{RequestMsg, ResponseMsg, TransportMsg};
 
 //TODO: rename this to something else like ProxyCore etc
-pub struct Core<P: CoreProcessor> {
-    inner: Arc<Inner<P>>,
+pub struct Core<R: ReqProcessor, C: ReqProcessor, D: DialogsProcessor> {
+    inner: Arc<Inner<R, C, D>>,
 }
 
 #[async_trait]
-impl<P: CoreProcessor> CoreLayer for Core<P> {
+impl<R: ReqProcessor, C: ReqProcessor, D: DialogsProcessor> CoreLayer for Core<R, C, D> {
     fn new(sip_manager: Weak<SipManager>) -> Self {
-        let inner = Arc::new(Inner {
-            sip_manager: sip_manager.clone(),
-            processor: Arc::new(P::new(sip_manager)),
-        });
+        let inner = Arc::new(Inner::new(sip_manager.clone()));
         Self { inner }
     }
 
@@ -32,60 +31,118 @@ impl<P: CoreProcessor> CoreLayer for Core<P> {
         Ok(self.inner.send(msg).await?)
     }
 
-    async fn run(&self) {
-        let inner = self.inner.clone();
-        tokio::spawn(async move {
-            inner.run().await;
-        });
-    }
+    //TODO: fix me
+    async fn run(&self) {}
 
     fn as_any(&self) -> &dyn Any {
         self
     }
 }
 
-#[allow(dead_code)]
-struct Inner<P: CoreProcessor> {
+#[derive(Debug)]
+pub struct Inner<R: ReqProcessor, C: ReqProcessor, D: DialogsProcessor> {
     sip_manager: Weak<SipManager>,
-    processor: Arc<P>,
+    registrar: R,
+    capabilities: C,
+    dialogs: D,
 }
 
-impl<P: CoreProcessor> Inner<P> {
-    //TODO: the spawning here should go inside the processor
-    async fn process_incoming_message(&self, msg: TransportMsg) {
-        let processor = self.processor.clone();
-        tokio::spawn(async move {
-            match processor.process_incoming_message(msg).await {
-                Ok(()) => (),
-                Err(err) => common::log::warn!("failed to process message: {:?}", err),
-            }
-        });
+#[async_trait]
+impl<R: ReqProcessor, C: ReqProcessor, D: DialogsProcessor> CoreLayer for Inner<R, C, D> {
+    fn new(sip_manager: Weak<SipManager>) -> Self {
+        Self {
+            registrar: R::new(sip_manager.clone()),
+            capabilities: C::new(sip_manager.clone()),
+            dialogs: D::new(sip_manager.clone()),
+            sip_manager,
+        }
     }
 
-    async fn send(&self, msg: RequestMsg) -> Result<(), Error> {
-        let processor = self.processor.clone();
-        tokio::spawn(async move {
-            match processor.send(msg.sip_request).await {
-                Ok(()) => (),
-                Err(err) => common::log::warn!("processor failed to send message: {:?}", err),
+    async fn process_incoming_message(&self, msg: TransportMsg) {
+        let sip_message = msg.sip_message;
+
+        //TODO: fix me
+        match match sip_message {
+            rsip::SipMessage::Request(request) => {
+                self.handle_request(RequestMsg::new(request, msg.peer, msg.transport))
+                    .await
             }
-        });
+            rsip::SipMessage::Response(_) => Err(Error::from("we don't support responses yet")),
+        } {
+            Ok(_) => (),
+            Err(err) => common::log::warn!("failed to process message: {:?}", err),
+        }
+    }
+
+    async fn send(&self, _msg: RequestMsg) -> Result<(), Error> {
+        Ok(())
+    }
+
+    async fn run(&self) {}
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+impl<R: ReqProcessor, C: ReqProcessor, D: DialogsProcessor> Inner<R, C, D> {
+    async fn handle_request(&self, msg: RequestMsg) -> Result<(), Error> {
+        use rsip::Method;
+
+        match msg.sip_request.method {
+            Method::Register => {
+                self.registrar
+                    .process_incoming_request(self.with_auth(msg).await?)
+                    .await?
+            }
+            Method::Options => self.capabilities.process_incoming_request(msg).await?,
+            _ => {
+                self.sip_manager()
+                    .transport
+                    .send(
+                        ResponseMsg::new(
+                            presets::create_405_from(msg.sip_request)?,
+                            msg.peer,
+                            msg.transport,
+                        )
+                        .into(),
+                    )
+                    .await?
+            }
+        };
 
         Ok(())
     }
 
-    #[allow(dead_code)]
     fn sip_manager(&self) -> Arc<SipManager> {
         self.sip_manager.upgrade().expect("sip manager is missing!")
     }
 
-    async fn run(&self) {}
+    async fn with_auth(&self, msg: RequestMsg) -> Result<RequestMsg, Error> {
+        match msg.sip_request.authorization_header() {
+            Some(_) => Ok(msg),
+            None => {
+                self.sip_manager()
+                    .transport
+                    .send(
+                        ResponseMsg::from((
+                            presets::create_unauthorized_from(msg.sip_request)?,
+                            msg.peer,
+                            msg.transport,
+                        ))
+                        .into(),
+                    )
+                    .await?;
+                Err(Error::from("missing auth header"))
+            }
+        }
+    }
 }
 
-impl<P: CoreProcessor> std::fmt::Debug for Core<P> {
+impl<R: ReqProcessor, C: ReqProcessor, D: DialogsProcessor> std::fmt::Debug for Core<R, C, D> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Core")
-            .field("processor", &self.inner.processor)
+            .field("processor", &self.inner)
             .finish()
     }
 }

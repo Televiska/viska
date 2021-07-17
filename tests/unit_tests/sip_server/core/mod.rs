@@ -1,5 +1,5 @@
 pub mod capabilities;
-pub mod processor;
+pub mod core;
 pub mod registrar;
 
 //use crate::common::snitches::TransactionEmptySnitch;
