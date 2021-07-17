@@ -1,6 +1,6 @@
 use crate::common::snitches::Messages;
 use common::async_trait::async_trait;
-use models::{server::UdpTuple, transport::TransportMsg};
+use models::{server::UdpTuple, transport::{RequestMsg, TransportMsg}};
 use sip_server::{CoreLayer, SipBuilder, SipManager, Transaction, Transport};
 use std::any::Any;
 use std::sync::{Arc, Weak};
@@ -25,11 +25,13 @@ impl CoreLayer for CoreSnitch {
         self.messages.push(msg).await;
     }
 
-    async fn send(&self, msg: TransportMsg) {
-        match self.sip_manager().transport.send(msg).await {
+    async fn send(&self, msg: RequestMsg) -> Result<(), sip_server::Error> {
+        match self.sip_manager().transport.send(msg.into()).await {
             Ok(_) => (),
             Err(err) => common::log::error!("failed to send message: {:?}", err),
-        }
+        };
+
+        Ok(())
     }
 
     async fn run(&self) {}
@@ -58,7 +60,7 @@ impl CoreLayer for CorePanic {
         p!(self)
     }
 
-    async fn send(&self, msg: TransportMsg) {
+    async fn send(&self, msg: RequestMsg) -> Result<(), sip_server::Error> {
         p!(self)
     }
 

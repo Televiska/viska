@@ -78,6 +78,7 @@ impl DgStateMachine {
     }
 }
 
+#[allow(dead_code)]
 fn compute_dialog_id(
     call_id: rsip::headers::CallId,
     local_tag: String,

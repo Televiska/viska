@@ -1,10 +1,12 @@
 mod capabilities;
 mod core;
 mod registrar;
+mod dialogs;
 
 pub use self::capabilities::CapabilitiesSnitch;
 pub use self::core::{CorePanic, CoreSnitch};
 pub use self::registrar::RegistrarSnitch;
+pub use self::dialogs::DialogsSnitch;
 
 use common::async_trait::async_trait;
 use models::transport::RequestMsg;

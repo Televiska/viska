@@ -23,7 +23,7 @@ pub trait CoreLayer: Send + Sync + Any + Debug {
     where
         Self: Sized;
     async fn process_incoming_message(&self, msg: TransportMsg);
-    async fn send(&self, request: rsip::Request) -> Result<(), Error>;
+    async fn send(&self, msg: RequestMsg) -> Result<(), Error>;
     async fn run(&self);
     fn as_any(&self) -> &dyn Any;
 }

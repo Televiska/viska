@@ -1,13 +1,13 @@
 use super::CoreLayer;
 use crate::core::CoreProcessor;
-use common::{async_trait::async_trait, rsip, tokio};
+use common::{async_trait::async_trait, tokio};
 use std::{
     any::Any,
     sync::{Arc, Weak},
 };
 
 use crate::{Error, SipManager};
-use models::transport::TransportMsg;
+use models::transport::{RequestMsg, TransportMsg};
 
 //TODO: rename this to something else like ProxyCore etc
 pub struct Core<P: CoreProcessor> {
@@ -28,8 +28,8 @@ impl<P: CoreProcessor> CoreLayer for Core<P> {
         self.inner.process_incoming_message(msg).await
     }
 
-    async fn send(&self, request: rsip::Request) -> Result<(), Error> {
-        Ok(self.inner.send(request).await?)
+    async fn send(&self, msg: RequestMsg) -> Result<(), Error> {
+        Ok(self.inner.send(msg).await?)
     }
 
     async fn run(&self) {
@@ -44,6 +44,7 @@ impl<P: CoreProcessor> CoreLayer for Core<P> {
     }
 }
 
+#[allow(dead_code)]
 struct Inner<P: CoreProcessor> {
     sip_manager: Weak<SipManager>,
     processor: Arc<P>,
@@ -61,10 +62,10 @@ impl<P: CoreProcessor> Inner<P> {
         });
     }
 
-    async fn send(&self, request: rsip::Request) -> Result<(), Error> {
+    async fn send(&self, msg: RequestMsg) -> Result<(), Error> {
         let processor = self.processor.clone();
         tokio::spawn(async move {
-            match processor.send(request).await {
+            match processor.send(msg.sip_request).await {
                 Ok(()) => (),
                 Err(err) => common::log::warn!("processor failed to send message: {:?}", err),
             }
@@ -73,6 +74,7 @@ impl<P: CoreProcessor> Inner<P> {
         Ok(())
     }
 
+    #[allow(dead_code)]
     fn sip_manager(&self) -> Arc<SipManager> {
         self.sip_manager.upgrade().expect("sip manager is missing!")
     }
