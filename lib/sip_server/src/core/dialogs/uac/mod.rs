@@ -4,23 +4,23 @@ pub use states::{Confirmed, Deleted, Early, Errored, Unconfirmed};
 
 use crate::Error;
 use crate::SipManager;
-use models::{transport::RequestMsg, SipMessageExt};
-use rsip::{common::Uri, headers::CallId, message::HeadersExt};
+use common::rsip::{self, prelude::*};
+use common::tokio::time::Instant;
+use models::transport::RequestMsg;
 use std::sync::Arc;
-use tokio::time::Instant;
 
 #[derive(Debug)]
 pub struct DgStateMachine {
     pub id: Option<String>,
-    pub call_id: CallId,
+    pub call_id: rsip::headers::CallId,
     pub transaction_id: String,
     pub local_tag: String,
     pub local_seqn: u32,
-    pub local_uri: Uri,
+    pub local_uri: rsip::Uri,
     pub remote_tag: Option<String>,
     pub remote_seqn: Option<u32>,
-    pub remote_uri: Uri,
-    pub remote_target: Option<Uri>,
+    pub remote_uri: rsip::Uri,
+    pub remote_target: Option<rsip::Uri>,
     pub msg: RequestMsg,
     pub state: DgState,
     pub created_at: Instant,
@@ -59,15 +59,16 @@ impl DgStateMachine {
             local_tag: msg
                 .sip_request
                 .from_header()?
+                .typed()?
                 .tag()
                 .ok_or(Error::from("missing from tag"))?
                 .clone()
                 .into(),
-            local_seqn: msg.sip_request.cseq_header()?.seq,
-            local_uri: msg.sip_request.from_header()?.0.uri.clone(),
+            local_seqn: msg.sip_request.cseq_header()?.typed()?.seq as u32,
+            local_uri: msg.sip_request.from_header()?.typed()?.uri.clone(),
             remote_tag: None,
             remote_seqn: None,
-            remote_uri: msg.sip_request.to_header()?.0.uri.clone(),
+            remote_uri: msg.sip_request.to_header()?.typed()?.uri.clone(),
             remote_target: None,
             msg,
             state: DgState::Unconfirmed(Default::default()),
@@ -77,6 +78,15 @@ impl DgStateMachine {
     }
 }
 
-fn compute_dialog_id(call_id: CallId, local_tag: String, remote_tag: String) -> String {
-    format!("{}-{}-{}", Into::<String>::into(call_id), local_tag, remote_tag)
+fn compute_dialog_id(
+    call_id: rsip::headers::CallId,
+    local_tag: String,
+    remote_tag: String,
+) -> String {
+    format!(
+        "{}-{}-{}",
+        Into::<String>::into(call_id),
+        local_tag,
+        remote_tag
+    )
 }

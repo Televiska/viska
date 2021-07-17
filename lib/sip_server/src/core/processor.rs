@@ -44,11 +44,7 @@ impl<R: ReqProcessor, C: ReqProcessor, D: DialogsProcessor> CoreProcessor for Pr
         Ok(())
     }
 
-    async fn send(&self, req: rsip::Request) -> Result<(), Error> {
-        use rsip::common::Method;
-
-        match req.method {
-            Method::Invite => 
+    async fn send(&self, _req: rsip::Request) -> Result<(), Error> {
         Ok(())
     }
 

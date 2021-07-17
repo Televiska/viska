@@ -11,7 +11,7 @@ pub use dialogs::Dialogs;
 pub use processor::Processor;
 pub use registrar::Registrar;
 
-use common::async_trait::async_trait;
+use common::{async_trait::async_trait, rsip};
 use std::{any::Any, fmt::Debug, sync::Weak};
 
 use crate::{Error, SipManager};
@@ -47,6 +47,7 @@ pub trait ReqProcessor: Send + Sync + Any + Debug {
     fn as_any(&self) -> &dyn Any;
 }
 
+#[async_trait]
 pub trait DialogsProcessor: Send + Sync + Any + Debug {
     fn new(sip_manager: Weak<SipManager>) -> Self
     where

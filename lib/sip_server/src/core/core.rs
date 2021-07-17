@@ -1,12 +1,12 @@
 use super::CoreLayer;
 use crate::core::CoreProcessor;
-use common::{async_trait::async_trait, tokio};
+use common::{async_trait::async_trait, rsip, tokio};
 use std::{
     any::Any,
     sync::{Arc, Weak},
 };
 
-use crate::SipManager;
+use crate::{Error, SipManager};
 use models::transport::TransportMsg;
 
 //TODO: rename this to something else like ProxyCore etc

@@ -4,12 +4,12 @@ mod uas;
 use super::DialogsProcessor;
 pub use crate::{Error, SipManager};
 use common::async_trait::async_trait;
+use common::tokio::sync::{Mutex, RwLock};
 use std::collections::HashMap;
 use std::{
     any::Any,
     sync::{Arc, Weak},
 };
-use tokio::sync::{Mutex, RwLock};
 
 #[derive(Debug)]
 pub struct Dialogs {
@@ -33,6 +33,10 @@ impl DialogsProcessor for Dialogs {
         });
 
         Self { inner }
+    }
+
+    async fn has_dialog(&self, _dialog_id: &str) -> bool {
+        false
     }
 
     fn as_any(&self) -> &dyn Any {
