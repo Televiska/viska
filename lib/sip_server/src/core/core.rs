@@ -99,14 +99,7 @@ impl<R: ReqProcessor, C: ReqProcessor, D: DialogsProcessor> Inner<R, C, D> {
             _ => {
                 self.sip_manager()
                     .transport
-                    .send(
-                        ResponseMsg::new(
-                            presets::create_405_from(msg.sip_request)?,
-                            msg.peer,
-                            msg.transport,
-                        )
-                        .into(),
-                    )
+                    .send(default_response_from(msg).into())
                     .await?
             }
         };
@@ -145,4 +138,12 @@ impl<R: ReqProcessor, C: ReqProcessor, D: DialogsProcessor> std::fmt::Debug for 
             .field("processor", &self.inner)
             .finish()
     }
+}
+
+fn default_response_from(msg: RequestMsg) -> ResponseMsg {
+    ResponseMsg::new(
+        presets::create_405_from(msg.sip_request)?,
+        msg.peer,
+        msg.transport,
+    )
 }

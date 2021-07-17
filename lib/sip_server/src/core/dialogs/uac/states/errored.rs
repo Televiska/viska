@@ -4,4 +4,3 @@ use common::tokio::time::Instant;
 pub struct Errored {
     pub entered_at: Instant,
 }
-

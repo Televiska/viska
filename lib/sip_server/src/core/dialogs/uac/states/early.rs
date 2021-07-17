@@ -4,4 +4,3 @@ use common::tokio::time::Instant;
 pub struct Early {
     pub entered_at: Instant,
 }
-

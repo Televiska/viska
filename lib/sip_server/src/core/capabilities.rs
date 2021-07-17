@@ -85,7 +85,7 @@ fn create_busy_here_from(request: rsip::Request) -> Result<rsip::Response, crate
     headers.push(AcceptLanguage::new("english").into());
 
     Ok(rsip::Response {
-        status_code: 486.into(),
+        status_code: 200.into(),
         headers,
         ..Default::default()
     })

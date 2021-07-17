@@ -23,7 +23,7 @@ async fn setup() -> (Capabilities, Arc<SipManager>) {
 }
 
 #[tokio::test]
-async fn sending_an_options_request_receives_busy() {
+async fn sending_an_options_request_receives_ok() {
     let _ = common::setup();
     let (capabilities, sip_manager) = setup().await;
     let transport = sip_manager.transport.clone();
@@ -39,6 +39,6 @@ async fn sending_an_options_request_receives_busy() {
     assert_eq!(transport.messages.len().await, 1);
     assert_eq!(
         transport.messages.first_response().await.status_code,
-        486.into()
+        200.into()
     );
 }

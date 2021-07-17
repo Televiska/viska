@@ -30,7 +30,7 @@ async fn setup() -> (
 }
 
 #[tokio::test]
-async fn sending_an_options_request_receives_busy() {
+async fn sending_an_unauthorized_register_request_receives_401() {
     let _ = common::setup();
     let (processor, sip_manager) = setup().await;
     let transport = sip_manager.transport.clone();

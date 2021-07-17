@@ -1,6 +1,9 @@
 use crate::common::snitches::Messages;
 use common::async_trait::async_trait;
-use models::{server::UdpTuple, transport::{RequestMsg, TransportMsg}};
+use models::{
+    server::UdpTuple,
+    transport::{RequestMsg, TransportMsg},
+};
 use sip_server::{CoreLayer, SipBuilder, SipManager, Transaction, Transport};
 use std::any::Any;
 use std::sync::{Arc, Weak};
