@@ -7,8 +7,8 @@ use ::common::ipnetwork::IpNetwork;
 use ::common::rsip::{self, prelude::*};
 use models::transport::RequestMsg;
 use sip_server::{
-    core::{Capabilities, ReqProcessor},
-    Core, CoreLayer, SipBuilder, SipManager, Transaction,
+    core::impls::{Capabilities, UserAgent},
+    ReqProcessor, SipBuilder, SipManager, Transaction, CoreLayer,
 };
 use std::sync::Arc;
 

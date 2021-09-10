@@ -1,5 +1,8 @@
-use super::CoreLayer;
-use crate::core::CoreProcessor;
+mod processor;
+pub use processor::ProxyProcessor;
+
+use crate::CoreLayer;
+use crate::CoreProcessor;
 use common::{async_trait::async_trait, tokio};
 use std::{
     any::Any,
@@ -9,13 +12,12 @@ use std::{
 use crate::SipManager;
 use models::transport::TransportMsg;
 
-//TODO: rename this to something else like ProxyCore etc
-pub struct Core<P: CoreProcessor> {
+pub struct Proxy<P: CoreProcessor> {
     inner: Arc<Inner<P>>,
 }
 
 #[async_trait]
-impl<P: CoreProcessor> CoreLayer for Core<P> {
+impl<P: CoreProcessor> CoreLayer for Proxy<P> {
     fn new(sip_manager: Weak<SipManager>) -> Self {
         let inner = Arc::new(Inner {
             sip_manager: sip_manager.clone(),
@@ -75,9 +77,9 @@ impl<P: CoreProcessor> Inner<P> {
     async fn run(&self) {}
 }
 
-impl<P: CoreProcessor> std::fmt::Debug for Core<P> {
+impl<P: CoreProcessor> std::fmt::Debug for Proxy<P> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Core")
+        f.debug_struct("proxy")
             .field("processor", &self.inner.processor)
             .finish()
     }

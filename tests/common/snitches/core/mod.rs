@@ -8,7 +8,7 @@ pub use self::registrar::RegistrarSnitch;
 
 use common::async_trait::async_trait;
 use models::transport::RequestMsg;
-use sip_server::{core::ReqProcessor, Error, SipManager};
+use sip_server::{ReqProcessor, Error, SipManager};
 use std::any::Any;
 use std::sync::Weak;
 

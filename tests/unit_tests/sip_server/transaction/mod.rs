@@ -2,7 +2,7 @@ pub mod uac_tests;
 pub mod uas_tests;
 
 use crate::common::snitches::{CoreSnitch, TransportSnitch};
-use sip_server::{Core, CoreLayer, SipBuilder, SipManager, Transaction};
+use sip_server::{core::impls::UserAgent, SipBuilder, SipManager, Transaction, CoreLayer};
 use std::sync::Arc;
 
 async fn setup() -> Arc<SipManager> {

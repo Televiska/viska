@@ -44,7 +44,7 @@ async fn if_peer_not_alive() {
 
     as_downcasted!(
         sip_manager,
-        core,
+        tu,
         transaction,
         transport,
         CoreSnitch,
@@ -78,7 +78,7 @@ async fn transport_errors_on_second_provisional() {
 
     as_downcasted!(
         sip_manager,
-        core,
+        tu,
         transaction,
         transport,
         CoreSnitch,
@@ -127,7 +127,7 @@ async fn multiple_invite_on_proceeding() {
 
     as_downcasted!(
         sip_manager,
-        core,
+        tu,
         transaction,
         transport,
         CoreSnitch,
@@ -184,7 +184,7 @@ async fn with_redirect_response_moves_to_completed() {
 
     as_downcasted!(
         sip_manager,
-        core,
+        tu,
         transaction,
         transport,
         CoreSnitch,
@@ -230,7 +230,7 @@ async fn with_ok_response_moves_to_accepted() {
 
     as_downcasted!(
         sip_manager,
-        core,
+        tu,
         transaction,
         transport,
         CoreSnitch,
@@ -277,7 +277,7 @@ async fn multiple_invites_on_completed_resends_response() {
 
     as_downcasted!(
         sip_manager,
-        core,
+        tu,
         transaction,
         transport,
         CoreSnitch,
@@ -340,7 +340,7 @@ async fn redirect_but_peer_not_responding_with_ack() {
 
     as_downcasted!(
         sip_manager,
-        core,
+        tu,
         transaction,
         transport,
         CoreSnitch,
@@ -416,7 +416,7 @@ async fn with_ack_moves_to_confirmed() {
 
     as_downcasted!(
         sip_manager,
-        core,
+        tu,
         transaction,
         transport,
         CoreSnitch,
@@ -449,7 +449,7 @@ async fn with_ack_moves_to_confirmed() {
             .is_uas_completed(request.transaction_id().expect("response transaction id"))
             .await
     );
-    assert_eq!(core.messages.len().await, 0);
+    assert_eq!(tu.messages.len().await, 0);
     assert_eq!(transport.messages.len().await, 2);
     assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
 
@@ -462,7 +462,7 @@ async fn with_ack_moves_to_confirmed() {
             .into(),
         )
         .await;
-    assert_eq!(core.messages.len().await, 0);
+    assert_eq!(tu.messages.len().await, 0);
     assert_eq!(transport.messages.len().await, 2);
     assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
     assert!(
@@ -480,7 +480,7 @@ async fn multiple_invites_on_accepted_resends_response() {
 
     as_downcasted!(
         sip_manager,
-        core,
+        tu,
         transaction,
         transport,
         CoreSnitch,
@@ -543,7 +543,7 @@ async fn ok_but_peer_not_responding_with_ack() {
 
     as_downcasted!(
         sip_manager,
-        core,
+        tu,
         transaction,
         transport,
         CoreSnitch,
@@ -605,7 +605,7 @@ async fn with_multiple_ok_on_accepted() {
 
     as_downcasted!(
         sip_manager,
-        core,
+        tu,
         transaction,
         transport,
         CoreSnitch,
@@ -662,7 +662,7 @@ async fn with_error_on_second_ok_on_accepted() {
 
     as_downcasted!(
         sip_manager,
-        core,
+        tu,
         transaction,
         transport,
         CoreSnitch,
@@ -744,7 +744,7 @@ async fn multiple_ack_received_are_forwarded_to_tu() {
 
     as_downcasted!(
         sip_manager,
-        core,
+        tu,
         transaction,
         transport,
         CoreSnitch,
@@ -777,7 +777,7 @@ async fn multiple_ack_received_are_forwarded_to_tu() {
             .is_uas_accepted(request.transaction_id().expect("response transaction id"))
             .await
     );
-    assert_eq!(core.messages.len().await, 0);
+    assert_eq!(tu.messages.len().await, 0);
     assert_eq!(transport.messages.len().await, 2);
     assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
 
@@ -790,7 +790,7 @@ async fn multiple_ack_received_are_forwarded_to_tu() {
             .into(),
         )
         .await;
-    assert_eq!(core.messages.len().await, 1);
+    assert_eq!(tu.messages.len().await, 1);
     assert_eq!(transport.messages.len().await, 2);
     assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
 }
@@ -805,7 +805,7 @@ async fn when_confirmed_acks_have_no_effect() {
 
     as_downcasted!(
         sip_manager,
-        core,
+        tu,
         transaction,
         transport,
         CoreSnitch,
@@ -844,7 +844,7 @@ async fn when_confirmed_acks_have_no_effect() {
         )
         .await;
 
-    assert_eq!(core.messages.len().await, 0);
+    assert_eq!(tu.messages.len().await, 0);
     assert_eq!(transport.messages.len().await, 2);
     assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
     assert!(
@@ -872,7 +872,7 @@ async fn when_confirmed_acks_have_no_effect() {
         )
         .await;
 
-    assert_eq!(core.messages.len().await, 0);
+    assert_eq!(tu.messages.len().await, 0);
     assert_eq!(transport.messages.len().await, 2);
     assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
     assert!(
@@ -891,7 +891,7 @@ async fn when_confirmed_when_time_i_kicks_in_move_to_terminated() {
 
     as_downcasted!(
         sip_manager,
-        core,
+        tu,
         transaction,
         transport,
         CoreSnitch,
@@ -930,7 +930,7 @@ async fn when_confirmed_when_time_i_kicks_in_move_to_terminated() {
         )
         .await;
 
-    assert_eq!(core.messages.len().await, 0);
+    assert_eq!(tu.messages.len().await, 0);
     assert_eq!(transport.messages.len().await, 2);
     assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
     assert!(
@@ -941,7 +941,7 @@ async fn when_confirmed_when_time_i_kicks_in_move_to_terminated() {
 
     advance_for(Duration::from_millis(5000)).await;
 
-    assert_eq!(core.messages.len().await, 0);
+    assert_eq!(tu.messages.len().await, 0);
     assert_eq!(transport.messages.len().await, 2);
     assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
     assert!(

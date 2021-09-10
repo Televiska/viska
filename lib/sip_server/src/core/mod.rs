@@ -1,19 +1,10 @@
-mod capabilities;
-#[allow(clippy::module_inception)]
-mod core;
-mod processor;
-mod registrar;
-
-pub use self::core::Core;
-pub use capabilities::Capabilities;
-pub use processor::Processor;
-pub use registrar::Registrar;
+pub mod impls;
 
 use common::async_trait::async_trait;
 use std::{any::Any, fmt::Debug, sync::Weak};
 
 use crate::SipManager;
-use models::transport::{RequestMsg, TransportMsg};
+use models::transport::{RequestMsg, ResponseMsg, TransportMsg};
 
 #[async_trait]
 pub trait CoreLayer: Send + Sync + Any + Debug {
@@ -43,3 +34,26 @@ pub trait ReqProcessor: Send + Sync + Any + Debug {
     async fn process_incoming_request(&self, msg: RequestMsg) -> Result<(), crate::Error>;
     fn as_any(&self) -> &dyn Any;
 }
+
+#[async_trait]
+pub trait RespProcessor: Send + Sync + Any + Debug {
+    fn new(sip_manager: Weak<SipManager>) -> Self
+    where
+        Self: Sized;
+    async fn process_incoming_response(&self, msg: ResponseMsg) -> Result<(), crate::Error>;
+    fn as_any(&self) -> &dyn Any;
+}
+
+
+//#[async_trait]
+//pub trait ProxyProcessor: Send + Sync + Any + Debug {
+//    fn new(sip_manager: Weak<SipManager>) -> Self
+//    where
+//        Self: Sized;
+//    async fn validate_request(&self, msg: RequestMsg) -> Result<(), crate::Error>;
+//    async fn preprocess_routing_info(&self, msg: RequestMsg) -> Result<(), crate::Error>;
+//    async fn determine_targets(&self, msg: RequestMsg) -> Result<(), crate::Error>;
+//    async fn forward_request(&self, msg: RequestMsg) -> Result<(), crate::Error>;
+//    async fn process_response(&self, msg: ResponseMsg) -> Result<(), crate::Error>;
+//    fn as_any(&self) -> &dyn Any;
+//}

@@ -1,5 +1,4 @@
-use super::ReqProcessor;
-use crate::{Error, SipManager};
+use crate::{Error, SipManager, ReqProcessor};
 use common::{
     async_trait::async_trait,
     rsip::{self, prelude::*},
