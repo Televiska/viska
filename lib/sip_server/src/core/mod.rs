@@ -43,17 +43,3 @@ pub trait RespProcessor: Send + Sync + Any + Debug {
     async fn process_incoming_response(&self, msg: ResponseMsg) -> Result<(), crate::Error>;
     fn as_any(&self) -> &dyn Any;
 }
-
-
-//#[async_trait]
-//pub trait ProxyProcessor: Send + Sync + Any + Debug {
-//    fn new(sip_manager: Weak<SipManager>) -> Self
-//    where
-//        Self: Sized;
-//    async fn validate_request(&self, msg: RequestMsg) -> Result<(), crate::Error>;
-//    async fn preprocess_routing_info(&self, msg: RequestMsg) -> Result<(), crate::Error>;
-//    async fn determine_targets(&self, msg: RequestMsg) -> Result<(), crate::Error>;
-//    async fn forward_request(&self, msg: RequestMsg) -> Result<(), crate::Error>;
-//    async fn process_response(&self, msg: ResponseMsg) -> Result<(), crate::Error>;
-//    fn as_any(&self) -> &dyn Any;
-//}

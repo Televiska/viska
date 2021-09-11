@@ -1,5 +1,5 @@
 mod processor;
-pub use processor::UaProcessor;
+pub use processor::UasProcessor;
 
 use crate::{CoreLayer, CoreProcessor};
 use common::{async_trait::async_trait, tokio};

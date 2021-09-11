@@ -178,8 +178,8 @@ impl std::fmt::Debug for Transport {
 }
 
 fn create_socket() -> Result<(UdpSink, UdpStream), crate::Error> {
-    let socket = UdpSocket::from_std(std::net::UdpSocket::bind("0.0.0.0:5060")?)?;
-    common::log::debug!("starting udp server listening in port 5060");
+    let socket = UdpSocket::from_std(std::net::UdpSocket::bind("0.0.0.0:5066")?)?;
+    common::log::debug!("starting udp server listening in port 5066");
     let socket = UdpFramed::new(socket, BytesCodec::new());
     Ok(socket.split())
 }

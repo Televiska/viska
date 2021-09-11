@@ -1,8 +1,6 @@
-use sip_server::{
-    core::impls::{Capabilities, Registrar, UaProcessor, UserAgent},
-    SipBuilder, Transaction, Transport,
-};
+use sip_server::{core::impls, SipBuilder, Transaction, Transport};
 
+/*
 #[tokio::main]
 async fn main() {
     common::pretty_env_logger::init_timed();
@@ -12,7 +10,7 @@ async fn main() {
 
     if std::env::args().len() == 1 {
         let manager = SipBuilder::new::<
-            UserAgent<UaProcessor<Registrar, Capabilities>>,
+            impls::UserAgent<impls::UasProcessor<impls::Registrar, impls::Capabilities>>,
             Transaction,
             Transport,
         >()
@@ -29,4 +27,24 @@ async fn main() {
     } else {
         tasks::run_task().await.expect("run task failed");
     }
+}*/
+
+#[tokio::main]
+async fn main() {
+    common::pretty_env_logger::init_timed();
+    let config = common::Config::default();
+
+    println!("{:?}", config);
+
+    let manager = SipBuilder::new::<impls::uac::UserAgent, Transaction, Transport>()
+        .expect("sip manager failed");
+    manager.run().await;
+
+    tokio::spawn(async move {
+        loop {
+            std::thread::sleep(std::time::Duration::from_millis(4000))
+        }
+    })
+    .await
+    .expect("sleeping");
 }

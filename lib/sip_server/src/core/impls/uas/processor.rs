@@ -11,14 +11,14 @@ use std::{
 };
 
 #[derive(Debug)]
-pub struct UaProcessor<R: ReqProcessor, C: ReqProcessor> {
+pub struct UasProcessor<R: ReqProcessor, C: ReqProcessor> {
     sip_manager: Weak<SipManager>,
     registrar: R,
     capabilities: C,
 }
 
 #[async_trait]
-impl<R: ReqProcessor, C: ReqProcessor> CoreProcessor for UaProcessor<R, C> {
+impl<R: ReqProcessor, C: ReqProcessor> CoreProcessor for UasProcessor<R, C> {
     fn new(sip_manager: Weak<SipManager>) -> Self {
         Self {
             registrar: R::new(sip_manager.clone()),
@@ -46,7 +46,7 @@ impl<R: ReqProcessor, C: ReqProcessor> CoreProcessor for UaProcessor<R, C> {
     }
 }
 
-impl<R: ReqProcessor, C: ReqProcessor> UaProcessor<R, C> {
+impl<R: ReqProcessor, C: ReqProcessor> UasProcessor<R, C> {
     async fn handle_request(&self, msg: RequestMsg) -> Result<(), Error> {
         use rsip::Method;
 
