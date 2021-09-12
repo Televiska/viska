@@ -1,5 +1,4 @@
-pub use super::{Capabilities, CoreProcessor, Registrar, ReqProcessor};
-pub use crate::{presets, Error, SipManager};
+pub use crate::{presets, Error, SipManager, CoreProcessor, ReqProcessor};
 use common::{
     async_trait::async_trait,
     rsip::{self, prelude::*},
@@ -12,14 +11,14 @@ use std::{
 };
 
 #[derive(Debug)]
-pub struct Processor<R: ReqProcessor, C: ReqProcessor> {
+pub struct UaProcessor<R: ReqProcessor, C: ReqProcessor> {
     sip_manager: Weak<SipManager>,
     registrar: R,
     capabilities: C,
 }
 
 #[async_trait]
-impl<R: ReqProcessor, C: ReqProcessor> CoreProcessor for Processor<R, C> {
+impl<R: ReqProcessor, C: ReqProcessor> CoreProcessor for UaProcessor<R, C> {
     fn new(sip_manager: Weak<SipManager>) -> Self {
         Self {
             registrar: R::new(sip_manager.clone()),
@@ -47,7 +46,7 @@ impl<R: ReqProcessor, C: ReqProcessor> CoreProcessor for Processor<R, C> {
     }
 }
 
-impl<R: ReqProcessor, C: ReqProcessor> Processor<R, C> {
+impl<R: ReqProcessor, C: ReqProcessor> UaProcessor<R, C> {
     async fn handle_request(&self, msg: RequestMsg) -> Result<(), Error> {
         use rsip::Method;
 
