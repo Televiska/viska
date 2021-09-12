@@ -23,6 +23,7 @@ async fn setup() -> (Capabilities, Arc<SipManager>) {
 }
 
 #[tokio::test]
+#[serial_test::serial]
 async fn sending_an_options_request_receives_busy() {
     let _ = common::setup();
     let (capabilities, sip_manager) = setup().await;

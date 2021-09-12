@@ -53,7 +53,7 @@ pub fn register_query_request() -> rsip::Request {
     headers.unique_push(typed::CSeq::from((1, Method::Register)).into());
 
     let base_uri: Uri = common::CONFIG.default_addr().into();
-    let from_uri = base_uri.clone().with_username("filippos");
+    let from_uri = base_uri.clone().with_user("filippos");
     let to_uri = from_uri.clone();
 
     headers.unique_push(typed::From::from(from_uri).into());
@@ -106,7 +106,7 @@ pub fn options_request() -> rsip::Request {
     headers.unique_push(typed::CSeq::from((1, Method::Options)).into());
 
     let base_uri: Uri = common::CONFIG.default_addr().into();
-    let to_uri = base_uri.clone().with_username("filippos");
+    let to_uri = base_uri.clone().with_user("filippos");
 
     headers.unique_push(typed::To::from(to_uri.clone()).into());
     headers.retain(|h| !matches!(h, Header::Contact(_)));

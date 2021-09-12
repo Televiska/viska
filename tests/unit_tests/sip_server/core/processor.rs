@@ -27,6 +27,7 @@ async fn setup() -> (
 }
 
 #[tokio::test]
+#[serial_test::serial]
 async fn sending_an_options_request_receives_busy() {
     let _ = common::setup();
     let (processor, sip_manager) = setup().await;

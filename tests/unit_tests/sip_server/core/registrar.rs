@@ -21,6 +21,7 @@ async fn setup() -> (Registrar, Arc<SipManager>) {
 }
 
 #[tokio::test]
+#[serial_test::serial]
 async fn with_no_records_returns_empty_list() {
     let _ = common::setup();
     let (registrar, sip_manager) = setup().await;
@@ -50,6 +51,7 @@ async fn with_no_records_returns_empty_list() {
 }
 
 #[tokio::test]
+#[serial_test::serial]
 async fn with_records_returns_a_list_of_contacts() {
     let _ = common::setup();
     create_registration();
@@ -84,6 +86,7 @@ async fn with_records_returns_a_list_of_contacts() {
 }
 
 #[tokio::test]
+#[serial_test::serial]
 async fn with_new_register_request_saves_the_contact() {
     let _ = common::setup();
     create_registration();
@@ -122,6 +125,7 @@ async fn with_new_register_request_saves_the_contact() {
 }
 
 #[tokio::test]
+#[serial_test::serial]
 async fn with_wrong_from_to_register() {
     use rsip::Uri;
 
@@ -132,7 +136,7 @@ async fn with_wrong_from_to_register() {
     let mut request = requests::register_request();
     request
         .headers
-        .unique_push(rsip::typed::To::from(Uri::default().with_username("another")).into());
+        .unique_push(rsip::typed::To::from(Uri::default().with_user("another")).into());
 
     let res = registrar
         .process_incoming_request(RequestMsg {
@@ -145,6 +149,7 @@ async fn with_wrong_from_to_register() {
 }
 
 #[tokio::test]
+#[serial_test::serial]
 async fn delete_registration() {
     let _ = common::setup();
 
@@ -189,13 +194,13 @@ fn create_registration() -> (store::Registration, rsip::Uri) {
     use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
     let ip_address: IpNetwork = IpAddrBuilder::localhost().into();
-    let username: String = "filippos".into();
+    let user: String = "filippos".into();
 
     let uri = rsip::Uri {
-        schema: Some(rsip::Schema::default()),
+        scheme: Some(rsip::Scheme::default()),
         host_with_port: rsip::HostWithPort::from(ip_address.clone().ip()),
         auth: Some(rsip::Auth {
-            username: username.clone(),
+            user: user.clone(),
             password: None,
         }),
         params: vec![],
@@ -204,7 +209,7 @@ fn create_registration() -> (store::Registration, rsip::Uri) {
 
     //TODO: should impl Randomized default
     let mut new_registration = store::DirtyRegistration {
-        username: Some(username),
+        username: Some(user),
         domain: Some("localhost".into()),
         expires: Some(Utc::now() + Duration::minutes(100)),
         call_id: Some(rsip::headers::CallId::default().value().into()),
