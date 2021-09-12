@@ -166,6 +166,9 @@ pub enum Transport {
     Udp,
     Tls,
     Sctp,
+    TlsSctp,
+    Ws,
+    Wss,
 }
 impl fmt::Display for Transport {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -196,6 +199,9 @@ impl std::str::FromStr for Transport {
             s if s.eq_ignore_ascii_case("udp") => Ok(Transport::Udp),
             s if s.eq_ignore_ascii_case("tls") => Ok(Transport::Tls),
             s if s.eq_ignore_ascii_case("sctp") => Ok(Transport::Sctp),
+            s if s.eq_ignore_ascii_case("tls-sctp") => Ok(Transport::TlsSctp),
+            s if s.eq_ignore_ascii_case("ws") => Ok(Transport::Ws),
+            s if s.eq_ignore_ascii_case("wss") => Ok(Transport::Wss),
             s => Err(format!("failed to parse transport {}", s)),
         }
     }
@@ -209,6 +215,9 @@ impl Into<rsip::Transport> for Transport {
             Transport::Udp => rsip::Transport::Udp,
             Transport::Tls => rsip::Transport::Tls,
             Transport::Sctp => rsip::Transport::Sctp,
+            Transport::TlsSctp => rsip::Transport::TlsSctp,
+            Transport::Ws => rsip::Transport::Ws,
+            Transport::Wss => rsip::Transport::Wss,
         }
     }
 }
@@ -220,6 +229,9 @@ impl From<rsip::Transport> for Transport {
             rsip::Transport::Udp => Transport::Udp,
             rsip::Transport::Tls => Transport::Tls,
             rsip::Transport::Sctp => Transport::Sctp,
+            rsip::Transport::TlsSctp => Transport::TlsSctp,
+            rsip::Transport::Ws => Transport::Ws,
+            rsip::Transport::Wss => Transport::Wss,
         }
     }
 }
@@ -259,7 +271,7 @@ impl TryFrom<RequestMsg> for DirtyRegistration {
                     .from_header()?
                     .typed()?
                     .uri
-                    .username()
+                    .user()
                     .ok_or("missing username in from header")?
                     .into(),
             ),

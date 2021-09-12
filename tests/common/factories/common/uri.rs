@@ -1,14 +1,14 @@
 use super::SocketAddrBuilder;
 use crate::common::factories::RandomizedBuilder;
-use common::rsip::{prelude::*, Auth, Host, HostWithPort, Param, Schema, Uri};
+use common::rsip::{prelude::*, Auth, Host, HostWithPort, Param, Scheme, Uri};
 use std::net::SocketAddr;
 
 pub trait UriExt {
-    fn with_schema(self, schema: Option<Schema>) -> Self;
+    fn with_scheme(self, scheme: Option<Scheme>) -> Self;
     fn sip(self) -> Self;
     fn sips(self) -> Self;
     fn with_auth(self, auth: Option<Auth>) -> Self;
-    fn with_username(self, username: impl Into<String>) -> Self;
+    fn with_user(self, user: impl Into<String>) -> Self;
     fn with_host_with_port(self, host_with_port: impl Into<HostWithPort>) -> Self;
     fn with_host(self, host: impl Into<HostWithPort>) -> Self;
     fn with_port(self, port: u16) -> Self;
@@ -18,30 +18,30 @@ pub trait UriExt {
     where
         Self: Sized,
     {
-        self.with_auth(None).with_params(vec![]).with_schema(None)
+        self.with_auth(None).with_params(vec![]).with_scheme(None)
     }
 }
 
 impl UriExt for Uri {
-    fn with_schema(mut self, schema: Option<Schema>) -> Self {
-        self.schema = schema;
+    fn with_scheme(mut self, scheme: Option<Scheme>) -> Self {
+        self.scheme = scheme;
         self
     }
     fn sip(mut self) -> Self {
-        self.schema = Some(Schema::Sip);
+        self.scheme = Some(Scheme::Sip);
         self
     }
     fn sips(mut self) -> Self {
-        self.schema = Some(Schema::Sips);
+        self.scheme = Some(Scheme::Sips);
         self
     }
     fn with_auth(mut self, auth: Option<Auth>) -> Self {
         self.auth = auth;
         self
     }
-    fn with_username(mut self, username: impl Into<String>) -> Self {
+    fn with_user(mut self, user: impl Into<String>) -> Self {
         self.auth = Some(Auth {
-            username: username.into(),
+            user: user.into(),
             password: self.auth.map(|auth| auth.password).flatten(),
         });
         self
