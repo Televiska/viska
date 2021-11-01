@@ -66,7 +66,7 @@ fn www_authenticate_header_value() -> Result<rsip::headers::WwwAuthenticate, cra
     let nonce = store::AuthRequest::create(store::DirtyAuthRequest::default())?.nonce;
 
     Ok(rsip::typed::WwwAuthenticate {
-        realm: "192.168.1.157".into(),
+        realm: "192.168.0.30".into(),
         nonce,
         algorithm: Some(auth::Algorithm::Md5),
         qop: Some(auth::Qop::Auth),

@@ -50,7 +50,7 @@ impl Registrar {
                     store::Registration::delete_by_uri(typed_contact_header.uri.to_string())?;
                 }
                 _ => {
-                    println!("{:?}", typed_contact_header);
+                    println!("---> {:?}", typed_contact_header);
                     store::Registration::upsert(store::DirtyRegistration::try_from(msg.clone())?)?;
                 }
             }
