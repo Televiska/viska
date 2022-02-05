@@ -25,5 +25,5 @@ async-trait = "0.1.40"
 pnet = "0.27.2"
 once_cell = "1.5.2"
 lexical-core = "0.7.6"
-rsip = { path = "../../rsip" }
-rsip-dns = { path = "../../rsip-dns" }
+rsip = "0.3.0"
+rsip-dns = "0.1.2"
