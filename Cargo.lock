@@ -96,6 +96,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "bstr"
+version = "0.2.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba3569f383e8f1598449f1a423e72e99569137b47740b1da11ef19af3d5c3223"
+dependencies = [
+ "lazy_static",
+ "memchr",
+ "regex-automata",
+]
+
+[[package]]
 name = "byteorder"
 version = "1.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -160,7 +171,7 @@ dependencies = [
  "pretty_env_logger",
  "rand",
  "rand_chacha",
- "rsip 0.2.0",
+ "rsip 0.3.0",
  "rsip-dns",
  "tokio",
  "tokio-util",
@@ -628,9 +639,9 @@ checksum = "490cc448043f947bae3cbee9c203358d62dbee0db12107a74be5c30ccfd09771"
 
 [[package]]
 name = "memchr"
-version = "2.3.3"
+version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3728d817d99e5ac407411fa471ff9800a778d88a24685968b36824eaf4bee400"
+checksum = "308cc39be01b73d0d18f82a0e7b2a3df85245f84af96fdddc5d202d27e47b86a"
 
 [[package]]
 name = "migrations_internals"
@@ -649,6 +660,12 @@ dependencies = [
  "proc-macro2",
  "quote",
 ]
+
+[[package]]
+name = "minimal-lexical"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 
 [[package]]
 name = "mio"
@@ -681,15 +698,26 @@ dependencies = [
 
 [[package]]
 name = "nom"
-version = "6.2.0"
+version = "6.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "046a595c7251e2f48b291c1b65d98ef1df51dbfbad46e99a1ff09729535a779e"
+checksum = "e7413f999671bd4745a7b624bd370a569fb6bc574b23c83a3c5ed2e453f3d5e2"
 dependencies = [
  "bitvec",
  "funty",
  "lexical-core",
  "memchr",
  "regex",
+ "version_check",
+]
+
+[[package]]
+name = "nom"
+version = "7.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b1d11e1ef389c76fe5b81bcaf2ea32cf88b62bc494e19f493d0b30e7a930109"
+dependencies = [
+ "memchr",
+ "minimal-lexical",
  "version_check",
 ]
 
@@ -1018,22 +1046,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "regex-automata"
+version = "0.1.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c230d73fb8d8c1b9c0b3135c5142a8acee3a0558fb8db5cf1cb65f8d7862132"
+
+[[package]]
 name = "regex-syntax"
 version = "0.6.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "26412eb97c6b088a6997e05f69403a802a92d520de2f8e63c2b65f9e0f47c4e8"
-
-[[package]]
-name = "rsip"
-version = "0.2.0"
-dependencies = [
- "bytes",
- "md-5",
- "nom",
- "rsip-derives 0.1.0",
- "sha2",
- "uuid",
-]
 
 [[package]]
 name = "rsip"
@@ -1043,20 +1065,25 @@ checksum = "2bd4ff21ce91f26ac08c9708a61c890c2da540c554b376a4329a58f7caed4d19"
 dependencies = [
  "bytes",
  "md-5",
- "nom",
- "rsip-derives 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nom 6.1.2",
+ "rsip-derives 0.1.0",
  "sha2",
  "uuid",
 ]
 
 [[package]]
-name = "rsip-derives"
-version = "0.1.0"
+name = "rsip"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fceb378782fd10fb41cbe8300eb1ac1426b615dc611d39396d1d90cb342102b"
 dependencies = [
- "darling 0.13.0",
- "proc-macro2",
- "quote",
- "syn",
+ "bstr",
+ "bytes",
+ "md-5",
+ "nom 7.1.0",
+ "rsip-derives 0.3.0",
+ "sha2",
+ "uuid",
 ]
 
 [[package]]
@@ -1072,13 +1099,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "rsip-derives"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2000fb0e1be427b6270f86e0fc97c02843b617f8bb9ed6ece8cbe604813a8993"
+dependencies = [
+ "darling 0.13.0",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "rsip-dns"
 version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "563de5bf161e2666691047dc7504aaec2a85f1fcf5687f9f2412ceedde33a569"
 dependencies = [
  "async-trait",
  "futures",
- "nom",
- "rsip 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nom 6.1.2",
+ "rsip 0.2.0",
 ]
 
 [[package]]
