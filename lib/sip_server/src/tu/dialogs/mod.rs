@@ -21,9 +21,9 @@ pub struct Dialogs {
 struct Inner {
     sip_manager: Weak<SipManager>,
     #[allow(dead_code)]
-    pub uac_state: RwLock<HashMap<String, Mutex<uac::DgStateMachine>>>,
+    pub uac_state: RwLock<HashMap<String, Mutex<uac::DialogSm>>>,
     #[allow(dead_code)]
-    pub uas_state: RwLock<HashMap<String, Mutex<uas::DgStateMachine>>>,
+    pub uas_state: RwLock<HashMap<String, Mutex<uas::DialogSm>>>,
 }
 
 #[async_trait]

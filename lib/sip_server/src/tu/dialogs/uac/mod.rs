@@ -10,7 +10,7 @@ use models::transport::RequestMsg;
 use std::sync::Arc;
 
 #[derive(Debug)]
-pub struct DgStateMachine {
+pub struct DialogSm {
     pub id: Option<String>,
     pub call_id: rsip::headers::CallId,
     pub transaction_id: String,
@@ -22,14 +22,14 @@ pub struct DgStateMachine {
     pub remote_uri: rsip::Uri,
     pub remote_target: Option<rsip::Uri>,
     pub msg: RequestMsg,
-    pub state: DgState,
+    pub state: DialogState,
     pub created_at: Instant,
     pub sip_manager: Arc<SipManager>,
 }
 
 #[allow(dead_code)]
 #[derive(Debug)]
-pub enum DgState {
+pub enum DialogState {
     Unconfirmed(Unconfirmed),
     Early(Early),
     Confirmed(Confirmed),
@@ -37,20 +37,20 @@ pub enum DgState {
     Errored(Errored),
 }
 
-impl std::fmt::Display for DgState {
+impl std::fmt::Display for DialogState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Unconfirmed(_) => write!(f, "DgState::Unconfirmed"),
-            Self::Early(_) => write!(f, "DgState::Early"),
-            Self::Confirmed(_) => write!(f, "DgState::Confirmed"),
-            Self::Deleted(_) => write!(f, "DgState::Deleted"),
-            Self::Errored(_) => write!(f, "DgState::Errored"),
+            Self::Unconfirmed(_) => write!(f, "DialogState::Unconfirmed"),
+            Self::Early(_) => write!(f, "DialogState::Early"),
+            Self::Confirmed(_) => write!(f, "DialogState::Confirmed"),
+            Self::Deleted(_) => write!(f, "DialogState::Deleted"),
+            Self::Errored(_) => write!(f, "DialogState::Errored"),
         }
     }
 }
 
 #[allow(dead_code)]
-impl DgStateMachine {
+impl DialogSm {
     pub fn new(sip_manager: Arc<SipManager>, msg: RequestMsg) -> Result<Self, Error> {
         Ok(Self {
             id: None,
@@ -71,7 +71,7 @@ impl DgStateMachine {
             remote_uri: msg.sip_request.to_header()?.typed()?.uri.clone(),
             remote_target: None,
             msg,
-            state: DgState::Unconfirmed(Default::default()),
+            state: DialogState::Unconfirmed(Default::default()),
             created_at: Instant::now(),
             sip_manager,
         })

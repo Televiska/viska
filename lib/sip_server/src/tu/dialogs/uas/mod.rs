@@ -1,4 +1,4 @@
 #[derive(Debug)]
-pub struct DgStateMachine {
+pub struct DialogSm {
     pub id: String,
 }
