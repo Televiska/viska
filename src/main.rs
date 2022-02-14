@@ -1,5 +1,8 @@
 use sip_server::{
-    core::impls::{Capabilities, Registrar, UaProcessor, UserAgent},
+    core::{
+        impls::{Capabilities, Registrar, UaProcessor, UserAgent},
+        Dialogs,
+    },
     SipBuilder, Transaction, Transport,
 };
 
@@ -12,7 +15,7 @@ async fn main() {
 
     if std::env::args().len() == 1 {
         let manager = SipBuilder::new::<
-            UserAgent<UaProcessor<Registrar, Capabilities>>,
+            UserAgent<UaProcessor<Registrar, Capabilities, Dialogs>>,
             Transaction,
             Transport,
         >()

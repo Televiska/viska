@@ -4,8 +4,9 @@ mod transaction;
 mod transport;
 
 pub use self::core::{
-    CapabilitiesSnitch, CorePanic, CoreSnitch, RegistrarSnitch, ReqProcessorPanic,
+    CapabilitiesSnitch, CorePanic, CoreSnitch, DialogsEmptySnitch, RegistrarSnitch,
+    ReqProcessorPanic,
 };
-pub use self::transaction::{TransactionEmptySnitch, TransactionPanic};
-pub use self::transport::{TransportErrorSnitch, TransportPanic, TransportSnitch};
 pub use messages::Messages;
+pub use transaction::{TransactionEmptySnitch, TransactionPanic};
+pub use transport::{TransportErrorSnitch, TransportPanic, TransportSnitch};

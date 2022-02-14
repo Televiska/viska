@@ -1,7 +1,7 @@
 use crate::common::{
     self,
     factories::prelude::*,
-    snitches::{CorePanic, RegistrarSnitch, ReqProcessorPanic, TransactionPanic, TransportSnitch},
+    snitches::{CorePanic, RegistrarSnitch, ReqProcessorPanic, TransactionPanic, TransportSnitch, DialogsEmptySnitch},
 };
 use ::common::ipnetwork::IpNetwork;
 use ::common::rsip::{self, prelude::*};
@@ -10,14 +10,14 @@ use sip_server::{core::impls::UaProcessor, ReqProcessor, SipBuilder, SipManager,
 use std::sync::Arc;
 
 async fn setup() -> (
-    UaProcessor<RegistrarSnitch, ReqProcessorPanic>,
+    UaProcessor<RegistrarSnitch, ReqProcessorPanic, DialogsEmptySnitch>,
     Arc<SipManager>,
 ) {
     let sip_manager = SipBuilder::new::<CorePanic, TransactionPanic, TransportSnitch>()
         .expect("sip manager failed")
         .manager;
 
-    let processor: UaProcessor<RegistrarSnitch, ReqProcessorPanic> =
+    let processor: UaProcessor<RegistrarSnitch, ReqProcessorPanic, DialogsEmptySnitch> =
         UaProcessor::new(Arc::downgrade(&sip_manager));
 
     (processor, sip_manager)

@@ -11,6 +11,6 @@ pub mod core;
 
 pub use crate::transaction::{Transaction, TransactionLayer};
 pub use crate::transport::{Transport, TransportLayer};
-pub use crate::core::{ReqProcessor, CoreLayer, CoreProcessor};
+pub use crate::core::{ReqProcessor, CoreLayer, CoreProcessor, DialogsProcessor, Dialogs};
 pub use error::{Error, ErrorKind};
 pub use sip_manager::{SipBuilder, SipManager};

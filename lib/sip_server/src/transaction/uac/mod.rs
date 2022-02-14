@@ -4,10 +4,7 @@ pub use states::{Accepted, Calling, Completed, Errored, Proceeding, Terminated};
 
 use crate::Error;
 use crate::SipManager;
-use common::{
-    rsip::{self, prelude::*},
-    tokio::time::Instant,
-};
+use common::{rsip, tokio::time::Instant};
 use models::{
     transport::{RequestMsg, ResponseMsg},
     RequestExt,

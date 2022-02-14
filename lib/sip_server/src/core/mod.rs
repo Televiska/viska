@@ -1,4 +1,7 @@
 pub mod impls;
+mod dialogs;
+
+pub use dialogs::Dialogs;
 
 use common::async_trait::async_trait;
 use std::{any::Any, fmt::Debug, sync::Weak};
@@ -44,6 +47,14 @@ pub trait RespProcessor: Send + Sync + Any + Debug {
     fn as_any(&self) -> &dyn Any;
 }
 
+#[async_trait]
+pub trait DialogsProcessor: Send + Sync + Any + Debug {
+    fn new(sip_manager: Weak<SipManager>) -> Self
+    where
+        Self: Sized;
+    async fn has_dialog(&self, dialog_id: &str) -> bool;
+    fn as_any(&self) -> &dyn Any;
+}
 
 //#[async_trait]
 //pub trait ProxyProcessor: Send + Sync + Any + Debug {
