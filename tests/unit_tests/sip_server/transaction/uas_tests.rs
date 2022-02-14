@@ -2,7 +2,7 @@ use crate::common::{
     advance_for,
     extensions::TransactionUasExt,
     factories::prelude::*,
-    snitches::{CoreSnitch, TransportErrorSnitch, TransportSnitch},
+    snitches::{UaSnitch, TransportErrorSnitch, TransportSnitch},
 };
 use common::futures_util::stream::StreamExt;
 use common::log::Level;
@@ -21,14 +21,14 @@ use std::time::Duration;
 
 async fn setup() -> Arc<SipManager> {
     let builder =
-        SipBuilder::new::<CoreSnitch, Transaction, TransportSnitch>().expect("sip manager failed");
+        SipBuilder::new::<UaSnitch, Transaction, TransportSnitch>().expect("sip manager failed");
     builder.run().await;
 
     builder.manager
 }
 
 async fn setup_with_error_transport() -> Arc<SipManager> {
-    let builder = SipBuilder::new::<CoreSnitch, Transaction, TransportErrorSnitch>()
+    let builder = SipBuilder::new::<UaSnitch, Transaction, TransportErrorSnitch>()
         .expect("sip manager failed");
     builder.run().await;
 
@@ -47,7 +47,7 @@ async fn if_peer_not_alive() {
         tu,
         transaction,
         transport,
-        CoreSnitch,
+        UaSnitch,
         Transaction,
         TransportErrorSnitch
     );
@@ -81,7 +81,7 @@ async fn transport_errors_on_second_provisional() {
         tu,
         transaction,
         transport,
-        CoreSnitch,
+        UaSnitch,
         Transaction,
         TransportErrorSnitch
     );
@@ -136,7 +136,7 @@ async fn multiple_invite_on_proceeding() {
         tu,
         transaction,
         transport,
-        CoreSnitch,
+        UaSnitch,
         Transaction,
         TransportSnitch
     );
@@ -193,7 +193,7 @@ async fn with_redirect_response_moves_to_completed() {
         tu,
         transaction,
         transport,
-        CoreSnitch,
+        UaSnitch,
         Transaction,
         TransportSnitch
     );
@@ -245,7 +245,7 @@ async fn with_ok_response_moves_to_accepted() {
         tu,
         transaction,
         transport,
-        CoreSnitch,
+        UaSnitch,
         Transaction,
         TransportSnitch
     );
@@ -298,7 +298,7 @@ async fn multiple_invites_on_completed_resends_response() {
         tu,
         transaction,
         transport,
-        CoreSnitch,
+        UaSnitch,
         Transaction,
         TransportSnitch
     );
@@ -367,7 +367,7 @@ async fn redirect_but_peer_not_responding_with_ack() {
         tu,
         transaction,
         transport,
-        CoreSnitch,
+        UaSnitch,
         Transaction,
         TransportSnitch
     );
@@ -455,7 +455,7 @@ async fn with_ack_moves_to_confirmed() {
         tu,
         transaction,
         transport,
-        CoreSnitch,
+        UaSnitch,
         Transaction,
         TransportSnitch
     );
@@ -531,7 +531,7 @@ async fn multiple_invites_on_accepted_resends_response() {
         tu,
         transaction,
         transport,
-        CoreSnitch,
+        UaSnitch,
         Transaction,
         TransportSnitch
     );
@@ -600,7 +600,7 @@ async fn ok_but_peer_not_responding_with_ack() {
         tu,
         transaction,
         transport,
-        CoreSnitch,
+        UaSnitch,
         Transaction,
         TransportSnitch
     );
@@ -680,7 +680,7 @@ async fn with_multiple_ok_on_accepted() {
         tu,
         transaction,
         transport,
-        CoreSnitch,
+        UaSnitch,
         Transaction,
         TransportSnitch
     );
@@ -743,7 +743,7 @@ async fn with_error_on_second_ok_on_accepted() {
         tu,
         transaction,
         transport,
-        CoreSnitch,
+        UaSnitch,
         Transaction,
         TransportErrorSnitch
     );
@@ -843,7 +843,7 @@ async fn multiple_ack_received_are_forwarded_to_tu() {
         tu,
         transaction,
         transport,
-        CoreSnitch,
+        UaSnitch,
         Transaction,
         TransportSnitch
     );
@@ -910,7 +910,7 @@ async fn when_confirmed_acks_have_no_effect() {
         tu,
         transaction,
         transport,
-        CoreSnitch,
+        UaSnitch,
         Transaction,
         TransportSnitch
     );
@@ -1008,7 +1008,7 @@ async fn when_confirmed_when_time_i_kicks_in_move_to_terminated() {
         tu,
         transaction,
         transport,
-        CoreSnitch,
+        UaSnitch,
         Transaction,
         TransportSnitch
     );

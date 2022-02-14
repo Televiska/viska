@@ -1,10 +1,10 @@
-mod core;
+mod tu;
 mod messages;
 mod transaction;
 mod transport;
 
-pub use self::core::{
-    CapabilitiesSnitch, CorePanic, CoreSnitch, DialogsEmptySnitch, RegistrarSnitch,
+pub use self::tu::{
+    CapabilitiesSnitch, UaPanic, UaSnitch, DialogsEmptySnitch, RegistrarSnitch,
     ReqProcessorPanic,
 };
 pub use messages::Messages;

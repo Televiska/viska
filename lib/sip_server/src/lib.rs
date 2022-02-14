@@ -7,10 +7,10 @@ pub mod presets;
 pub mod sip_manager;
 pub mod transaction;
 pub mod transport;
-pub mod core;
+pub mod tu;
 
-pub use crate::transaction::{Transaction, TransactionLayer};
-pub use crate::transport::{Transport, TransportLayer};
-pub use crate::core::{ReqProcessor, CoreLayer, CoreProcessor, DialogsProcessor, Dialogs};
+pub use transaction::{Transaction, TransactionLayer};
+pub use transport::{Transport, TransportLayer};
+pub use tu::{ReqProcessor, TuLayer, TuProcessor, DialogsProcessor, Dialogs};
 pub use error::{Error, ErrorKind};
 pub use sip_manager::{SipBuilder, SipManager};

@@ -10,7 +10,7 @@ use crate::SipManager;
 use models::transport::{RequestMsg, ResponseMsg, TransportMsg};
 
 #[async_trait]
-pub trait CoreLayer: Send + Sync + Any + Debug {
+pub trait TuLayer: Send + Sync + Any + Debug {
     fn new(sip_manager: Weak<SipManager>) -> Self
     where
         Self: Sized;
@@ -21,7 +21,7 @@ pub trait CoreLayer: Send + Sync + Any + Debug {
 }
 
 #[async_trait]
-pub trait CoreProcessor: Send + Sync + Any + Debug {
+pub trait TuProcessor: Send + Sync + Any + Debug {
     fn new(sip_manager: Weak<SipManager>) -> Self
     where
         Self: Sized;

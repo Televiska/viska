@@ -2,7 +2,7 @@ use crate::common::{
     advance_for,
     extensions::TransactionUacExt,
     factories::prelude::*,
-    snitches::{CoreSnitch, TransportSnitch},
+    snitches::{UaSnitch, TransportSnitch},
 };
 use common::futures_util::stream::StreamExt;
 use common::log::Level;
@@ -18,7 +18,7 @@ use std::time::Duration;
 
 async fn setup() -> Arc<SipManager> {
     let builder =
-        SipBuilder::new::<CoreSnitch, Transaction, TransportSnitch>().expect("sip manager failed");
+        SipBuilder::new::<UaSnitch, Transaction, TransportSnitch>().expect("sip manager failed");
     builder.run().await;
 
     builder.manager
@@ -34,7 +34,7 @@ async fn if_peer_not_responding() {
         tu,
         transaction,
         transport,
-        CoreSnitch,
+        UaSnitch,
         Transaction,
         TransportSnitch
     );
@@ -102,7 +102,7 @@ async fn with_trying_goes_through_proceeding() {
         tu,
         transaction,
         transport,
-        CoreSnitch,
+        UaSnitch,
         Transaction,
         TransportSnitch
     );
@@ -208,8 +208,8 @@ async fn request_failure_goes_through_completed() {
 
     let transport = sip_manager.transport.clone();
     let transport = as_any!(transport, TransportSnitch);
-    let tu = sip_manager.core.clone();
-    let tu = as_any!(tu, CoreSnitch);
+    let tu = sip_manager.tu.clone();
+    let tu = as_any!(tu, UaSnitch);
     let transaction = sip_manager.transaction.clone();
     let transaction = as_any!(transaction, Transaction);
 
@@ -289,8 +289,8 @@ async fn multiple_request_failure_goes_through_completed() {
 
     let transport = sip_manager.transport.clone();
     let transport = as_any!(transport, TransportSnitch);
-    let tu = sip_manager.core.clone();
-    let tu = as_any!(tu, CoreSnitch);
+    let tu = sip_manager.tu.clone();
+    let tu = as_any!(tu, UaSnitch);
     let transaction = sip_manager.transaction.clone();
     let transaction = as_any!(transaction, Transaction);
 
@@ -398,8 +398,8 @@ async fn unexpected_failures_when_accepted_goes_to_errored() {
 
     let transport = sip_manager.transport.clone();
     let transport = as_any!(transport, TransportSnitch);
-    let tu = sip_manager.core.clone();
-    let tu = as_any!(tu, CoreSnitch);
+    let tu = sip_manager.tu.clone();
+    let tu = as_any!(tu, UaSnitch);
     let transaction = sip_manager.transaction.clone();
     let transaction = as_any!(transaction, Transaction);
 
@@ -513,8 +513,8 @@ async fn ok_when_completed_goes_to_errored() {
 
     let transport = sip_manager.transport.clone();
     let transport = as_any!(transport, TransportSnitch);
-    let tu = sip_manager.core.clone();
-    let tu = as_any!(tu, CoreSnitch);
+    let tu = sip_manager.tu.clone();
+    let tu = as_any!(tu, UaSnitch);
     let transaction = sip_manager.transaction.clone();
     let transaction = as_any!(transaction, Transaction);
 

@@ -117,42 +117,42 @@ impl TrxStateMachine {
         match (&self.state, response.status_code.kind()) {
             (TrxState::Calling(_), StatusCodeKind::Provisional) => {
                 self.sip_manager
-                    .core
+                    .tu
                     .process_incoming_message(self.response_msg_from(response.clone()).into())
                     .await;
                 self.proceed(response);
             }
             (TrxState::Calling(_), StatusCodeKind::Successful) => {
                 self.sip_manager
-                    .core
+                    .tu
                     .process_incoming_message(self.response_msg_from(response.clone()).into())
                     .await;
                 self.accept(response);
             }
             (TrxState::Calling(_), _) => {
                 self.sip_manager
-                    .core
+                    .tu
                     .process_incoming_message(self.response_msg_from(response.clone()).into())
                     .await;
                 self.complete(response);
             }
             (TrxState::Proceeding(_), StatusCodeKind::Provisional) => {
                 self.sip_manager
-                    .core
+                    .tu
                     .process_incoming_message(self.response_msg_from(response.clone()).into())
                     .await;
                 self.update_response(response);
             }
             (TrxState::Proceeding(_), StatusCodeKind::Successful) => {
                 self.sip_manager
-                    .core
+                    .tu
                     .process_incoming_message(self.response_msg_from(response.clone()).into())
                     .await;
                 self.accept(response);
             }
             (TrxState::Proceeding(_), _) => {
                 self.sip_manager
-                    .core
+                    .tu
                     .process_incoming_message(self.response_msg_from(response.clone()).into())
                     .await;
                 self.send_ack_request_from(response.clone()).await?;
@@ -160,7 +160,7 @@ impl TrxStateMachine {
             }
             (TrxState::Accepted(_), StatusCodeKind::Successful) => {
                 self.sip_manager
-                    .core
+                    .tu
                     .process_incoming_message(self.response_msg_from(response.clone()).into())
                     .await;
                 self.update_response(response);

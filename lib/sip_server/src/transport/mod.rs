@@ -120,14 +120,14 @@ impl Inner {
                         .await;
                 } else {
                     self.sip_manager()
-                        .core
+                        .tu
                         .process_incoming_message(message)
                         .await;
                 }
             }
             None => {
                 self.sip_manager()
-                    .core
+                    .tu
                     .process_incoming_message(message)
                     .await;
             }

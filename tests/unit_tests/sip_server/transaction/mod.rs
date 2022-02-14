@@ -1,19 +1,19 @@
 pub mod uac_tests;
 pub mod uas_tests;
 
-use crate::common::snitches::{CoreSnitch, TransportSnitch};
-use sip_server::{core::impls::UserAgent, SipBuilder, SipManager, Transaction, CoreLayer};
+use crate::common::snitches::{UaSnitch, TransportSnitch};
+use sip_server::{tu::impls::UserAgent, SipBuilder, SipManager, Transaction, TuLayer};
 use std::sync::Arc;
 
 async fn setup() -> Arc<SipManager> {
-    SipBuilder::new::<CoreSnitch, Transaction, TransportSnitch>()
+    SipBuilder::new::<UaSnitch, Transaction, TransportSnitch>()
         .expect("sip manager failed")
         .manager
 }
 
 /*
 pub struct TypedSipManager<'a> {
-    core: Arc<&'a CoreSnitch>,
+    ua: Arc<&'a UaSnitch>,
     /*
     transaction: &'b Transaction,
     transport: &'c TransportSnitch,
@@ -29,8 +29,8 @@ impl From<Arc<SipManager>> for TypedSipManager<'_> {
         let transaction = sip_manager.transaction.clone();
         let transaction = as_any!(transaction, Transaction);
         */
-        let core_match: Option<&CoreSnitch> = sip_manager.core.clone().as_any().clone().downcast_ref::<CoreSnitch>();
-        let core: Arc<&CoreSnitch> = match core_match {
+        let ua_match: Option<&UaSnitch> = sip_manager.tu.clone().as_any().clone().downcast_ref::<UaSnitch>();
+        let ua: Arc<&UaSnitch> = match ua_match {
             Some(concrete_type) => Arc::new(concrete_type),
             None => {
                 panic!("cant't cast value!");
@@ -38,7 +38,7 @@ impl From<Arc<SipManager>> for TypedSipManager<'_> {
         };
 
         Self {
-            core,
+            ua,
             sip_manager,
         }
     }

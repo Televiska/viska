@@ -1,10 +1,10 @@
 mod capabilities;
-mod core;
+mod ua;
 mod registrar;
 mod dialogs;
 
 pub use capabilities::CapabilitiesSnitch;
-pub use self::core::{CorePanic, CoreSnitch};
+pub use ua::{UaPanic, UaSnitch};
 pub use registrar::RegistrarSnitch;
 pub use dialogs::DialogsEmptySnitch;
 

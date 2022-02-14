@@ -1,4 +1,4 @@
-pub use crate::{presets, CoreProcessor, DialogsProcessor, Error, ReqProcessor, SipManager};
+pub use crate::{presets, TuProcessor, DialogsProcessor, Error, ReqProcessor, SipManager};
 use common::{
     async_trait::async_trait,
     rsip::{self, prelude::*},
@@ -20,7 +20,7 @@ pub struct UaProcessor<R: ReqProcessor, C: ReqProcessor, D: DialogsProcessor> {
 }
 
 #[async_trait]
-impl<R: ReqProcessor, C: ReqProcessor, D: DialogsProcessor> CoreProcessor for UaProcessor<R, C, D> {
+impl<R: ReqProcessor, C: ReqProcessor, D: DialogsProcessor> TuProcessor for UaProcessor<R, C, D> {
     fn new(sip_manager: Weak<SipManager>) -> Self {
         Self {
             registrar: R::new(sip_manager.clone()),

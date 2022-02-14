@@ -1,7 +1,8 @@
 mod processor;
-pub use processor::UaProcessor;
+pub use processor::ProxyProcessor;
 
-use crate::{CoreLayer, CoreProcessor};
+use crate::TuLayer;
+use crate::TuProcessor;
 use common::{async_trait::async_trait, tokio};
 use std::{
     any::Any,
@@ -11,13 +12,12 @@ use std::{
 use crate::SipManager;
 use models::transport::TransportMsg;
 
-//TODO: rename this to something else like ProxyCore etc
-pub struct UserAgent<P: CoreProcessor> {
+pub struct Proxy<P: TuProcessor> {
     inner: Arc<Inner<P>>,
 }
 
 #[async_trait]
-impl<P: CoreProcessor> CoreLayer for UserAgent<P> {
+impl<P: TuProcessor> TuLayer for Proxy<P> {
     fn new(sip_manager: Weak<SipManager>) -> Self {
         let inner = Arc::new(Inner {
             sip_manager: sip_manager.clone(),
@@ -46,12 +46,12 @@ impl<P: CoreProcessor> CoreLayer for UserAgent<P> {
     }
 }
 
-struct Inner<P: CoreProcessor> {
+struct Inner<P: TuProcessor> {
     sip_manager: Weak<SipManager>,
     processor: Arc<P>,
 }
 
-impl<P: CoreProcessor> Inner<P> {
+impl<P: TuProcessor> Inner<P> {
     //TODO: remove expect and log instead
     async fn process_incoming_message(&self, msg: TransportMsg) {
         let processor = self.processor.clone();
@@ -63,7 +63,6 @@ impl<P: CoreProcessor> Inner<P> {
         });
     }
 
-    //TODO: if it is a public API, it should return an incoming messages handler
     async fn send(&self, msg: TransportMsg) {
         match self.sip_manager().transport.send(msg).await {
             Ok(_) => (),
@@ -78,9 +77,9 @@ impl<P: CoreProcessor> Inner<P> {
     async fn run(&self) {}
 }
 
-impl<P: CoreProcessor> std::fmt::Debug for UserAgent<P> {
+impl<P: TuProcessor> std::fmt::Debug for Proxy<P> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Core")
+        f.debug_struct("proxy")
             .field("processor", &self.inner.processor)
             .finish()
     }

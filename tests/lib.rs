@@ -21,9 +21,9 @@ macro_rules! as_any {
 
 #[macro_use]
 macro_rules! as_downcasted {
-    ($sip_manager:expr, $core:ident, $transaction:ident, $transport:ident, $tu_type:path, $transaction_type:path, $transport_type:path) => {
-        let core = $sip_manager.core.clone();
-        let $core = as_any!(core, $tu_type);
+    ($sip_manager:expr, $tu:ident, $transaction:ident, $transport:ident, $tu_type:path, $transaction_type:path, $transport_type:path) => {
+        let tu = $sip_manager.tu.clone();
+        let $tu = as_any!(tu, $tu_type);
 
         let transaction = $sip_manager.transaction.clone();
         let $transaction = as_any!(transaction, $transaction_type);

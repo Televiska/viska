@@ -1,19 +1,19 @@
 use crate::common::snitches::Messages;
 use common::async_trait::async_trait;
 use models::{server::UdpTuple, transport::TransportMsg};
-use sip_server::{SipBuilder, SipManager, Transaction, Transport, CoreLayer};
+use sip_server::{SipBuilder, SipManager, Transaction, Transport, TuLayer};
 use std::any::Any;
 use std::sync::{Arc, Weak};
 use tokio::sync::Mutex;
 
 #[derive(Debug)]
-pub struct CoreSnitch {
+pub struct UaSnitch {
     sip_manager: Weak<SipManager>,
     pub messages: Messages,
 }
 
 #[async_trait]
-impl CoreLayer for CoreSnitch {
+impl TuLayer for UaSnitch {
     fn new(sip_manager: Weak<SipManager>) -> Self {
         Self {
             sip_manager: sip_manager.clone(),
@@ -39,17 +39,17 @@ impl CoreLayer for CoreSnitch {
     }
 }
 
-impl CoreSnitch {
+impl UaSnitch {
     fn sip_manager(&self) -> Arc<SipManager> {
         self.sip_manager.upgrade().expect("sip manager is missing!")
     }
 }
 
 #[derive(Debug)]
-pub struct CorePanic;
+pub struct UaPanic;
 
 #[async_trait]
-impl CoreLayer for CorePanic {
+impl TuLayer for UaPanic {
     fn new(sip_manager: Weak<SipManager>) -> Self {
         Self
     }

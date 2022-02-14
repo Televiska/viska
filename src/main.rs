@@ -1,5 +1,5 @@
 use sip_server::{
-    core::{
+    tu::{
         impls::{Capabilities, Registrar, UaProcessor, UserAgent},
         Dialogs,
     },

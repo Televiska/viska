@@ -178,7 +178,7 @@ impl TrxStateMachine {
             }
             (TrxState::Accepted(_), Method::Ack) => {
                 self.sip_manager
-                    .core
+                    .tu
                     .process_incoming_message(self.request_msg_from(request).into())
                     .await;
             }

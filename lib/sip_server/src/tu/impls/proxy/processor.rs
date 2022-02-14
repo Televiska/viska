@@ -1,4 +1,4 @@
-pub use crate::{presets, Error, ReqProcessor, SipManager, CoreProcessor};
+pub use crate::{presets, Error, ReqProcessor, SipManager, TuProcessor};
 use common::{
     async_trait::async_trait,
     rsip::{self},
@@ -16,7 +16,7 @@ pub struct ProxyProcessor {
 }
 
 #[async_trait]
-impl CoreProcessor for ProxyProcessor {
+impl TuProcessor for ProxyProcessor {
     fn new(sip_manager: Weak<SipManager>) -> Self {
         Self { sip_manager }
     }

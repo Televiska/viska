@@ -1,19 +1,19 @@
 use crate::common::{
     self,
     factories::prelude::*,
-    snitches::{CorePanic, RegistrarSnitch, ReqProcessorPanic, TransactionPanic, TransportSnitch, DialogsEmptySnitch},
+    snitches::{UaPanic, RegistrarSnitch, ReqProcessorPanic, TransactionPanic, TransportSnitch, DialogsEmptySnitch},
 };
 use ::common::ipnetwork::IpNetwork;
 use ::common::rsip::{self, prelude::*};
 use models::transport::RequestMsg;
-use sip_server::{core::impls::UaProcessor, ReqProcessor, SipBuilder, SipManager, CoreProcessor};
+use sip_server::{tu::impls::UaProcessor, ReqProcessor, SipBuilder, SipManager, TuProcessor};
 use std::sync::Arc;
 
 async fn setup() -> (
     UaProcessor<RegistrarSnitch, ReqProcessorPanic, DialogsEmptySnitch>,
     Arc<SipManager>,
 ) {
-    let sip_manager = SipBuilder::new::<CorePanic, TransactionPanic, TransportSnitch>()
+    let sip_manager = SipBuilder::new::<UaPanic, TransactionPanic, TransportSnitch>()
         .expect("sip manager failed")
         .manager;
 
