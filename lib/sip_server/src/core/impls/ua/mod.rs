@@ -63,6 +63,7 @@ impl<P: CoreProcessor> Inner<P> {
         });
     }
 
+    //TODO: if it is a public API, it should return an incoming messages handler
     async fn send(&self, msg: TransportMsg) {
         match self.sip_manager().transport.send(msg).await {
             Ok(_) => (),

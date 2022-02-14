@@ -13,8 +13,8 @@ pub struct TransportMsg {
 }
 
 impl TransportMsg {
-    pub fn transaction_id(&self) -> Result<String, Error> {
-        Ok(self.sip_message.transaction_id()?)
+    pub fn transaction_id(&self) -> Result<Option<String>, Error> {
+        Ok(self.sip_message.transaction_id()?.map(Into::into))
     }
 }
 

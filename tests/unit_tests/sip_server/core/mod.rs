@@ -1,3 +1,2 @@
-pub mod capabilities;
 pub mod processor;
-pub mod registrar;
+pub mod req_processor;

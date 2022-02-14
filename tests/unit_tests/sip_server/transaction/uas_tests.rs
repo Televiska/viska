@@ -115,7 +115,13 @@ async fn transport_errors_on_second_provisional() {
     assert!(result.is_err());
     assert!(
         transaction
-            .is_uas_errored(request.transaction_id().expect("response transaction id"))
+            .is_uas_errored(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 }
@@ -218,7 +224,13 @@ async fn with_redirect_response_moves_to_completed() {
     assert!(result.is_ok());
     assert!(
         transaction
-            .is_uas_completed(request.transaction_id().expect("response transaction id"))
+            .is_uas_completed(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 }
@@ -264,7 +276,13 @@ async fn with_ok_response_moves_to_accepted() {
     assert!(result.is_ok());
     assert!(
         transaction
-            .is_uas_accepted(request.transaction_id().expect("response transaction id"))
+            .is_uas_accepted(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 }
@@ -308,7 +326,13 @@ async fn multiple_invites_on_completed_resends_response() {
 
     assert!(
         transaction
-            .is_uas_completed(request.transaction_id().expect("response transaction id"))
+            .is_uas_completed(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 
@@ -371,7 +395,13 @@ async fn redirect_but_peer_not_responding_with_ack() {
 
     assert!(
         transaction
-            .is_uas_completed(request.transaction_id().expect("response transaction id"))
+            .is_uas_completed(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
     assert_eq!(transport.messages.len().await, 2);
@@ -402,7 +432,13 @@ async fn redirect_but_peer_not_responding_with_ack() {
 
     assert!(
         transaction
-            .is_uas_terminated(request.transaction_id().expect("request transaction id"))
+            .is_uas_terminated(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("request transaction id")
+                    .into()
+            )
             .await
     );
 }
@@ -446,7 +482,13 @@ async fn with_ack_moves_to_confirmed() {
         .expect("send transaction result");
     assert!(
         transaction
-            .is_uas_completed(request.transaction_id().expect("response transaction id"))
+            .is_uas_completed(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
     assert_eq!(tu.messages.len().await, 0);
@@ -467,7 +509,13 @@ async fn with_ack_moves_to_confirmed() {
     assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uas_confirmed(request.transaction_id().expect("response transaction id"))
+            .is_uas_confirmed(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 }
@@ -511,7 +559,13 @@ async fn multiple_invites_on_accepted_resends_response() {
 
     assert!(
         transaction
-            .is_uas_accepted(request.transaction_id().expect("response transaction id"))
+            .is_uas_accepted(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 
@@ -574,7 +628,13 @@ async fn ok_but_peer_not_responding_with_ack() {
 
     assert!(
         transaction
-            .is_uas_accepted(request.transaction_id().expect("response transaction id"))
+            .is_uas_accepted(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
     assert_eq!(transport.messages.len().await, 2);
@@ -584,7 +644,13 @@ async fn ok_but_peer_not_responding_with_ack() {
 
     assert!(
         transaction
-            .is_uas_accepted(request.transaction_id().expect("request transaction id"))
+            .is_uas_accepted(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("request transaction id")
+                    .into()
+            )
             .await
     );
 
@@ -593,7 +659,13 @@ async fn ok_but_peer_not_responding_with_ack() {
 
     assert!(
         transaction
-            .is_uas_terminated(request.transaction_id().expect("request transaction id"))
+            .is_uas_terminated(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("request transaction id")
+                    .into()
+            )
             .await
     );
 }
@@ -639,7 +711,13 @@ async fn with_multiple_ok_on_accepted() {
         .expect("send transaction result");
     assert!(
         transaction
-            .is_uas_accepted(request.transaction_id().expect("response transaction id"))
+            .is_uas_accepted(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 
@@ -696,7 +774,13 @@ async fn with_error_on_second_ok_on_accepted() {
         .expect("send transaction result");
     assert!(
         transaction
-            .is_uas_accepted(request.transaction_id().expect("response transaction id"))
+            .is_uas_accepted(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 
@@ -712,7 +796,13 @@ async fn with_error_on_second_ok_on_accepted() {
     assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uas_accepted(request.transaction_id().expect("response transaction id"))
+            .is_uas_accepted(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
     transport.turn_fail_switch_on().await;
@@ -729,7 +819,13 @@ async fn with_error_on_second_ok_on_accepted() {
 
     assert!(
         transaction
-            .is_uas_errored(request.transaction_id().expect("response transaction id"))
+            .is_uas_errored(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
     assert!(result.is_err());
@@ -774,7 +870,13 @@ async fn multiple_ack_received_are_forwarded_to_tu() {
         .expect("send transaction result");
     assert!(
         transaction
-            .is_uas_accepted(request.transaction_id().expect("response transaction id"))
+            .is_uas_accepted(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
     assert_eq!(tu.messages.len().await, 0);
@@ -849,7 +951,13 @@ async fn when_confirmed_acks_have_no_effect() {
     assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uas_confirmed(request.transaction_id().expect("response transaction id"))
+            .is_uas_confirmed(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 
@@ -877,7 +985,13 @@ async fn when_confirmed_acks_have_no_effect() {
     assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uas_confirmed(request.transaction_id().expect("response transaction id"))
+            .is_uas_confirmed(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 }
@@ -935,7 +1049,13 @@ async fn when_confirmed_when_time_i_kicks_in_move_to_terminated() {
     assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uas_confirmed(request.transaction_id().expect("response transaction id"))
+            .is_uas_confirmed(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 
@@ -946,7 +1066,13 @@ async fn when_confirmed_when_time_i_kicks_in_move_to_terminated() {
     assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uas_terminated(request.transaction_id().expect("response transaction id"))
+            .is_uas_terminated(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 }

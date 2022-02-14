@@ -73,7 +73,7 @@ impl TrxStateMachine {
         } = msg;
 
         Ok(Self {
-            id: sip_request.transaction_id()?,
+            id: sip_request.transaction_id()?.expect("transaction_id").into(),
             state: TrxState::Proceeding(Default::default()),
             response: response.unwrap_or_else(|| sip_request.provisional_of(100)),
             msg: RequestMsg {

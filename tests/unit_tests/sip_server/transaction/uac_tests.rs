@@ -55,7 +55,13 @@ async fn if_peer_not_responding() {
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uac_calling(request.transaction_id().expect("response transaction id"))
+            .is_uac_calling(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
     advance_for(Duration::from_millis(500)).await;
@@ -75,7 +81,13 @@ async fn if_peer_not_responding() {
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uac_terminated(request.transaction_id().expect("response transaction id"))
+            .is_uac_terminated(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 }
@@ -112,7 +124,13 @@ async fn with_trying_goes_through_proceeding() {
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uac_calling(request.transaction_id().expect("response transaction id"))
+            .is_uac_calling(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 
@@ -132,7 +150,13 @@ async fn with_trying_goes_through_proceeding() {
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uac_proceeding(request.transaction_id().expect("response transaction id"))
+            .is_uac_proceeding(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 
@@ -152,7 +176,13 @@ async fn with_trying_goes_through_proceeding() {
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uac_accepted(request.transaction_id().expect("response transaction id"))
+            .is_uac_accepted(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 
@@ -160,7 +190,13 @@ async fn with_trying_goes_through_proceeding() {
 
     assert!(
         transaction
-            .is_uac_terminated(request.transaction_id().expect("response transaction id"))
+            .is_uac_terminated(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 }
@@ -195,7 +231,13 @@ async fn request_failure_goes_through_completed() {
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uac_calling(request.transaction_id().expect("response transaction id"))
+            .is_uac_calling(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 
@@ -215,7 +257,13 @@ async fn request_failure_goes_through_completed() {
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uac_completed(request.transaction_id().expect("response transaction id"))
+            .is_uac_completed(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 
@@ -223,7 +271,13 @@ async fn request_failure_goes_through_completed() {
 
     assert!(
         transaction
-            .is_uac_terminated(request.transaction_id().expect("response transaction id"))
+            .is_uac_terminated(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 }
@@ -258,7 +312,13 @@ async fn multiple_request_failure_goes_through_completed() {
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uac_calling(request.transaction_id().expect("response transaction id"))
+            .is_uac_calling(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 
@@ -278,7 +338,13 @@ async fn multiple_request_failure_goes_through_completed() {
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uac_completed(request.transaction_id().expect("response transaction id"))
+            .is_uac_completed(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 
@@ -300,7 +366,13 @@ async fn multiple_request_failure_goes_through_completed() {
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uac_completed(response.transaction_id().expect("response transaction id"))
+            .is_uac_completed(
+                response
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 
@@ -308,7 +380,13 @@ async fn multiple_request_failure_goes_through_completed() {
 
     assert!(
         transaction
-            .is_uac_terminated(response.transaction_id().expect("response transaction id"))
+            .is_uac_terminated(
+                response
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 }
@@ -343,7 +421,13 @@ async fn unexpected_failures_when_accepted_goes_to_errored() {
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uac_calling(request.transaction_id().expect("response transaction id"))
+            .is_uac_calling(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 
@@ -363,7 +447,13 @@ async fn unexpected_failures_when_accepted_goes_to_errored() {
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uac_proceeding(response.transaction_id().expect("response transaction id"))
+            .is_uac_proceeding(
+                response
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 
@@ -383,7 +473,13 @@ async fn unexpected_failures_when_accepted_goes_to_errored() {
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uac_accepted(response.transaction_id().expect("response transaction id"))
+            .is_uac_accepted(
+                response
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 
@@ -399,7 +495,13 @@ async fn unexpected_failures_when_accepted_goes_to_errored() {
 
     assert!(
         transaction
-            .is_uac_errored(response.transaction_id().expect("response transaction id"))
+            .is_uac_errored(
+                response
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 }
@@ -433,7 +535,13 @@ async fn ok_when_completed_goes_to_errored() {
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uac_calling(request.transaction_id().expect("response transaction id"))
+            .is_uac_calling(
+                request
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 
@@ -453,7 +561,13 @@ async fn ok_when_completed_goes_to_errored() {
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uac_proceeding(response.transaction_id().expect("response transaction id"))
+            .is_uac_proceeding(
+                response
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 
@@ -473,7 +587,13 @@ async fn ok_when_completed_goes_to_errored() {
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uac_completed(response.transaction_id().expect("response transaction id"))
+            .is_uac_completed(
+                response
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 
@@ -489,7 +609,13 @@ async fn ok_when_completed_goes_to_errored() {
 
     assert!(
         transaction
-            .is_uac_errored(response.transaction_id().expect("response transaction id"))
+            .is_uac_errored(
+                response
+                    .transaction_id()
+                    .unwrap()
+                    .expect("response transaction id")
+                    .into()
+            )
             .await
     );
 }

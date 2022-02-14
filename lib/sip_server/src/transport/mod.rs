@@ -105,9 +105,9 @@ impl Inner {
             .process_incoming_message(udp_tuple.try_into()?)
             .await?;
 
-        let transaction_id = message.transaction_id();
+        let transaction_id = message.transaction_id()?;
         match transaction_id {
-            Ok(transaction_id) => {
+            Some(transaction_id) => {
                 if self
                     .sip_manager()
                     .transaction
@@ -125,7 +125,7 @@ impl Inner {
                         .await;
                 }
             }
-            Err(_) => {
+            None => {
                 self.sip_manager()
                     .core
                     .process_incoming_message(message)

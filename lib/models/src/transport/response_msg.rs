@@ -20,8 +20,8 @@ impl ResponseMsg {
         }
     }
 
-    pub fn transaction_id(&self) -> Result<String, Error> {
-        Ok(self.sip_response.transaction_id()?)
+    pub fn transaction_id(&self) -> Result<Option<String>, Error> {
+        Ok(self.sip_response.transaction_id()?.map(Into::into))
     }
 }
 

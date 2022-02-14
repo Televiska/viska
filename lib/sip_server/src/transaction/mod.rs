@@ -4,7 +4,7 @@ pub mod uas;
 use crate::{error::TransactionError, Error, SipManager};
 use common::{
     async_trait::async_trait,
-    rsip::{self, prelude::*},
+    rsip,
     tokio::{
         self,
         sync::{Mutex, RwLock},
@@ -158,7 +158,12 @@ impl Inner {
     }
 
     async fn send(&self, msg: ResponseMsg) -> Result<(), Error> {
-        match self.uas_state.read().await.get(&msg.transaction_id()?) {
+        match self
+            .uas_state
+            .read()
+            .await
+            .get(&msg.transaction_id()?.expect("transaction_id"))
+        {
             Some(transaction_machine) => {
                 let mut transaction_machine = transaction_machine.lock().await;
                 transaction_machine
@@ -224,10 +229,7 @@ impl Inner {
     }
 
     async fn process_incoming_request(&self, msg: RequestMsg) -> Result<(), Error> {
-        let transaction_id = msg
-            .sip_request
-            .transaction_id()
-            .map_err(|_| Error::from(TransactionError::NotFound))?;
+        let transaction_id = msg.transaction_id()?.expect("transaction_id");
 
         match self.uas_state.read().await.get(&transaction_id) {
             Some(transaction_machine) => {
@@ -243,10 +245,7 @@ impl Inner {
     }
 
     async fn process_incoming_response(&self, msg: ResponseMsg) -> Result<(), Error> {
-        let transaction_id = msg
-            .sip_response
-            .transaction_id()
-            .map_err(|_| Error::from(TransactionError::NotFound))?;
+        let transaction_id = msg.transaction_id()?.expect("transaction_id");
 
         match self.uac_state.read().await.get(&transaction_id) {
             Some(transaction_machine) => {

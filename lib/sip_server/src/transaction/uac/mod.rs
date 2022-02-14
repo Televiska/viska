@@ -56,7 +56,7 @@ impl std::fmt::Display for TrxState {
 impl TrxStateMachine {
     pub fn new(sip_manager: Arc<SipManager>, msg: RequestMsg) -> Result<Self, Error> {
         Ok(Self {
-            id: msg.sip_request.transaction_id()?,
+            id: msg.transaction_id()?.expect("transaction_id"),
             state: TrxState::Calling(Default::default()),
             msg,
             created_at: Instant::now(),

@@ -1,9 +1,13 @@
 #![allow(dead_code)]
+
 #![allow(unused)]
+
 #[macro_use]
 pub extern crate diesel_migrations;
 
+
 #[macro_use]
+
 macro_rules! as_any {
     ($variable:expr, $type:path) => {
         match $variable.as_any().downcast_ref::<$type>() {
@@ -11,7 +15,7 @@ macro_rules! as_any {
             None => {
                 panic!("cant't cast value!");
             }
-        };
+        }
     };
 }
 
