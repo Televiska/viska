@@ -3,13 +3,14 @@ mod states;
 pub use states::{Accepted, Completed, Confirmed, Errored, Proceeding, Terminated};
 
 use crate::Error;
-use crate::SipManager;
 use common::{
     rsip::{self, prelude::*},
     tokio::time::Instant,
 };
-use models::transport::{RequestMsg, ResponseMsg};
-use std::sync::Arc;
+use models::{
+    transport::{RequestMsg, ResponseMsg},
+    Handlers,
+};
 
 static TIMED_OUT: bool = true;
 static DID_NOT_TIME_OUT: bool = false;
@@ -32,7 +33,7 @@ pub struct TrxStateMachine {
     //uas (final) response, uas in this case is us
     pub response: rsip::Response,
     pub created_at: Instant,
-    sip_manager: Arc<SipManager>,
+    handlers: Handlers,
 }
 
 #[derive(Debug)]
@@ -60,7 +61,7 @@ impl std::fmt::Display for TrxState {
 
 impl TrxStateMachine {
     pub fn new(
-        sip_manager: Arc<SipManager>,
+        handlers: Handlers,
         msg: RequestMsg,
         response: Option<rsip::Response>,
     ) -> Result<Self, Error> {
@@ -73,7 +74,10 @@ impl TrxStateMachine {
         } = msg;
 
         Ok(Self {
-            id: sip_request.transaction_id()?.expect("transaction_id").into(),
+            id: sip_request
+                .transaction_id()?
+                .expect("transaction_id")
+                .into(),
             state: TrxState::Proceeding(Default::default()),
             response: response.unwrap_or_else(|| sip_request.provisional_of(100)),
             msg: RequestMsg {
@@ -82,7 +86,7 @@ impl TrxStateMachine {
                 transport,
             },
             created_at: Instant::now(),
-            sip_manager,
+            handlers,
         })
     }
 
@@ -119,7 +123,7 @@ impl TrxStateMachine {
                 match (completed.has_timedout(), completed.should_retransmit()) {
                     (true, _) => self.terminate(TIMED_OUT),
                     (false, true) => {
-                        self.sip_manager
+                        self.handlers
                             .transport
                             .send(self.response_msg_from(self.response.clone()).into())
                             .await?;
@@ -156,13 +160,13 @@ impl TrxStateMachine {
 
         match (&self.state, &request.method) {
             (TrxState::Proceeding(_), Method::Invite) => {
-                self.sip_manager
+                self.handlers
                     .transport
                     .send(self.response_msg_from(self.response.clone()).into())
                     .await?;
             }
             (TrxState::Completed(_), Method::Invite) => {
-                self.sip_manager
+                self.handlers
                     .transport
                     .send(self.response_msg_from(self.response.clone()).into())
                     .await?;
@@ -171,16 +175,16 @@ impl TrxStateMachine {
                 self.confirm(request);
             }
             (TrxState::Accepted(_), Method::Invite) => {
-                self.sip_manager
+                self.handlers
                     .transport
                     .send(self.response_msg_from(self.response.clone()).into())
                     .await?;
             }
             (TrxState::Accepted(_), Method::Ack) => {
-                self.sip_manager
+                self.handlers
                     .tu
-                    .process_incoming_message(self.request_msg_from(request).into())
-                    .await;
+                    .process(self.request_msg_from(request).into())
+                    .await?;
             }
             (TrxState::Confirmed(_), Method::Ack) => {
                 //absorb ack
@@ -206,14 +210,14 @@ impl TrxStateMachine {
         match (&self.state, response.status_code.kind()) {
             (TrxState::Proceeding(_), StatusCodeKind::Provisional) => {
                 self.response = response.clone();
-                self.sip_manager
+                self.handlers
                     .transport
                     .send(self.response_msg_from(response).into())
                     .await?;
             }
             (TrxState::Proceeding(_), StatusCodeKind::Successful) => {
                 self.response = response.clone();
-                self.sip_manager
+                self.handlers
                     .transport
                     .send(self.response_msg_from(response).into())
                     .await?;
@@ -221,14 +225,14 @@ impl TrxStateMachine {
             }
             (TrxState::Proceeding(_), _) => {
                 self.response = response.clone();
-                self.sip_manager
+                self.handlers
                     .transport
                     .send(self.response_msg_from(response).into())
                     .await?;
                 self.complete();
             }
             (TrxState::Accepted(_), StatusCodeKind::Successful) => {
-                self.sip_manager
+                self.handlers
                     .transport
                     .send(self.response_msg_from(self.response.clone()).into())
                     .await?;

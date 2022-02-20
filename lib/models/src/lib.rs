@@ -1,18 +1,18 @@
 mod auth_request;
-pub mod core;
-mod dialog;
 mod error;
-pub mod server;
+pub mod handlers;
 mod sip_message_ext;
 pub mod transaction;
-pub mod transactions;
 pub mod transport;
+pub mod tu;
 
 pub use auth_request::AuthRequest;
-pub use dialog::{Dialog, DialogFlow};
 pub use error::Error;
+pub use handlers::Handlers;
 pub use sip_message_ext::RequestExt;
 
-use common::tokio::sync::mpsc::{Receiver, Sender};
+use common::tokio::sync::mpsc::Receiver;
 
-pub type ChannelOf<T> = (Sender<T>, Receiver<T>);
+pub type TuReceiver = Receiver<tu::TuLayerMsg>;
+pub type TrxReceiver = Receiver<transaction::TransactionLayerMsg>;
+pub type TrReceiver = Receiver<transport::TransportLayerMsg>;

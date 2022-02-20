@@ -1,8 +1,5 @@
 use sip_server::{
-    tu::{
-        impls::{Capabilities, Registrar, UaProcessor, UserAgent},
-        Dialogs,
-    },
+    tu::elements::{Capabilities, Registrar, UserAgent},
     SipBuilder, Transaction, Transport,
 };
 
@@ -14,12 +11,9 @@ async fn main() {
     println!("{:?}", config);
 
     if std::env::args().len() == 1 {
-        let manager = SipBuilder::new::<
-            UserAgent<UaProcessor<Registrar, Capabilities, Dialogs>>,
-            Transaction,
-            Transport,
-        >()
-        .expect("sip manager failed");
+        let manager =
+            SipBuilder::new::<UserAgent<Registrar, Capabilities>, Transaction, Transport>()
+                .expect("sip manager failed");
         manager.run().await;
 
         tokio::spawn(async move {

@@ -2,13 +2,8 @@ pub mod processor;
 pub mod uac;
 pub mod uas;
 
-use crate::{Error, SipManager};
-use common::async_trait::async_trait;
-use std::{
-    any::Any,
-    fmt::Debug,
-    sync::{Arc, Weak},
-};
+use crate::Error;
+use std::{convert::TryInto, fmt::Debug, net::SocketAddr, sync::Arc};
 
 use common::{
     bytes::Bytes,
@@ -17,141 +12,172 @@ use common::{
         SinkExt,
     },
     futures_util::stream::StreamExt,
+    rsip::SipMessage,
     tokio::{self, net::UdpSocket, sync::Mutex},
     tokio_util::codec::BytesCodec,
     tokio_util::udp::UdpFramed,
 };
-use models::{server::UdpTuple, transport::TransportMsg};
-//use processor::Processor;
-use std::net::SocketAddr;
+use models::{
+    transport::TransportLayerMsg,
+    transport::{RequestMsg, ResponseMsg, TransportMsg, UdpTuple},
+    Handlers, TrReceiver,
+};
 
 type UdpSink = SplitSink<UdpFramed<BytesCodec>, (Bytes, SocketAddr)>;
 type UdpStream = SplitStream<UdpFramed<BytesCodec>>;
 
-#[async_trait]
-pub trait TransportLayer: Send + Sync + Any + Debug {
-    fn new(sip_manager: Weak<SipManager>) -> Result<Self, Error>
-    where
-        Self: Sized;
-    async fn process_incoming_message(&self, udp_tuple: UdpTuple) -> Result<(), Error>;
-    async fn send(&self, msg: TransportMsg) -> Result<(), Error>;
-    async fn run(&self);
-    fn as_any(&self) -> &dyn Any;
-}
-
+#[derive(Debug)]
 pub struct Transport {
     inner: Arc<Inner>,
 }
 
-//with tokio 3.x, the Mutexes will be replaced with an Arc here
-struct Inner {
-    sip_manager: Weak<SipManager>,
+//TODO: remove Mutexes here
+#[derive(Debug)]
+pub struct Inner {
     processor: processor::Processor,
     udp_sink: Mutex<UdpSink>,
-    udp_stream: Mutex<UdpStream>,
+    handlers: Handlers,
 }
 
-#[async_trait]
-impl TransportLayer for Transport {
-    fn new(sip_manager: Weak<SipManager>) -> Result<Self, Error> {
+impl Transport {
+    pub fn new(handlers: Handlers, messages_rx: TrReceiver) -> Result<Self, Error> {
         let (udp_sink, udp_stream) = create_socket()?;
 
-        let inner = Arc::new(Inner {
-            sip_manager,
-            processor: processor::Processor::default(),
-            udp_sink: Mutex::new(udp_sink),
-            udp_stream: Mutex::new(udp_stream),
-        });
+        let me = Self {
+            inner: Arc::new(Inner {
+                processor: processor::Processor::default(),
+                udp_sink: Mutex::new(udp_sink),
+                handlers,
+            }),
+        };
 
-        Ok(Self { inner })
+        me.run(messages_rx, udp_stream);
+
+        Ok(me)
     }
 
-    async fn process_incoming_message(&self, udp_tuple: UdpTuple) -> Result<(), Error> {
-        self.inner.process_incoming_message(udp_tuple).await
-    }
-
-    async fn send(&self, msg: TransportMsg) -> Result<(), Error> {
-        self.inner.send(msg).await
-    }
-
-    async fn run(&self) {
+    fn run(&self, messages: TrReceiver, udp_stream: UdpStream) {
         let inner = self.inner.clone();
-        tokio::spawn(async move {
-            inner.run().await;
-        });
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
+        tokio::spawn(async move { inner.run(messages).await });
+        let socket_inner = self.inner.clone();
+        tokio::spawn(async move { socket_inner.run_socket(udp_stream).await });
     }
 }
 
 impl Inner {
+    async fn run(&self, mut messages: TrReceiver) {
+        while let Some(request) = messages.recv().await {
+            if let Err(err) = self.receive(request.into()).await {
+                common::log::error!("Error handling transport layer message: {}", err)
+            }
+        }
+    }
+
     async fn udp_send(&self, udp_tuple: UdpTuple) -> Result<(), Error> {
         debug_message(udp_tuple.bytes.to_vec());
 
         Ok(self.udp_sink.lock().await.send(udp_tuple.into()).await?)
     }
 
-    fn sip_manager(&self) -> Arc<SipManager> {
-        self.sip_manager.upgrade().expect("sip manager is missing!")
-    }
-
-    async fn process_incoming_message(&self, udp_tuple: UdpTuple) -> Result<(), Error> {
-        use std::convert::TryInto;
-
-        let message = self
-            .processor
-            .process_incoming_message(udp_tuple.try_into()?)
-            .await?;
-
-        let transaction_id = message.transaction_id()?;
-        match transaction_id {
-            Some(transaction_id) => {
-                if self
-                    .sip_manager()
-                    .transaction
-                    .has_transaction(&transaction_id)
-                    .await
-                {
-                    self.sip_manager()
-                        .transaction
-                        .process_incoming_message(message)
-                        .await;
-                } else {
-                    self.sip_manager()
-                        .tu
-                        .process_incoming_message(message)
-                        .await;
-                }
-            }
-            None => {
-                self.sip_manager()
-                    .tu
-                    .process_incoming_message(message)
-                    .await;
-            }
-        }
+    //TODO: here we don't spawn, could lead to deadlocks
+    async fn receive(&self, msg: TransportLayerMsg) -> Result<(), Error> {
+        match msg {
+            TransportLayerMsg::Outgoing(msg) => self.receive_outgoing_message(msg).await?,
+            TransportLayerMsg::Incoming(msg) => self.receive_incoming_message(msg).await?,
+        };
 
         Ok(())
     }
 
-    async fn send(&self, msg: TransportMsg) -> Result<(), Error> {
-        //common::log::debug!("{:?}", msg);
+    async fn receive_outgoing_message(
+        &self,
+        TransportMsg {
+            sip_message,
+            peer,
+            transport,
+        }: TransportMsg,
+    ) -> Result<(), Error> {
+        let msg: TransportMsg = match sip_message {
+            SipMessage::Request(request) => self
+                .processor
+                .process_outgoing_request((request, peer, transport).into())
+                .await?
+                .into(),
+            SipMessage::Response(response) => self
+                .processor
+                .process_outgoing_response((response, peer, transport).into())
+                .await?
+                .into(),
+        };
 
-        Ok(self
-            .udp_send(self.processor.process_outgoing_message(msg)?.into())
-            .await?)
+        Ok(self.udp_send(msg.into()).await?)
     }
 
-    async fn run(&self) {
+    async fn receive_incoming_message(&self, udp_tuple: UdpTuple) -> Result<(), Error> {
+        let TransportMsg {
+            sip_message,
+            peer,
+            transport,
+        } = udp_tuple.try_into()?;
+
+        match sip_message {
+            SipMessage::Request(request) => {
+                let msg = self
+                    .processor
+                    .process_incoming_request((request, peer, transport).into())
+                    .await?;
+
+                self.process_incoming_request(msg).await?;
+            }
+            SipMessage::Response(response) => {
+                let msg = self
+                    .processor
+                    .process_incoming_response((response, peer, transport).into())
+                    .await?;
+
+                self.process_incoming_response(msg).await?;
+            }
+        };
+
+        Ok(())
+    }
+
+    async fn process_incoming_request(&self, request: RequestMsg) -> Result<(), Error> {
+        Ok(self.handlers.tu.process(request.into()).await?)
+    }
+
+    async fn process_incoming_response(&self, response: ResponseMsg) -> Result<(), Error> {
+        let transaction_id = response.transaction_id()?;
+
+        match transaction_id {
+            Some(transaction_id) => {
+                if self
+                    .handlers
+                    .transaction
+                    .has_transaction_for(transaction_id)
+                    .await?
+                {
+                    self.handlers.transaction.process(response.into()).await?;
+                } else {
+                    self.handlers.tu.process(response.into()).await?;
+                }
+            }
+            None => {
+                self.handlers.tu.process(response.into()).await?;
+            }
+        };
+
+        Ok(())
+    }
+
+    async fn run_socket(&self, mut udp_stream: UdpStream) {
         loop {
-            match self.udp_stream.lock().await.next().await {
+            match udp_stream.next().await {
                 Some(Ok((request, addr))) => {
                     debug_message(request.clone().freeze().to_vec());
 
                     match self
-                        .process_incoming_message((request.freeze(), addr).into())
+                        .receive(UdpTuple::from((request.freeze(), addr)).into())
                         .await
                     {
                         Ok(_) => (),
@@ -167,6 +193,7 @@ impl Inner {
     }
 }
 
+/*
 impl std::fmt::Debug for Transport {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Transport")
@@ -175,7 +202,7 @@ impl std::fmt::Debug for Transport {
             .field("udp_stream", &self.inner.udp_stream)
             .finish()
     }
-}
+}*/
 
 fn create_socket() -> Result<(UdpSink, UdpStream), crate::Error> {
     let socket = UdpSocket::from_std(std::net::UdpSocket::bind("0.0.0.0:5060")?)?;

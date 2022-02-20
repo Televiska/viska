@@ -1,10 +1,10 @@
-use crate::transport::{RequestMsg, ResponseMsg};
-use crate::{server::UdpTuple, Error};
+use crate::{Error, transport::{RequestMsg, ResponseMsg, UdpTuple}};
 use common::rsip::{self, prelude::*, Transport};
 use std::convert::{TryFrom, TryInto};
 use std::net::SocketAddr;
 
 //TODO: we probably need better naming here
+//TODO: we probably need to convert that to an enum
 #[derive(Debug, Clone)]
 pub struct TransportMsg {
     pub sip_message: rsip::SipMessage,
@@ -15,6 +15,10 @@ pub struct TransportMsg {
 impl TransportMsg {
     pub fn transaction_id(&self) -> Result<Option<String>, Error> {
         Ok(self.sip_message.transaction_id()?.map(Into::into))
+    }
+
+    pub fn is_request(&self) -> bool {
+        self.sip_message.is_request()
     }
 }
 

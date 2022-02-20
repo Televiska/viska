@@ -1,6 +1,10 @@
 #![allow(dead_code)]
 
-use common::rsip;
+use common::{
+    rsip,
+    tokio::sync::{mpsc::error::SendError, oneshot::error::RecvError},
+};
+use models::{transaction::TransactionLayerMsg, transport::TransportLayerMsg, tu::TuLayerMsg};
 use std::{error::Error as StdError, fmt};
 
 #[derive(Debug)]
@@ -13,12 +17,12 @@ pub struct Error {
 pub enum ErrorKind {
     Empty,
     Models(models::Error),
-    Store(store::Error),
     Rsip(rsip::Error),
     Custom(String),
     SipHelpers(String),
     Io(std::io::Error),
     Transaction(TransactionError),
+    Channel(String),
 }
 
 #[derive(Debug)]
@@ -43,11 +47,11 @@ impl From<Option<ErrorKind>> for ErrorKind {
     }
 }
 
+//TODO: fix me
 impl fmt::Display for ErrorKind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ErrorKind::Models(ref inner) => write!(f, "models transformation error: {}", inner),
-            ErrorKind::Store(ref inner) => write!(f, "store error: {}", inner),
             ErrorKind::Custom(ref inner) => write!(f, "{}", inner),
             _ => write!(f, "unknown error, {:?}", self),
         }
@@ -89,12 +93,6 @@ impl From<models::Error> for ErrorKind {
     }
 }
 
-impl From<store::Error> for ErrorKind {
-    fn from(e: store::Error) -> Self {
-        ErrorKind::Store(e)
-    }
-}
-
 impl From<rsip::Error> for ErrorKind {
     fn from(e: rsip::Error) -> Self {
         ErrorKind::Rsip(e)
@@ -110,5 +108,29 @@ impl From<std::io::Error> for ErrorKind {
 impl From<TransactionError> for ErrorKind {
     fn from(e: TransactionError) -> Self {
         ErrorKind::Transaction(e)
+    }
+}
+
+impl From<SendError<TransportLayerMsg>> for ErrorKind {
+    fn from(e: SendError<TransportLayerMsg>) -> Self {
+        ErrorKind::Channel(e.to_string())
+    }
+}
+
+impl From<SendError<TransactionLayerMsg>> for ErrorKind {
+    fn from(e: SendError<TransactionLayerMsg>) -> Self {
+        ErrorKind::Channel(e.to_string())
+    }
+}
+
+impl From<SendError<TuLayerMsg>> for ErrorKind {
+    fn from(e: SendError<TuLayerMsg>) -> Self {
+        ErrorKind::Channel(e.to_string())
+    }
+}
+
+impl From<RecvError> for ErrorKind {
+    fn from(e: RecvError) -> Self {
+        ErrorKind::Channel(e.to_string())
     }
 }

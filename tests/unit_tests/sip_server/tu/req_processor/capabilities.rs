@@ -7,7 +7,7 @@ use ::common::ipnetwork::IpNetwork;
 use ::common::rsip::{self, prelude::*};
 use models::transport::RequestMsg;
 use sip_server::{
-    tu::impls::{Capabilities, UserAgent},
+    tu::elements::{Capabilities, UserAgent},
     ReqProcessor, SipBuilder, SipManager, Transaction, TuLayer,
 };
 use std::sync::Arc;

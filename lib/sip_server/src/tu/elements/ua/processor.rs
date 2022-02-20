@@ -1,4 +1,4 @@
-pub use crate::{presets, TuProcessor, DialogsProcessor, Error, ReqProcessor, SipManager};
+use crate::{presets, TuProcessor, Error, ReqProcessor};
 use common::{
     async_trait::async_trait,
     rsip::{self, prelude::*},
@@ -11,21 +11,18 @@ use std::{
 };
 
 #[derive(Debug)]
-pub struct UaProcessor<R: ReqProcessor, C: ReqProcessor, D: DialogsProcessor> {
+pub struct UaProcessor<R: ReqProcessor, C: ReqProcessor> {
     sip_manager: Weak<SipManager>,
     registrar: R,
     capabilities: C,
-    #[allow(dead_code)]
-    dialogs: D,
 }
 
 #[async_trait]
-impl<R: ReqProcessor, C: ReqProcessor, D: DialogsProcessor> TuProcessor for UaProcessor<R, C, D> {
+impl<R: ReqProcessor, C: ReqProcessor> TuProcessor for UaProcessor<R, C> {
     fn new(sip_manager: Weak<SipManager>) -> Self {
         Self {
             registrar: R::new(sip_manager.clone()),
             capabilities: C::new(sip_manager.clone()),
-            dialogs: D::new(sip_manager.clone()),
             sip_manager,
         }
     }
@@ -49,7 +46,7 @@ impl<R: ReqProcessor, C: ReqProcessor, D: DialogsProcessor> TuProcessor for UaPr
     }
 }
 
-impl<R: ReqProcessor, C: ReqProcessor, D: DialogsProcessor> UaProcessor<R, C, D> {
+impl<R: ReqProcessor, C: ReqProcessor> UaProcessor<R, C> {
     async fn handle_request(&self, msg: RequestMsg) -> Result<(), Error> {
         use rsip::Method;
 

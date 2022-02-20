@@ -1,7 +1,11 @@
 #![allow(dead_code)]
 
-use common::{ipnetwork, rsip};
+use common::{
+    ipnetwork, rsip,
+    tokio::sync::{mpsc::error::SendError, oneshot::error::RecvError},
+};
 use std::{error::Error as StdError, fmt};
+use crate::{transaction::TransactionLayerMsg, transport::TransportLayerMsg, tu::TuLayerMsg};
 
 #[derive(Debug)]
 pub struct Error {
@@ -14,6 +18,7 @@ pub enum ErrorKind {
     Empty,
     IpAddress(String),
     Rsip(rsip::Error),
+    Channel(String),
     Custom(String),
 }
 
@@ -81,5 +86,29 @@ impl From<ipnetwork::IpNetworkError> for ErrorKind {
 impl From<rsip::Error> for ErrorKind {
     fn from(e: rsip::Error) -> Self {
         ErrorKind::Rsip(e)
+    }
+}
+
+impl From<SendError<TransportLayerMsg>> for ErrorKind {
+    fn from(e: SendError<TransportLayerMsg>) -> Self {
+        ErrorKind::Channel(e.to_string())
+    }
+}
+
+impl From<SendError<TransactionLayerMsg>> for ErrorKind {
+    fn from(e: SendError<TransactionLayerMsg>) -> Self {
+        ErrorKind::Channel(e.to_string())
+    }
+}
+
+impl From<SendError<TuLayerMsg>> for ErrorKind {
+    fn from(e: SendError<TuLayerMsg>) -> Self {
+        ErrorKind::Channel(e.to_string())
+    }
+}
+
+impl From<RecvError> for ErrorKind {
+    fn from(e: RecvError) -> Self {
+        ErrorKind::Channel(e.to_string())
     }
 }

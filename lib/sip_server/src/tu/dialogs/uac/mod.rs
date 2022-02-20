@@ -3,11 +3,9 @@ mod states;
 pub use states::{Confirmed, Deleted, Early, Errored, Unconfirmed};
 
 use crate::Error;
-use crate::SipManager;
 use common::rsip::{self, prelude::*};
 use common::tokio::time::Instant;
-use models::transport::RequestMsg;
-use std::sync::Arc;
+use models::{Handlers, transport::RequestMsg};
 
 #[derive(Debug)]
 pub struct DialogSm {
@@ -24,7 +22,7 @@ pub struct DialogSm {
     pub msg: RequestMsg,
     pub state: DialogState,
     pub created_at: Instant,
-    pub sip_manager: Arc<SipManager>,
+    pub handlers: Handlers,
 }
 
 #[allow(dead_code)]
@@ -51,7 +49,7 @@ impl std::fmt::Display for DialogState {
 
 #[allow(dead_code)]
 impl DialogSm {
-    pub fn new(sip_manager: Arc<SipManager>, msg: RequestMsg) -> Result<Self, Error> {
+    pub fn new(handlers: Handlers, msg: RequestMsg) -> Result<Self, Error> {
         Ok(Self {
             id: None,
             call_id: msg.sip_request.call_id_header()?.clone(),
@@ -73,7 +71,7 @@ impl DialogSm {
             msg,
             state: DialogState::Unconfirmed(Default::default()),
             created_at: Instant::now(),
-            sip_manager,
+            handlers,
         })
     }
 }

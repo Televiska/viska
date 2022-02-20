@@ -1,4 +1,4 @@
-use crate::{server::UdpTuple, transport::TransportMsg, Error};
+use crate::{transport::{UdpTuple, TransportMsg}, Error};
 use common::rsip::{self, prelude::*, Transport};
 use std::convert::{TryFrom, TryInto};
 use std::net::SocketAddr;
@@ -20,6 +20,7 @@ impl ResponseMsg {
         }
     }
 
+    //TODO: should be a proper type here instead of simply String
     pub fn transaction_id(&self) -> Result<Option<String>, Error> {
         Ok(self.sip_response.transaction_id()?.map(Into::into))
     }

@@ -7,5 +7,5 @@ edition = "2018"
 [dependencies]
 common = { path = "../../common" }
 models = { path = "../models" }
-store = { path = "../store" }
+#store = { path = "../store" }
 helpers = { path = "../helpers" }
