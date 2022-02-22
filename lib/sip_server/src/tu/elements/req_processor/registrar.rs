@@ -1,4 +1,4 @@
-use crate::{Error, SipManager, ReqProcessor};
+use crate::{Error, ReqProcessor};
 use common::{
     async_trait::async_trait,
     rsip::{self, prelude::*},
@@ -11,15 +11,14 @@ use std::{
 
 #[derive(Debug)]
 pub struct Registrar {
-    sip_manager: Weak<SipManager>,
+    handlers: Handlers,
+}
+
+impl Registrar {
 }
 
 #[async_trait]
 impl ReqProcessor for Registrar {
-    fn new(sip_manager: Weak<SipManager>) -> Self {
-        Self { sip_manager }
-    }
-
     async fn process_incoming_request(&self, msg: RequestMsg) -> Result<(), Error> {
         apply_default_checks(&msg.sip_request)?;
 
@@ -35,8 +34,8 @@ impl ReqProcessor for Registrar {
 }
 
 impl Registrar {
-    fn sip_manager(&self) -> Arc<SipManager> {
-        self.sip_manager.upgrade().expect("sip manager is missing!")
+    pub fn new(handlers: Handlers) -> Self {
+        Self { handlers }
     }
 
     async fn handle_update(&self, msg: RequestMsg) -> Result<(), Error> {
@@ -67,10 +66,10 @@ impl Registrar {
                 .map(Into::into)
                 .collect::<Vec<rsip::headers::Contact>>(),
         )?;
-        self.sip_manager()
+        Ok(self.sip_manager()
             .transport
             .send(ResponseMsg::from((response, msg.peer, msg.transport)).into())
-            .await
+            .await?)
     }
 }
 

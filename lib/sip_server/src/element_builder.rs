@@ -1,9 +1,19 @@
 use crate::Error;
-use crate::{tu::TuLayer, transaction::TransactionLayer, transport::TransportLayer};
-use std::sync::Arc;
+use crate::{transaction::Transaction, transport::Transport, tu::elements::UserAgent};
+use models::Handlers;
 
-pub struct SipBuilder {
-    pub manager: Arc<SipManager>,
+pub struct ElementBuilder;
+
+impl ElementBuilder {
+    pub fn new() {
+        let (tu_tx, tu_rx) = channel(10);
+        let (transaction_tx, transaction_rx) = channel(10);
+        let (transport_tx, transport_rx) = channel(10);
+
+        let handlers: Handlers = (tu_tx, transaction_tx, transport_tx).into();
+
+    }
+
 }
 
 #[allow(dead_code)]

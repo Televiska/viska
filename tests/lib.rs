@@ -1,10 +1,5 @@
-#![allow(dead_code)]
-
-#![allow(unused)]
-
 #[macro_use]
-pub extern crate diesel_migrations;
-
+//pub extern crate diesel_migrations;
 
 #[macro_use]
 
@@ -40,5 +35,5 @@ macro_rules! p {
     };
 }
 
-pub mod common;
-pub mod unit_tests;
+//pub mod common;
+//pub mod unit_tests;

@@ -1,9 +1,9 @@
-pub use crate::{Error, SipManager, ReqProcessor};
+pub use crate::{Error, ReqProcessor};
 use common::{
     async_trait::async_trait,
     rsip::{self, prelude::*},
 };
-use models::transport::{RequestMsg, ResponseMsg};
+use models::{Handlers, transport::{RequestMsg, ResponseMsg}};
 use std::{
     any::Any,
     sync::{Arc, Weak},
@@ -11,34 +11,26 @@ use std::{
 
 #[derive(Debug)]
 pub struct Capabilities {
-    sip_manager: Weak<SipManager>,
+    handlers: Handlers,
+}
+
+impl Capabilities {
+    pub fn new(handlers: Handlers) -> Self {
+        Self { handlers }
+    }
 }
 
 #[async_trait]
 impl ReqProcessor for Capabilities {
-    fn new(sip_manager: Weak<SipManager>) -> Self {
-        Self { sip_manager }
-    }
-
     async fn process_incoming_request(&self, msg: RequestMsg) -> Result<(), Error> {
         apply_default_checks(&msg.sip_request)?;
 
         let response = create_busy_here_from(msg.sip_request.clone())?;
 
-        self.sip_manager()
+        Ok(self.handlers
             .transport
             .send(ResponseMsg::from((response, msg.peer, msg.transport)).into())
-            .await
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
-
-impl Capabilities {
-    fn sip_manager(&self) -> Arc<SipManager> {
-        self.sip_manager.upgrade().expect("sip manager is missing!")
+            .await?)
     }
 }
 

@@ -10,21 +10,25 @@ use common::{
 
 #[derive(Debug, Clone)]
 pub struct TransactionHandler {
-    inner: mpsc::Sender<TransactionLayerMsg>,
+    pub tx: mpsc::Sender<TransactionLayerMsg>,
 }
 
 impl TransactionHandler {
+    pub fn new(tx: mpsc::Sender<TransactionLayerMsg>) -> Self {
+        Self { tx }
+    }
+
     pub async fn process(&self, msg: TransportMsg) -> Result<(), Error> {
-        Ok(self.inner.send(TransactionLayerMsg::Incoming(msg)).await?)
+        Ok(self.tx.send(TransactionLayerMsg::Incoming(msg)).await?)
     }
 
     pub async fn reply(&self, msg: ResponseMsg) -> Result<(), Error> {
-        Ok(self.inner.send(TransactionLayerMsg::Reply(msg)).await?)
+        Ok(self.tx.send(TransactionLayerMsg::Reply(msg)).await?)
     }
 
     pub async fn new_uac_invite(&self, msg: RequestMsg) -> Result<(), Error> {
         Ok(self
-            .inner
+            .tx
             .send(TransactionLayerMsg::NewUacInvite(msg))
             .await?)
     }
@@ -35,7 +39,7 @@ impl TransactionHandler {
         tu_response: Option<Response>,
     ) -> Result<(), Error> {
         Ok(self
-            .inner
+            .tx
             .send(TransactionLayerMsg::NewUasInvite(msg, tu_response))
             .await?)
     }
@@ -43,9 +47,15 @@ impl TransactionHandler {
     pub async fn has_transaction_for(&self, transaction_id: String) -> Result<bool, Error> {
         let (tx, rx) = oneshot::channel();
 
-        self.inner
+        self.tx
             .send(TransactionLayerMsg::HasTransaction(transaction_id, tx))
             .await?;
         Ok(rx.await?)
+    }
+}
+
+impl From<mpsc::Sender<TransactionLayerMsg>> for TransactionHandler {
+    fn from(tx: mpsc::Sender<TransactionLayerMsg>) -> Self {
+        Self { tx }
     }
 }
