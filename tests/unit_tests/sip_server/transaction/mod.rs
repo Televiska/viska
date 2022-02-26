@@ -1,13 +1,21 @@
 pub mod uac_tests;
-//pub mod uas_tests;
+pub mod uas_tests;
 
-/*
-use crate::common::snitches::{UaSnitch, TransportSnitch};
-use sip_server::{tu::elements::UserAgent, SipBuilder, SipManager, Transaction, TuLayer};
-use std::sync::Arc;
+use crate::common::snitches::SpySnitch;
+use models::{tu::TuLayerMsg, transport::TransportLayerMsg};
+use sip_server::Transaction;
 
-async fn setup() -> Arc<SipManager> {
-    SipBuilder::new::<UaSnitch, Transaction, TransportSnitch>()
-        .expect("sip manager failed")
-        .manager
-}*/
+pub async fn setup() -> (
+    SpySnitch<TuLayerMsg>,
+    Transaction,
+    SpySnitch<TransportLayerMsg>,
+) {
+    let (handlers, receivers) = models::channels_builder();
+    let transport = SpySnitch::new(handlers.clone(), receivers.transport).expect("transport");
+    let transaction =
+        Transaction::new(handlers.clone(), receivers.transaction).expect("transaction");
+    let tu = SpySnitch::new(handlers.clone(), receivers.tu).expect("tu");
+
+    (tu, transaction, transport)
+}
+

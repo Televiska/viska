@@ -7,6 +7,11 @@ pub enum TransactionLayerMsg {
     NewUasInvite(RequestMsg, Option<Response>), //from tu
     Reply(ResponseMsg),                         //from tu
     Incoming(TransportMsg),                     //from transport
-    //transaction_id and response channel
-    HasTransaction(String, Sender<bool>),       //from transport
+    TransportError(TransportMsg, TransportError),
+    HasTransaction(TransactionId, Sender<bool>),       //from transport
 }
+
+//TODO: add proper error type here
+pub type TransportError = String;
+//TODO: add proper (rsip) type here
+pub type TransactionId = String;

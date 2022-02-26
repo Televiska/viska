@@ -10,9 +10,10 @@ use common::{
     },
 };
 use models::{
+    receivers::TrxReceiver,
     transaction::{TransactionHandler, TransactionLayerMsg},
     transport::{RequestMsg, ResponseMsg, TransportMsg},
-    Handlers, receivers::TrxReceiver,
+    Handlers,
 };
 use std::collections::HashMap;
 use std::{fmt::Debug, sync::Arc};
@@ -75,12 +76,53 @@ impl Inner {
             }
             TransactionLayerMsg::Reply(msg) => self.process_tu_reply(msg).await?,
             TransactionLayerMsg::Incoming(msg) => self.process_incoming(msg).await?,
+            TransactionLayerMsg::TransportError(msg, error) => {
+                self.process_transport_error(msg, error).await?
+            }
             TransactionLayerMsg::HasTransaction(transaction_id, tx) => tx
                 .send(self.has_transaction(&transaction_id).await)
                 .map_err(|e| Error::custom(format!("could not send respond: {}", e)))?,
         };
 
         Ok(())
+    }
+
+    //TODO: improve ergonomics
+    async fn process_transport_error(
+        &self,
+        msg: TransportMsg,
+        reason: String,
+    ) -> Result<(), Error> {
+        if msg.is_request() {
+            match self
+                .uas_state
+                .read()
+                .await
+                .get(&msg.transaction_id()?.expect("transaction id"))
+            {
+                Some(transaction_machine) => {
+                    let mut transaction_machine = transaction_machine.lock().await;
+                    transaction_machine.transport_error(reason).await;
+                    Ok(())
+                }
+                None => Err(Error::from(TransactionError::NotFound)),
+            }
+        } else {
+            match self
+                .uac_state
+                .read()
+                .await
+                .get(&msg.transaction_id()?.expect("transaction id"))
+            {
+                Some(transaction_machine) => {
+                    let mut transaction_machine = transaction_machine.lock().await;
+                    transaction_machine.transport_error(reason).await;
+
+                    Ok(())
+                }
+                None => Err(Error::from(TransactionError::NotFound)),
+            }
+        }
     }
 
     async fn new_uac_invite_transaction(&self, msg: RequestMsg) -> Result<(), Error> {

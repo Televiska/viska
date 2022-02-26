@@ -1,27 +1,9 @@
-use crate::common::{
-    advance_for, extensions::TransactionUacExt, factories::prelude::*, snitches::SpySnitch,
-};
+use super::setup;
+use crate::common::{advance_for, extensions::TransactionUacExt, factories::prelude::*};
 use common::rsip::{self, prelude::*};
-use models::{
-    transport::{RequestMsg, TransportLayerMsg, TransportMsg},
-    tu::TuLayerMsg,
-};
-use sip_server::{transaction::uac::TIMER_M, Transaction};
+use models::transport::{RequestMsg, TransportMsg};
+use sip_server::transaction::uac::TIMER_M;
 use std::time::Duration;
-
-async fn setup() -> (
-    SpySnitch<TuLayerMsg>,
-    Transaction,
-    SpySnitch<TransportLayerMsg>,
-) {
-    let (handlers, receivers) = models::channels_builder();
-    let transport = SpySnitch::new(handlers.clone(), receivers.transport).expect("transport");
-    let transaction =
-        Transaction::new(handlers.clone(), receivers.transaction).expect("transaction");
-    let tu = SpySnitch::new(handlers.clone(), receivers.tu).expect("tu");
-
-    (tu, transaction, transport)
-}
 
 #[tokio::test]
 async fn if_peer_not_responding() {

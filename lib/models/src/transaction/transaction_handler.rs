@@ -26,6 +26,10 @@ impl TransactionHandler {
         Ok(self.tx.send(TransactionLayerMsg::Reply(msg)).await?)
     }
 
+    pub async fn transport_error(&self, msg: TransportMsg, error: String) -> Result<(), Error> {
+        Ok(self.tx.send(TransactionLayerMsg::TransportError(msg, error)).await?)
+    }
+
     pub async fn new_uac_invite(&self, msg: RequestMsg) -> Result<(), Error> {
         Ok(self
             .tx

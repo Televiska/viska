@@ -5,7 +5,11 @@ use crate::transport::{RequestMsg, ResponseMsg, TransportMsg};
 #[derive(Debug, Clone)]
 pub enum TuLayerMsg {
     Incoming(TransportMsg),
+    TransportError(TransportMsg, TransportError),
 }
+
+//TODO: add proper error type here
+pub type TransportError = String;
 
 impl From<TransportMsg> for TuLayerMsg {
     fn from(from: TransportMsg) -> Self {

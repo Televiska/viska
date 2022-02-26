@@ -5,9 +5,10 @@ use common::{rsip, tokio};
 use std::sync::Arc;
 
 use models::{
+    receivers::TuReceiver,
     transport::{RequestMsg, ResponseMsg, TransportMsg},
     tu::TuLayerMsg,
-    Handlers, receivers::TuReceiver,
+    Handlers,
 };
 
 //TODO: rename this to something else like ProxyTu etc
@@ -65,8 +66,19 @@ impl<R: ReqProcessor, C: ReqProcessor> Inner<R, C> {
     async fn receive(&self, msg: TuLayerMsg) -> Result<(), Error> {
         match msg {
             TuLayerMsg::Incoming(msg) => self.process_incoming_message(msg).await?,
+            TuLayerMsg::TransportError(msg, error) => {
+                self.process_transport_error(msg, error).await?
+            }
         };
 
+        Ok(())
+    }
+
+    async fn process_transport_error(
+        &self,
+        _msg: TransportMsg,
+        _error: String,
+    ) -> Result<(), Error> {
         Ok(())
     }
 

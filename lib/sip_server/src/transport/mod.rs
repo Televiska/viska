@@ -110,7 +110,36 @@ impl Inner {
                 .into(),
         };
 
-        Ok(self.udp_send(msg.into()).await?)
+        //TODO: optimize clone here
+        if let Err(err) = self.udp_send(msg.clone().into()).await {
+            self.report_transport_error(msg, format!("{:?}", err)).await?;
+        }
+
+        Ok(())
+    }
+
+    async fn report_transport_error(&self, msg: TransportMsg, error: String) -> Result<(), Error> {
+        let transaction_id = msg.transaction_id()?;
+
+        match transaction_id {
+            Some(transaction_id) => {
+                if self
+                    .handlers
+                    .transaction
+                    .has_transaction_for(transaction_id)
+                    .await?
+                {
+                    self.handlers.transaction.transport_error(msg.into(), error).await?;
+                } else {
+                    self.handlers.tu.transport_error(msg.into(), error).await?;
+                }
+            }
+            None => {
+                self.handlers.tu.transport_error(msg.into(), error).await?;
+            }
+        };
+
+        Ok(())
     }
 
     async fn receive_incoming_message(&self, udp_tuple: UdpTuple) -> Result<(), Error> {

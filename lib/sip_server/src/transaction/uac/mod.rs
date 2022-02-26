@@ -78,6 +78,11 @@ impl TrxStateMachine {
         !matches!(self.state, TrxState::Errored(_) | TrxState::Terminated(_))
     }
 
+    //TODO: use proper error type here
+    pub async fn transport_error(&mut self, reason: String) {
+        self.error(reason, None);
+    }
+
     async fn next_step(&mut self) -> Result<(), Error> {
         match &self.state {
             TrxState::Calling(calling) => {

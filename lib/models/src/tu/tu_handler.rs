@@ -14,6 +14,10 @@ impl TuHandler {
     pub async fn process(&self, msg: TransportMsg) -> Result<(), Error> {
         Ok(self.tx.send(TuLayerMsg::Incoming(msg)).await?)
     }
+
+    pub async fn transport_error(&self, msg: TransportMsg, error: String) -> Result<(), Error> {
+        Ok(self.tx.send(TuLayerMsg::TransportError(msg, error)).await?)
+    }
 }
 
 impl From<Sender<TuLayerMsg>> for TuHandler {
