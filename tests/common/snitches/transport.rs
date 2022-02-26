@@ -1,21 +1,24 @@
 use super::Messages;
 use models::{receivers::TrReceiver, transport::TransportLayerMsg, Handlers};
 use sip_server::Error;
-use std::sync::Arc;
+use std::{time::Duration, sync::Arc};
+use crate::common::delay_for;
+use common::tokio::sync::mpsc::Receiver;
 
+//TODO: it can be simplified ?
 #[derive(Debug)]
-pub struct TransportSnitch {
-    pub inner: Arc<Inner>,
+pub struct TransportSnitch<T> {
+    pub inner: Arc<Inner<T>>,
 }
 
 #[derive(Debug)]
-pub struct Inner {
+pub struct Inner<T> {
     handlers: models::Handlers,
-    pub messages: Messages<TransportLayerMsg>,
+    pub messages: Arc<Messages<T>>,
 }
 
-impl TransportSnitch {
-    pub fn new(handlers: Handlers, messages_rx: TrReceiver) -> Result<Self, Error> {
+impl<T: Clone + Send + 'static> TransportSnitch<T> {
+    pub fn new(handlers: Handlers, messages_rx: Receiver<T>) -> Result<Self, Error> {
         let me = Self {
             inner: Arc::new(Inner {
                 handlers,
@@ -28,14 +31,19 @@ impl TransportSnitch {
         Ok(me)
     }
 
-    fn run(&self, messages: TrReceiver) {
+    fn run(&self, messages: Receiver<T>) {
         let inner = self.inner.clone();
         tokio::spawn(async move { inner.run(messages).await });
     }
+
+    pub async fn messages(&self) -> Arc<Messages<T>> {
+        delay_for(Duration::from_millis(1)).await;
+        self.inner.messages.clone()
+    }
 }
 
-impl Inner {
-    async fn run(&self, mut messages: TrReceiver) {
+impl<T: Clone> Inner<T> {
+    async fn run(&self, mut messages: Receiver<T>) {
         while let Some(msg) = messages.recv().await {
             self.messages.push(msg).await;
         }

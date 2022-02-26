@@ -10,7 +10,7 @@ use common::{
     },
 };
 use models::{
-    transaction::TransactionLayerMsg,
+    transaction::{TransactionHandler, TransactionLayerMsg},
     transport::{RequestMsg, ResponseMsg, TransportMsg},
     Handlers, receivers::TrxReceiver,
 };
@@ -43,6 +43,10 @@ impl Transaction {
         me.run(messages_rx);
 
         Ok(me)
+    }
+
+    pub fn handler(&self) -> TransactionHandler {
+        self.inner.handlers.transaction.clone()
     }
 
     fn run(&self, messages: TrxReceiver) {

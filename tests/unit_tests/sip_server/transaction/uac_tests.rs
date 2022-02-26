@@ -1,57 +1,44 @@
 use crate::common::{
-    advance_for,
-    extensions::TransactionUacExt,
-    factories::prelude::*,
-    snitches::{UaSnitch, TransportSnitch},
+    advance_for, extensions::TransactionUacExt, factories::prelude::*, snitches::SpySnitch,
 };
-use common::futures_util::stream::StreamExt;
-use common::log::Level;
 use common::rsip::{self, prelude::*};
-use models::transport::{RequestMsg, TransportMsg};
-use sip_server::{
-    transaction::uac::{TrxState, TrxStateMachine, TIMER_M},
-    SipBuilder, SipManager, Transaction, TransactionLayer,
+use models::{
+    transport::{RequestMsg, TransportLayerMsg, TransportMsg},
+    tu::TuLayerMsg,
 };
-use std::any::Any;
-use std::sync::Arc;
+use sip_server::{transaction::uac::TIMER_M, Transaction};
 use std::time::Duration;
 
-async fn setup() -> Arc<SipManager> {
-    let builder =
-        SipBuilder::new::<UaSnitch, Transaction, TransportSnitch>().expect("sip manager failed");
-    builder.run().await;
+async fn setup() -> (
+    SpySnitch<TuLayerMsg>,
+    Transaction,
+    SpySnitch<TransportLayerMsg>,
+) {
+    let (handlers, receivers) = models::channels_builder();
+    let transport = SpySnitch::new(handlers.clone(), receivers.transport).expect("transport");
+    let transaction =
+        Transaction::new(handlers.clone(), receivers.transaction).expect("transaction");
+    let tu = SpySnitch::new(handlers.clone(), receivers.tu).expect("tu");
 
-    builder.manager
+    (tu, transaction, transport)
 }
 
 #[tokio::test]
 async fn if_peer_not_responding() {
-    let sip_manager = setup().await;
-    let transaction = sip_manager.transaction.clone();
-
-    as_downcasted!(
-        sip_manager,
-        tu,
-        transaction,
-        transport,
-        UaSnitch,
-        Transaction,
-        TransportSnitch
-    );
-
-    assert_eq!(transport.messages.len().await, 0);
+    let (_, transaction, transport) = setup().await;
 
     let request: rsip::Request = requests::invite_request();
-    let result = sip_manager
-        .transaction
-        .new_uac_invite_transaction(RequestMsg {
+    let result = transaction
+        .handler()
+        .new_uac_invite(RequestMsg {
             sip_request: request.clone(),
             ..Randomized::default()
         })
         .await;
     assert!(result.is_ok(), "returns: {:?}", result);
 
-    assert_eq!(transport.messages.len().await, 1);
+    assert_eq!(transport.messages().await.len().await, 1);
+
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
@@ -65,19 +52,19 @@ async fn if_peer_not_responding() {
             .await
     );
     advance_for(Duration::from_millis(500)).await;
-    assert_eq!(transport.messages.len().await, 2);
+    assert_eq!(transport.messages().await.len().await, 2);
     advance_for(Duration::from_millis(1000)).await;
-    assert_eq!(transport.messages.len().await, 3);
+    assert_eq!(transport.messages().await.len().await, 3);
     advance_for(Duration::from_millis(2000)).await;
-    assert_eq!(transport.messages.len().await, 4);
+    assert_eq!(transport.messages().await.len().await, 4);
     advance_for(Duration::from_millis(4000)).await;
-    assert_eq!(transport.messages.len().await, 5);
+    assert_eq!(transport.messages().await.len().await, 5);
     advance_for(Duration::from_millis(8000)).await;
-    assert_eq!(transport.messages.len().await, 6);
+    assert_eq!(transport.messages().await.len().await, 6);
     advance_for(Duration::from_millis(16000)).await;
-    assert_eq!(transport.messages.len().await, 7);
+    assert_eq!(transport.messages().await.len().await, 7);
     advance_for(Duration::from_millis(50000)).await;
-    assert_eq!(transport.messages.len().await, 7);
+    assert_eq!(transport.messages().await.len().await, 7);
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
@@ -94,33 +81,20 @@ async fn if_peer_not_responding() {
 
 #[tokio::test]
 async fn with_trying_goes_through_proceeding() {
-    let sip_manager = setup().await;
-    let transaction = sip_manager.transaction.clone();
-
-    as_downcasted!(
-        sip_manager,
-        tu,
-        transaction,
-        transport,
-        UaSnitch,
-        Transaction,
-        TransportSnitch
-    );
-
-    assert_eq!(transport.messages.len().await, 0);
+    let (tu, transaction, transport) = setup().await;
 
     let request: rsip::Request = requests::invite_request();
-    let result = sip_manager
-        .transaction
-        .new_uac_invite_transaction(RequestMsg {
+    let result = transaction
+        .handler()
+        .new_uac_invite(RequestMsg {
             sip_request: request.clone(),
             ..Randomized::default()
         })
         .await;
     assert!(result.is_ok(), "returns: {:?}", result);
 
-    assert_eq!(transport.messages.len().await, 1);
-    assert_eq!(tu.messages.len().await, 0);
+    assert_eq!(transport.messages().await.len().await, 1);
+    assert_eq!(tu.messages().await.len().await, 0);
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
@@ -135,17 +109,17 @@ async fn with_trying_goes_through_proceeding() {
     );
 
     let response: rsip::Response = responses::trying_response_from(request.clone());
-    let result = sip_manager
-        .transaction
-        .process_incoming_message(TransportMsg {
+    transaction
+        .handler()
+        .process(TransportMsg {
             sip_message: response.clone().into(),
             ..Randomized::default()
         })
-        .await;
+        .await
+        .unwrap();
 
-    assert_eq!(transport.messages.len().await, 1);
-    assert_eq!(tu.messages.len().await, 1);
-    //assert_eq!(tu.messages.lock().await.len(), 1);
+    assert_eq!(transport.messages().await.len().await, 1);
+    assert_eq!(tu.messages().await.len().await, 1);
 
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
@@ -161,17 +135,17 @@ async fn with_trying_goes_through_proceeding() {
     );
 
     let response: rsip::Response = responses::ok_response_from(request.clone());
-    let result = sip_manager
-        .transaction
-        .process_incoming_message(TransportMsg {
+    transaction
+        .handler()
+        .process(TransportMsg {
             sip_message: response.clone().into(),
             ..Randomized::default()
         })
-        .await;
+        .await
+        .unwrap();
 
-    assert_eq!(transport.messages.len().await, 1);
-    assert_eq!(tu.messages.len().await, 2);
-    //assert_eq!(tu.messages.lock().await.len(), 1);
+    assert_eq!(transport.messages().await.len().await, 1);
+    assert_eq!(tu.messages().await.len().await, 2);
 
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
@@ -203,30 +177,20 @@ async fn with_trying_goes_through_proceeding() {
 
 #[tokio::test]
 async fn request_failure_goes_through_completed() {
-    let sip_manager = setup().await;
-    let transaction = sip_manager.transaction.clone();
-
-    let transport = sip_manager.transport.clone();
-    let transport = as_any!(transport, TransportSnitch);
-    let tu = sip_manager.tu.clone();
-    let tu = as_any!(tu, UaSnitch);
-    let transaction = sip_manager.transaction.clone();
-    let transaction = as_any!(transaction, Transaction);
-
-    assert_eq!(transport.messages.len().await, 0);
+    let (tu, transaction, transport) = setup().await;
 
     let request: rsip::Request = requests::invite_request();
-    let result = sip_manager
-        .transaction
-        .new_uac_invite_transaction(RequestMsg {
+    transaction
+        .handler()
+        .new_uac_invite(RequestMsg {
             sip_request: request.clone(),
             ..Randomized::default()
         })
-        .await;
-    assert!(result.is_ok(), "result is error: {:?}", result);
+        .await
+        .unwrap();
 
-    assert_eq!(transport.messages.len().await, 1);
-    assert_eq!(tu.messages.len().await, 0);
+    assert_eq!(transport.messages().await.len().await, 1);
+    assert_eq!(tu.messages().await.len().await, 0);
 
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
@@ -242,17 +206,17 @@ async fn request_failure_goes_through_completed() {
     );
 
     let response: rsip::Response = responses::request_failure_response_from(request.clone());
-    let result = sip_manager
-        .transaction
-        .process_incoming_message(TransportMsg {
+    transaction
+        .handler()
+        .process(TransportMsg {
             sip_message: response.clone().into(),
             ..Randomized::default()
         })
-        .await;
+        .await
+        .unwrap();
 
-    assert_eq!(transport.messages.len().await, 1);
-    assert_eq!(tu.messages.len().await, 1);
-    //assert_eq!(tu.messages.lock().await.len(), 1);
+    assert_eq!(transport.messages().await.len().await, 1);
+    assert_eq!(tu.messages().await.len().await, 1);
 
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
@@ -284,30 +248,20 @@ async fn request_failure_goes_through_completed() {
 
 #[tokio::test]
 async fn multiple_request_failure_goes_through_completed() {
-    let sip_manager = setup().await;
-    let transaction = sip_manager.transaction.clone();
-
-    let transport = sip_manager.transport.clone();
-    let transport = as_any!(transport, TransportSnitch);
-    let tu = sip_manager.tu.clone();
-    let tu = as_any!(tu, UaSnitch);
-    let transaction = sip_manager.transaction.clone();
-    let transaction = as_any!(transaction, Transaction);
-
-    assert_eq!(transport.messages.len().await, 0);
+    let (tu, transaction, transport) = setup().await;
 
     let request: rsip::Request = requests::invite_request();
-    let result = sip_manager
-        .transaction
-        .new_uac_invite_transaction(RequestMsg {
+    transaction
+        .handler()
+        .new_uac_invite(RequestMsg {
             sip_request: request.clone(),
             ..Randomized::default()
         })
-        .await;
-    assert!(result.is_ok(), "result is error: {:?}", result);
+        .await
+        .unwrap();
 
-    assert_eq!(transport.messages.len().await, 1);
-    assert_eq!(tu.messages.len().await, 0);
+    assert_eq!(transport.messages().await.len().await, 1);
+    assert_eq!(tu.messages().await.len().await, 0);
 
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
@@ -323,17 +277,17 @@ async fn multiple_request_failure_goes_through_completed() {
     );
 
     let response: rsip::Response = responses::request_failure_response_from(request.clone());
-    let result = sip_manager
-        .transaction
-        .process_incoming_message(TransportMsg {
+    transaction
+        .handler()
+        .process(TransportMsg {
             sip_message: response.clone().into(),
             ..Randomized::default()
         })
-        .await;
+        .await
+        .unwrap();
 
-    assert_eq!(transport.messages.len().await, 1);
-    assert_eq!(tu.messages.len().await, 1);
-    //assert_eq!(tu.messages.lock().await.len(), 1);
+    assert_eq!(transport.messages().await.len().await, 1);
+    assert_eq!(tu.messages().await.len().await, 1);
 
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
@@ -351,17 +305,17 @@ async fn multiple_request_failure_goes_through_completed() {
     advance_for(Duration::from_millis(10)).await;
 
     let response: rsip::Response = responses::request_failure_response_from(request.clone());
-    let result = sip_manager
-        .transaction
-        .process_incoming_message(TransportMsg {
+    transaction
+        .handler()
+        .process(TransportMsg {
             sip_message: response.clone().into(),
             ..Randomized::default()
         })
-        .await;
+        .await
+        .unwrap();
 
-    assert_eq!(transport.messages.len().await, 2);
-    assert_eq!(tu.messages.len().await, 1);
-    //assert_eq!(tu.messages.lock().await.len(), 1);
+    assert_eq!(transport.messages().await.len().await, 2);
+    assert_eq!(tu.messages().await.len().await, 1);
 
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
@@ -393,30 +347,20 @@ async fn multiple_request_failure_goes_through_completed() {
 
 #[tokio::test]
 async fn unexpected_failures_when_accepted_goes_to_errored() {
-    let sip_manager = setup().await;
-    let transaction = sip_manager.transaction.clone();
-
-    let transport = sip_manager.transport.clone();
-    let transport = as_any!(transport, TransportSnitch);
-    let tu = sip_manager.tu.clone();
-    let tu = as_any!(tu, UaSnitch);
-    let transaction = sip_manager.transaction.clone();
-    let transaction = as_any!(transaction, Transaction);
-
-    assert_eq!(transport.messages.len().await, 0);
+    let (tu, transaction, transport) = setup().await;
 
     let request: rsip::Request = requests::invite_request();
-    let result = sip_manager
-        .transaction
-        .new_uac_invite_transaction(RequestMsg {
+    transaction
+        .handler()
+        .new_uac_invite(RequestMsg {
             sip_request: request.clone(),
             ..Randomized::default()
         })
-        .await;
-    assert!(result.is_ok(), "result is error: {:?}", result);
+        .await
+        .unwrap();
 
-    assert_eq!(transport.messages.len().await, 1);
-    assert_eq!(tu.messages.len().await, 0);
+    assert_eq!(transport.messages().await.len().await, 1);
+    assert_eq!(tu.messages().await.len().await, 0);
 
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
@@ -432,17 +376,17 @@ async fn unexpected_failures_when_accepted_goes_to_errored() {
     );
 
     let response: rsip::Response = responses::trying_response_from(request.clone());
-    let result = sip_manager
-        .transaction
-        .process_incoming_message(TransportMsg {
+    transaction
+        .handler()
+        .process(TransportMsg {
             sip_message: response.clone().into(),
             ..Randomized::default()
         })
-        .await;
+        .await
+        .unwrap();
 
-    assert_eq!(transport.messages.len().await, 1);
-    assert_eq!(tu.messages.len().await, 1);
-    //assert_eq!(tu.messages.lock().await.len(), 1);
+    assert_eq!(transport.messages().await.len().await, 1);
+    assert_eq!(tu.messages().await.len().await, 1);
 
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
@@ -458,17 +402,17 @@ async fn unexpected_failures_when_accepted_goes_to_errored() {
     );
 
     let response: rsip::Response = responses::ok_response_from(request.clone());
-    let result = sip_manager
-        .transaction
-        .process_incoming_message(TransportMsg {
+    transaction
+        .handler()
+        .process(TransportMsg {
             sip_message: response.clone().into(),
             ..Randomized::default()
         })
-        .await;
+        .await
+        .unwrap();
 
-    assert_eq!(transport.messages.len().await, 1);
-    assert_eq!(tu.messages.len().await, 2);
-    //assert_eq!(tu.messages.lock().await.len(), 1);
+    assert_eq!(transport.messages().await.len().await, 1);
+    assert_eq!(tu.messages().await.len().await, 2);
 
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
@@ -485,13 +429,14 @@ async fn unexpected_failures_when_accepted_goes_to_errored() {
 
     advance_for(Duration::from_secs(1)).await;
     let response: rsip::Response = responses::request_failure_response_from(request.clone());
-    let result = sip_manager
-        .transaction
-        .process_incoming_message(TransportMsg {
+    transaction
+        .handler()
+        .process(TransportMsg {
             sip_message: response.clone().into(),
             ..Randomized::default()
         })
-        .await;
+        .await
+        .unwrap();
 
     assert!(
         transaction
@@ -508,30 +453,20 @@ async fn unexpected_failures_when_accepted_goes_to_errored() {
 
 #[tokio::test]
 async fn ok_when_completed_goes_to_errored() {
-    let sip_manager = setup().await;
-    let transaction = sip_manager.transaction.clone();
-
-    let transport = sip_manager.transport.clone();
-    let transport = as_any!(transport, TransportSnitch);
-    let tu = sip_manager.tu.clone();
-    let tu = as_any!(tu, UaSnitch);
-    let transaction = sip_manager.transaction.clone();
-    let transaction = as_any!(transaction, Transaction);
-
-    assert_eq!(transport.messages.len().await, 0);
+    let (tu, transaction, transport) = setup().await;
 
     let request: rsip::Request = requests::invite_request();
-    let result = sip_manager
-        .transaction
-        .new_uac_invite_transaction(RequestMsg {
+    transaction
+        .handler()
+        .new_uac_invite(RequestMsg {
             sip_request: request.clone(),
             ..Randomized::default()
         })
-        .await;
-    assert!(result.is_ok(), "result is error: {:?}", result);
+        .await
+        .unwrap();
 
-    assert_eq!(transport.messages.len().await, 1);
-    assert_eq!(tu.messages.len().await, 0);
+    assert_eq!(transport.messages().await.len().await, 1);
+    assert_eq!(tu.messages().await.len().await, 0);
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
         transaction
@@ -546,17 +481,17 @@ async fn ok_when_completed_goes_to_errored() {
     );
 
     let response: rsip::Response = responses::trying_response_from(request.clone());
-    let result = sip_manager
-        .transaction
-        .process_incoming_message(TransportMsg {
+    transaction
+        .handler()
+        .process(TransportMsg {
             sip_message: response.clone().into(),
             ..Randomized::default()
         })
-        .await;
+        .await
+        .unwrap();
 
-    assert_eq!(transport.messages.len().await, 1);
-    assert_eq!(tu.messages.len().await, 1);
-    //assert_eq!(tu.messages.lock().await.len(), 1);
+    assert_eq!(transport.messages().await.len().await, 1);
+    assert_eq!(tu.messages().await.len().await, 1);
 
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
     assert!(
@@ -572,16 +507,17 @@ async fn ok_when_completed_goes_to_errored() {
     );
 
     let response: rsip::Response = responses::request_failure_response_from(request.clone());
-    let result = sip_manager
-        .transaction
-        .process_incoming_message(TransportMsg {
+    transaction
+        .handler()
+        .process(TransportMsg {
             sip_message: response.clone().into(),
             ..Randomized::default()
         })
-        .await;
+        .await
+        .unwrap();
 
-    assert_eq!(transport.messages.len().await, 2);
-    assert_eq!(tu.messages.len().await, 2);
+    assert_eq!(transport.messages().await.len().await, 2);
+    assert_eq!(tu.messages().await.len().await, 2);
     //assert_eq!(tu.messages.lock().await.len(), 1);
 
     assert_eq!(transaction.inner.uac_state.read().await.len(), 1);
@@ -599,13 +535,14 @@ async fn ok_when_completed_goes_to_errored() {
 
     advance_for(Duration::from_secs(1)).await;
     let response: rsip::Response = responses::ok_response_from(request.clone());
-    let result = sip_manager
-        .transaction
-        .process_incoming_message(TransportMsg {
+    transaction
+        .handler()
+        .process(TransportMsg {
             sip_message: response.clone().into(),
             ..Randomized::default()
         })
-        .await;
+        .await
+        .unwrap();
 
     assert!(
         transaction
