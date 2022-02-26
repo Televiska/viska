@@ -1,8 +1,5 @@
 use common::async_trait::async_trait;
-use sip_server::{
-    transaction::{uac::TrxState as UacTrxState, uas::TrxState as UasTrxState},
-    Transaction,
-};
+use sip_server::transaction::{uac::TrxState as UacTrxState, uas::TrxState as UasTrxState};
 
 #[async_trait]
 pub trait TransactionUacExt {

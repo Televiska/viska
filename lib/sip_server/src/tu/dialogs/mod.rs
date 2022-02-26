@@ -20,6 +20,7 @@ struct Inner {
     pub uac_state: RwLock<HashMap<String, Mutex<uac::DialogSm>>>,
     #[allow(dead_code)]
     pub uas_state: RwLock<HashMap<String, Mutex<uas::DialogSm>>>,
+    #[allow(dead_code)]
     handlers: Handlers,
 }
 

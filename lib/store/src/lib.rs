@@ -8,7 +8,7 @@ use once_cell::sync::Lazy;
 use std::sync::Arc;
 
 mod auth_request;
-mod dialog;
+//mod dialog;
 mod error;
 mod registration;
 mod request;
@@ -16,9 +16,9 @@ mod response;
 mod transaction;
 
 pub use auth_request::{AuthRequest, DirtyAuthRequest};
-pub use dialog::{
-    Dialog, DialogFlow, DialogWithTransaction, DirtyDialog, DirtyDialogWithTransaction,
-};
+//pub use dialog::{
+//    Dialog, DialogFlow, DialogWithTransaction, DirtyDialog, DirtyDialogWithTransaction,
+//};
 pub use error::Error;
 pub use registration::{DirtyRegistration, Registration, Transport};
 pub use request::{DirtyRequest, Request};

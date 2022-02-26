@@ -3,10 +3,9 @@ use common::{
     async_trait::async_trait,
     rsip::{self, prelude::*},
 };
-use models::{Handlers, transport::{RequestMsg, ResponseMsg}};
-use std::{
-    any::Any,
-    sync::{Arc, Weak},
+use models::{
+    transport::{RequestMsg, ResponseMsg},
+    Handlers,
 };
 
 #[derive(Debug)]
@@ -27,7 +26,8 @@ impl ReqProcessor for Capabilities {
 
         let response = create_busy_here_from(msg.sip_request.clone())?;
 
-        Ok(self.handlers
+        Ok(self
+            .handlers
             .transport
             .send(ResponseMsg::from((response, msg.peer, msg.transport)).into())
             .await?)

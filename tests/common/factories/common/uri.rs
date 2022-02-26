@@ -1,7 +1,4 @@
-use super::SocketAddrBuilder;
-use crate::common::factories::RandomizedBuilder;
-use common::rsip::{prelude::*, Auth, Host, HostWithPort, Param, Scheme, Uri};
-use std::net::SocketAddr;
+use common::rsip::{Auth, HostWithPort, Param, Scheme, Uri};
 
 pub trait UriExt {
     fn with_scheme(self, scheme: Option<Scheme>) -> Self;

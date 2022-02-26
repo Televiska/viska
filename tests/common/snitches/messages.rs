@@ -1,4 +1,4 @@
-use common::rsip::{self, prelude::*};
+use common::rsip;
 use models::transport::{RequestMsg, ResponseMsg, TransportMsg};
 use std::convert::TryInto;
 use tokio::sync::Mutex;

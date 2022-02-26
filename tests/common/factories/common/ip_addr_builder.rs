@@ -42,7 +42,7 @@ impl RandomizedBuilder for IpAddrBuilder {
             }
             IpVersion::V6 => {
                 if self.multicast {
-                    let mut rng = thread_rng();
+                    //let mut rng = thread_rng();
                     Self::Item::V6(Ipv6Addr::new(0xff00, 0, 0, 0, 0, 0, 0, 0x3))
                 } else {
                     Self::Item::V6(IPv6(EN).fake())

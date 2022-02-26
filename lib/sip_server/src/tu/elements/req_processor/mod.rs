@@ -1,5 +1,5 @@
 mod capabilities;
-//mod registrar;
+mod registrar;
 
 pub use capabilities::Capabilities;
-//pub use registrar::Registrar;
+pub use registrar::Registrar;

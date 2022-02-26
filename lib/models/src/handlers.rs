@@ -3,7 +3,7 @@ use crate::{
     transport::{TransportHandler, TransportLayerMsg},
     tu::{TuHandler, TuLayerMsg},
 };
-use common::tokio::sync::mpsc::{channel, Receiver, Sender};
+use common::tokio::sync::mpsc::Sender;
 
 #[derive(Debug, Clone)]
 pub struct Handlers {

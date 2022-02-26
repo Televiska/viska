@@ -8,33 +8,22 @@ use tokio::sync::Mutex;
 
 #[derive(Debug)]
 pub struct TransportSnitch {
-    sip_manager: Weak<SipManager>,
+    handlers: models::Hanlders,
     pub messages: Messages,
 }
 
-#[async_trait]
-impl TransportLayer for TransportSnitch {
-    fn new(sip_manager: Weak<SipManager>) -> Result<Self, Error> {
+impl TransportSnitch {
+    fn new(handlers: Handlers) -> Result<Self, Error> {
         Ok(Self {
-            sip_manager: sip_manager.clone(),
+            handlers,
             messages: Default::default(),
         })
-    }
-
-    async fn process_incoming_message(&self, _: UdpTuple) -> Result<(), Error> {
-        Ok(())
     }
 
     async fn send(&self, msg: TransportMsg) -> Result<(), Error> {
         self.messages.push(msg).await;
 
         Ok(())
-    }
-
-    async fn run(&self) {}
-
-    fn as_any(&self) -> &dyn Any {
-        self
     }
 }
 

@@ -20,7 +20,7 @@ use common::{
 use models::{
     transport::TransportLayerMsg,
     transport::{RequestMsg, ResponseMsg, TransportMsg, UdpTuple},
-    Handlers, TrReceiver,
+    Handlers, receivers::TrReceiver,
 };
 
 type UdpSink = SplitSink<UdpFramed<BytesCodec>, (Bytes, SocketAddr)>;

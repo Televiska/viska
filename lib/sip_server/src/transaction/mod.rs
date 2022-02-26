@@ -12,7 +12,7 @@ use common::{
 use models::{
     transaction::TransactionLayerMsg,
     transport::{RequestMsg, ResponseMsg, TransportMsg},
-    Handlers, TrxReceiver,
+    Handlers, receivers::TrxReceiver,
 };
 use std::collections::HashMap;
 use std::{fmt::Debug, sync::Arc};

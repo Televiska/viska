@@ -7,7 +7,7 @@ use std::sync::Arc;
 use models::{
     transport::{RequestMsg, ResponseMsg, TransportMsg},
     tu::TuLayerMsg,
-    Handlers, TuReceiver,
+    Handlers, receivers::TuReceiver,
 };
 
 //TODO: rename this to something else like ProxyTu etc
@@ -47,6 +47,7 @@ impl<R: ReqProcessor, C: ReqProcessor> UserAgent<R, C> {
 struct Inner<R: ReqProcessor, C: ReqProcessor> {
     registrar: R,
     capabilities: C,
+    #[allow(dead_code)]
     dialogs: Dialogs,
     handlers: Handlers,
 }

@@ -23,6 +23,7 @@ pub enum ErrorKind {
     Io(std::io::Error),
     Transaction(TransactionError),
     Channel(String),
+    Store(store::Error),
 }
 
 #[derive(Debug)]
@@ -132,5 +133,11 @@ impl From<SendError<TuLayerMsg>> for ErrorKind {
 impl From<RecvError> for ErrorKind {
     fn from(e: RecvError) -> Self {
         ErrorKind::Channel(e.to_string())
+    }
+}
+
+impl From<store::Error> for ErrorKind {
+    fn from(e: store::Error) -> Self {
+        ErrorKind::Store(e)
     }
 }

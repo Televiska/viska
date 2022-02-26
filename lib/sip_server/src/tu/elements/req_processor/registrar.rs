@@ -3,18 +3,14 @@ use common::{
     async_trait::async_trait,
     rsip::{self, prelude::*},
 };
-use models::transport::{RequestMsg, ResponseMsg};
-use std::{
-    any::Any,
-    sync::{Arc, Weak},
+use models::{
+    transport::{RequestMsg, ResponseMsg},
+    Handlers,
 };
 
 #[derive(Debug)]
 pub struct Registrar {
     handlers: Handlers,
-}
-
-impl Registrar {
 }
 
 #[async_trait]
@@ -26,10 +22,6 @@ impl ReqProcessor for Registrar {
             Ok(_) => self.handle_update(msg).await,
             Err(_) => self.handle_query(msg).await,
         }
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
     }
 }
 
@@ -66,7 +58,8 @@ impl Registrar {
                 .map(Into::into)
                 .collect::<Vec<rsip::headers::Contact>>(),
         )?;
-        Ok(self.sip_manager()
+        Ok(self
+            .handlers
             .transport
             .send(ResponseMsg::from((response, msg.peer, msg.transport)).into())
             .await?)
