@@ -1,32 +1,48 @@
 use super::Messages;
-use common::async_trait::async_trait;
-use models::{server::UdpTuple, transport::TransportMsg};
-use sip_server::{Error, SipManager, TransportLayer};
-use std::any::Any;
-use std::sync::{Arc, Weak};
-use tokio::sync::Mutex;
+use models::{receivers::TrReceiver, transport::TransportLayerMsg, Handlers};
+use sip_server::Error;
+use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct TransportSnitch {
-    handlers: models::Hanlders,
-    pub messages: Messages,
+    pub inner: Arc<Inner>,
+}
+
+#[derive(Debug)]
+pub struct Inner {
+    handlers: models::Handlers,
+    pub messages: Messages<TransportLayerMsg>,
 }
 
 impl TransportSnitch {
-    fn new(handlers: Handlers) -> Result<Self, Error> {
-        Ok(Self {
-            handlers,
-            messages: Default::default(),
-        })
+    pub fn new(handlers: Handlers, messages_rx: TrReceiver) -> Result<Self, Error> {
+        let me = Self {
+            inner: Arc::new(Inner {
+                handlers,
+                messages: Default::default(),
+            }),
+        };
+
+        me.run(messages_rx);
+
+        Ok(me)
     }
 
-    async fn send(&self, msg: TransportMsg) -> Result<(), Error> {
-        self.messages.push(msg).await;
-
-        Ok(())
+    fn run(&self, messages: TrReceiver) {
+        let inner = self.inner.clone();
+        tokio::spawn(async move { inner.run(messages).await });
     }
 }
 
+impl Inner {
+    async fn run(&self, mut messages: TrReceiver) {
+        while let Some(msg) = messages.recv().await {
+            self.messages.push(msg).await;
+        }
+    }
+}
+
+/*
 #[derive(Debug)]
 pub struct TransportErrorSnitch {
     sip_manager: Weak<SipManager>,
@@ -102,4 +118,4 @@ impl TransportLayer for TransportPanic {
     fn as_any(&self) -> &dyn Any {
         self
     }
-}
+}*/

@@ -6,4 +6,4 @@ macro_rules! p {
 }
 
 pub mod common;
-//pub mod unit_tests;
+pub mod unit_tests;

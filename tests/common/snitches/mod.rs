@@ -1,7 +1,7 @@
 //mod tu;
 mod messages;
 //mod transaction;
-//mod transport;
+mod transport;
 /*
 pub use self::tu::{
     CapabilitiesSnitch, UaPanic, UaSnitch, DialogsEmptySnitch, RegistrarSnitch,

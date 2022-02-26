@@ -1,6 +1,6 @@
 pub mod sip_server;
 
-pub fn debug(udp_tuple: &models::server::UdpTuple) {
+pub fn debug(udp_tuple: &models::transport::UdpTuple) {
     println!(
         "\nRequest from {}: \n{}",
         udp_tuple.peer,
