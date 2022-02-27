@@ -1,45 +1,43 @@
-use crate::common::{
-    self,
-    factories::prelude::*,
-    snitches::{UaSnitch, TransportSnitch},
+use crate::common::{factories::prelude::*, snitches::SpySnitch};
+use ::common::rsip::prelude::*;
+use models::{
+    transaction::TransactionLayerMsg,
+    transport::{RequestMsg, TransportLayerMsg},
+    tu::TuLayerMsg,
 };
-use ::common::ipnetwork::IpNetwork;
-use ::common::rsip::{self, prelude::*};
-use models::transport::RequestMsg;
-use sip_server::{
-    tu::elements::{Capabilities, UserAgent},
-    ReqProcessor, SipBuilder, SipManager, Transaction, TuLayer,
-};
-use std::sync::Arc;
+use sip_server::{tu::elements::Capabilities, ReqProcessor};
 
-async fn setup() -> (Capabilities, Arc<SipManager>) {
-    let sip_manager = SipBuilder::new::<UaSnitch, Transaction, TransportSnitch>()
-        .expect("sip manager failed")
-        .manager;
+pub async fn setup() -> (
+    SpySnitch<TuLayerMsg>,
+    SpySnitch<TransactionLayerMsg>,
+    SpySnitch<TransportLayerMsg>,
+) {
+    let (handlers, receivers) = models::channels_builder();
+    let transport = SpySnitch::new(handlers.clone(), receivers.transport).expect("transport");
+    let transaction = SpySnitch::new(handlers.clone(), receivers.transaction).expect("transaction");
+    let tu = SpySnitch::new(handlers.clone(), receivers.tu).expect("tu");
 
-    let capabilities = Capabilities::new(Arc::downgrade(&sip_manager));
-
-    (capabilities, sip_manager)
+    (tu, transaction, transport)
 }
 
 #[tokio::test]
 #[serial_test::serial]
 async fn sending_an_options_request_receives_busy() {
-    let _ = common::setup();
-    let (capabilities, sip_manager) = setup().await;
-    let transport = sip_manager.transport.clone();
-    let transport = as_any!(transport, TransportSnitch);
+    let (_, _, transport) = setup().await;
 
-    let res = capabilities
+    let capabilities = Capabilities::new(transport.handlers());
+
+    capabilities
         .process_incoming_request(RequestMsg {
             sip_request: requests::options_request(),
             ..Randomized::default()
         })
-        .await;
-    assert!(res.is_ok(), "returns: {:?}", res);
-    assert_eq!(transport.messages.len().await, 1);
+        .await
+        .unwrap();
+    assert_eq!(transport.messages().await.len().await, 1);
+    /*
     assert_eq!(
         transport.messages.first_response().await.status_code,
         486.into()
-    );
+    );*/
 }

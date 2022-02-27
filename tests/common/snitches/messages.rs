@@ -65,7 +65,9 @@ impl<T: Clone> Messages<T> {
             .expect("convert to rsip::Response")
     }
 */
+}
 
+impl<T> Messages<T> {
     pub async fn push(&self, msg: T) {
         let mut messages = self.0.lock().await;
         messages.push(msg);

@@ -12,12 +12,11 @@ pub struct SpySnitch<T> {
 
 #[derive(Debug)]
 pub struct Inner<T> {
-    #[allow(dead_code)]
     handlers: models::Handlers,
     pub messages: Arc<Messages<T>>,
 }
 
-impl<T: Clone + Send + 'static> SpySnitch<T> {
+impl<T: Send + 'static> SpySnitch<T> {
     pub fn new(handlers: Handlers, messages_rx: Receiver<T>) -> Result<Self, Error> {
         let me = Self {
             inner: Arc::new(Inner {
@@ -31,6 +30,10 @@ impl<T: Clone + Send + 'static> SpySnitch<T> {
         Ok(me)
     }
 
+    pub fn handlers(&self) -> models::Handlers {
+        self.inner.handlers.clone()
+    }
+
     fn run(&self, messages: Receiver<T>) {
         let inner = self.inner.clone();
         tokio::spawn(async move { inner.run(messages).await });
@@ -42,7 +45,7 @@ impl<T: Clone + Send + 'static> SpySnitch<T> {
     }
 }
 
-impl<T: Clone> Inner<T> {
+impl<T> Inner<T> {
     async fn run(&self, mut messages: Receiver<T>) {
         while let Some(msg) = messages.recv().await {
             self.messages.push(msg).await;

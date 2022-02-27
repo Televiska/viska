@@ -1,2 +1,2 @@
 pub mod capabilities;
-pub mod registrar;
+//pub mod registrar;
