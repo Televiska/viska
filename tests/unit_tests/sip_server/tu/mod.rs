@@ -1,2 +1,2 @@
-//pub mod processor;
-pub mod req_processor;
+pub mod capabilities;
+pub mod registrar;

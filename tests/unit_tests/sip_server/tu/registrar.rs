@@ -1,49 +1,54 @@
-use crate::common::{
-    self,
-    factories::prelude::*,
-    snitches::{UaSnitch, TransportSnitch},
+use crate::common::{factories::prelude::*, snitches::SpySnitch};
+use common::{ipnetwork::IpNetwork, rsip::{self, headers::UntypedHeader}};
+use models::{
+    transaction::TransactionLayerMsg,
+    transport::{RequestMsg, TransportLayerMsg},
+    tu::TuLayerMsg,
 };
-use ::common::ipnetwork::IpNetwork;
-use ::common::rsip::{self, prelude::*};
-use models::transport::RequestMsg;
-use sip_server::{
-    tu::elements::{UserAgent, Registrar},
-    ReqProcessor, SipBuilder, SipManager, Transaction, TuLayer,
-};
-use std::sync::Arc;
+use sip_server::{tu::elements::Registrar, ReqProcessor};
 
-async fn setup() -> (Registrar, Arc<SipManager>) {
-    let sip_manager = SipBuilder::new::<UaSnitch, Transaction, TransportSnitch>()
-        .expect("sip manager failed")
-        .manager;
+pub async fn setup() -> (
+    SpySnitch<TuLayerMsg>,
+    SpySnitch<TransactionLayerMsg>,
+    SpySnitch<TransportLayerMsg>,
+) {
+    let (handlers, receivers) = models::channels_builder();
+    let transport = SpySnitch::new(handlers.clone(), receivers.transport).expect("transport");
+    let transaction = SpySnitch::new(handlers.clone(), receivers.transaction).expect("transaction");
+    let tu = SpySnitch::new(handlers.clone(), receivers.tu).expect("tu");
 
-    let registrar = Registrar::new(Arc::downgrade(&sip_manager));
-
-    (registrar, sip_manager)
+    (tu, transaction, transport)
 }
 
 #[tokio::test]
 #[serial_test::serial]
 async fn with_no_records_returns_empty_list() {
-    let _ = common::setup();
-    let (registrar, sip_manager) = setup().await;
-    let transport = sip_manager.transport.clone();
-    let transport = as_any!(transport, TransportSnitch);
+    let _ = crate::common::setup();
+    let (_, _, transport) = setup().await;
 
-    let res = registrar
+    let registrar = Registrar::new(transport.handlers());
+
+    registrar
         .process_incoming_request(RequestMsg {
             sip_request: requests::register_query_request(),
             ..Randomized::default()
         })
-        .await;
-    assert!(res.is_ok(), "returns: {:?}", res);
-    assert_eq!(transport.messages.len().await, 1);
+        .await
+        .unwrap();
+
+    assert_eq!(transport.messages().await.len().await, 1);
     assert_eq!(
-        transport.messages.first_response().await.status_code,
+        transport
+            .messages()
+            .await
+            .first_response()
+            .await
+            .status_code,
         200.into()
     );
     assert!(transport
-        .messages
+        .messages()
+        .await
         .first_response()
         .await
         .headers
@@ -55,28 +60,35 @@ async fn with_no_records_returns_empty_list() {
 #[tokio::test]
 #[serial_test::serial]
 async fn with_records_returns_a_list_of_contacts() {
-    let _ = common::setup();
-    create_registration();
-    create_registration();
-    let (registrar, sip_manager) = setup().await;
-    let transport = sip_manager.transport.clone();
-    let transport = as_any!(transport, TransportSnitch);
+    let _ = crate::common::setup();
+    let (_, _, transport) = setup().await;
 
-    let res = registrar
+    let registrar = Registrar::new(transport.handlers());
+
+    create_registration();
+    create_registration();
+
+    registrar
         .process_incoming_request(RequestMsg {
             sip_request: requests::register_query_request(),
             ..Randomized::default()
         })
-        .await;
-    assert!(res.is_ok(), "returns: {:?}", res);
-    assert_eq!(transport.messages.len().await, 1);
+        .await
+        .unwrap();
+    assert_eq!(transport.messages().await.len().await, 1);
     assert_eq!(
-        transport.messages.first_response().await.status_code,
+        transport
+            .messages()
+            .await
+            .first_response()
+            .await
+            .status_code,
         200.into()
     );
     assert_eq!(
         transport
-            .messages
+            .messages()
+            .await
             .first_response()
             .await
             .headers
@@ -90,27 +102,34 @@ async fn with_records_returns_a_list_of_contacts() {
 #[tokio::test]
 #[serial_test::serial]
 async fn with_new_register_request_saves_the_contact() {
-    let _ = common::setup();
-    create_registration();
-    let (registrar, sip_manager) = setup().await;
-    let transport = sip_manager.transport.clone();
-    let transport = as_any!(transport, TransportSnitch);
+    let _ = crate::common::setup();
+    let (_, _, transport) = setup().await;
 
-    let res = registrar
+    let registrar = Registrar::new(transport.handlers());
+
+    create_registration();
+
+    registrar
         .process_incoming_request(RequestMsg {
             sip_request: requests::register_request(),
             ..Randomized::default()
         })
-        .await;
-    assert!(res.is_ok(), "returns: {:?}", res);
-    assert_eq!(transport.messages.len().await, 1);
+        .await
+        .unwrap();
+    assert_eq!(transport.messages().await.len().await, 1);
     assert_eq!(
-        transport.messages.first_response().await.status_code,
+        transport
+            .messages()
+            .await
+            .first_response()
+            .await
+            .status_code,
         200.into()
     );
     assert_eq!(
         transport
-            .messages
+            .messages()
+            .await
             .first_response()
             .await
             .headers
@@ -131,10 +150,11 @@ async fn with_new_register_request_saves_the_contact() {
 async fn with_wrong_from_to_register() {
     use rsip::Uri;
 
-    let _ = common::setup();
-    let (registrar, sip_manager) = setup().await;
-    let transport = sip_manager.transport.clone();
-    let transport = as_any!(transport, TransportSnitch);
+    let _ = crate::common::setup();
+    let (_, _, transport) = setup().await;
+
+    let registrar = Registrar::new(transport.handlers());
+
     let mut request = requests::register_request();
     request
         .headers
@@ -146,35 +166,41 @@ async fn with_wrong_from_to_register() {
             ..Randomized::default()
         })
         .await;
-    assert!(res.is_err(), "returns: {:?}", res);
-    assert_eq!(transport.messages.len().await, 0);
+    assert!(res.is_err());
+    assert_eq!(transport.messages().await.len().await, 0);
 }
 
 #[tokio::test]
 #[serial_test::serial]
 async fn delete_registration() {
-    let _ = common::setup();
+    let _ = crate::common::setup();
+    let (_, _, transport) = setup().await;
 
-    let (registration, uri) = create_registration();
-    let (registrar, sip_manager) = setup().await;
-    let transport = sip_manager.transport.clone();
-    let transport = as_any!(transport, TransportSnitch);
+    let registrar = Registrar::new(transport.handlers());
 
-    let res = registrar
+    let (_registration, uri) = create_registration();
+
+    registrar
         .process_incoming_request(RequestMsg {
             sip_request: requests::register_delete_request_with_uri(uri),
             ..Randomized::default()
         })
-        .await;
-    assert!(res.is_ok(), "returns: {:?}", res);
-    assert_eq!(transport.messages.len().await, 1);
+        .await
+        .unwrap();
+    assert_eq!(transport.messages().await.len().await, 1);
     assert_eq!(
-        transport.messages.first_response().await.status_code,
+        transport
+            .messages()
+            .await
+            .first_response()
+            .await
+            .status_code,
         200.into()
     );
     assert_eq!(
         transport
-            .messages
+            .messages()
+            .await
             .first_response()
             .await
             .headers
@@ -193,7 +219,6 @@ async fn delete_registration() {
 fn create_registration() -> (store::Registration, rsip::Uri) {
     use ::common::chrono::{Duration, Utc};
     use std::convert::TryInto;
-    use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
     let ip_address: IpNetwork = IpAddrBuilder::localhost().into();
     let user: String = "filippos".into();
@@ -241,7 +266,7 @@ fn create_registration() -> (store::Registration, rsip::Uri) {
             .to_owned(),
     );
 
-    let foo: rsip::headers::Contact = new_registration
+    let _: rsip::headers::Contact = new_registration
         .contact
         .clone()
         .expect("contact")

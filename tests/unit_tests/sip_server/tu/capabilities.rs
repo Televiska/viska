@@ -1,5 +1,4 @@
 use crate::common::{factories::prelude::*, snitches::SpySnitch};
-use ::common::rsip::prelude::*;
 use models::{
     transaction::TransactionLayerMsg,
     transport::{RequestMsg, TransportLayerMsg},
