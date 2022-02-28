@@ -1,8 +1,6 @@
 use crate::common::factories::prelude::*;
-use crate::common::factories::prelude::*;
-use common::rsip::{self, prelude::*, Transport};
+use common::rsip::Transport;
 use models::transport::{RequestMsg, ResponseMsg, TransportMsg};
-use std::net::SocketAddr;
 
 impl Randomized for TransportMsg {
     fn default() -> Self {

@@ -7,11 +7,11 @@ pub fn apply_request_defaults(
     mut request: rsip::Request,
     peer: SocketAddr,
     _transport: rsip::Transport,
-) -> Result<rsip::SipMessage, Error> {
+) -> Result<rsip::Request, Error> {
     use super::uas::*;
 
     apply_received_value(request.via_header_mut().expect("via header missing"), &peer)?;
-    Ok(request.into())
+    Ok(request)
 }
 
 //outgoing
@@ -19,8 +19,8 @@ pub fn apply_response_defaults(
     response: rsip::Response,
     _peer: SocketAddr,
     _transport: rsip::Transport,
-) -> rsip::SipMessage {
-    response.into()
+) -> rsip::Response {
+    response
 }
 
 pub fn apply_received_value(

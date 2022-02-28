@@ -1,5 +1,5 @@
 use common::rsip::{self, prelude::*};
-
+/*
 pub fn create_unauthorized_from(request: rsip::Request) -> Result<rsip::Response, crate::Error> {
     let mut headers: rsip::Headers = Default::default();
     headers.push(request.via_header()?.clone().into());
@@ -20,7 +20,7 @@ pub fn create_unauthorized_from(request: rsip::Request) -> Result<rsip::Response
         headers,
         ..Default::default()
     })
-}
+}*/
 
 pub fn create_404_from(request: rsip::Request) -> Result<rsip::Response, crate::Error> {
     let mut headers: rsip::Headers = Default::default();
@@ -59,7 +59,7 @@ pub fn create_405_from(request: rsip::Request) -> Result<rsip::Response, crate::
         ..Default::default()
     })
 }
-
+/*
 fn www_authenticate_header_value() -> Result<rsip::headers::WwwAuthenticate, crate::Error> {
     use rsip::headers::auth;
 
@@ -75,7 +75,7 @@ fn www_authenticate_header_value() -> Result<rsip::headers::WwwAuthenticate, cra
         ..Default::default()
     }
     .into())
-}
+}*/
 
 pub fn is_authorized(offer: rsip::headers::Authorization) -> Result<bool, crate::Error> {
     let offer = offer.typed()?;

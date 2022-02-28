@@ -1,5 +1,5 @@
 use crate::common::factories::prelude::*;
-use common::rsip::{self, headers::*, prelude::*, Method, Uri};
+use common::rsip::{self, headers::*, Method, Uri};
 
 impl Randomized for rsip::Request {
     fn default() -> Self {

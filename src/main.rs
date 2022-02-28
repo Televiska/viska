@@ -1,32 +1,31 @@
 use sip_server::{
-    core::impls::{Capabilities, Registrar, UaProcessor, UserAgent},
-    SipBuilder, Transaction, Transport,
+    transaction::Transaction,
+    transport::Transport,
+    tu::elements::{Capabilities, Registrar, UserAgent},
 };
 
 #[tokio::main]
 async fn main() {
     common::pretty_env_logger::init_timed();
-    let config = common::Config::default();
+    let _ = common::Config::default();
 
-    println!("{:?}", config);
+    let (handlers, receivers) = models::channels_builder();
+    let _ = UserAgent::new(
+        handlers.clone(),
+        receivers.tu,
+        Registrar::new(handlers.clone()),
+        Capabilities::new(handlers.clone()),
+    );
 
-    if std::env::args().len() == 1 {
-        let manager = SipBuilder::new::<
-            UserAgent<UaProcessor<Registrar, Capabilities>>,
-            Transaction,
-            Transport,
-        >()
-        .expect("sip manager failed");
-        manager.run().await;
+    let _ = Transaction::new(handlers.clone(), receivers.transaction);
 
-        tokio::spawn(async move {
-            loop {
-                std::thread::sleep(std::time::Duration::from_millis(4000))
-            }
-        })
-        .await
-        .expect("sleeping");
-    } else {
-        tasks::run_task().await.expect("run task failed");
-    }
+    let _ = Transport::new(handlers.clone(), receivers.transport);
+
+    tokio::spawn(async move {
+        loop {
+            std::thread::sleep(std::time::Duration::from_millis(4000))
+        }
+    })
+    .await
+    .expect("sleeping");
 }

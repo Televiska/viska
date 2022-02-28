@@ -1074,8 +1074,6 @@ dependencies = [
 [[package]]
 name = "rsip"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1fceb378782fd10fb41cbe8300eb1ac1426b615dc611d39396d1d90cb342102b"
 dependencies = [
  "bstr",
  "bytes",
@@ -1101,8 +1099,6 @@ dependencies = [
 [[package]]
 name = "rsip-derives"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2000fb0e1be427b6270f86e0fc97c02843b617f8bb9ed6ece8cbe604813a8993"
 dependencies = [
  "darling 0.13.0",
  "proc-macro2",
@@ -1318,10 +1314,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
 
 [[package]]
-name = "tasks"
-version = "0.1.0"
-
-[[package]]
 name = "term"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1468,7 +1460,6 @@ dependencies = [
  "serial_test",
  "sip_server",
  "store",
- "tasks",
  "testing_logger",
  "tokio",
 ]

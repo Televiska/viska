@@ -1,18 +1,17 @@
 use crate::common::factories::prelude::*;
-use common::rsip::{self, headers::*, prelude::*, Method, Uri, Version};
-use std::{convert::TryInto, net::IpAddr as StdIpAddr};
+use common::rsip::{self, headers::*, prelude::*, Uri, Version};
 
 pub fn response(from_uri: Option<Uri>, to_uri: Option<Uri>) -> rsip::Response {
     let mut headers: rsip::Headers = Randomized::default();
     if let Some(from_uri) = from_uri {
-        let mut typed_from_header = rsip::header_opt!(headers.iter(), Header::From)
+        let typed_from_header = rsip::header_opt!(headers.iter(), Header::From)
             .expect("from header")
             .typed()
             .expect("typed from header");
         headers.unique_push(typed_from_header.with_uri(from_uri).into());
     }
     if let Some(to_uri) = to_uri {
-        let mut typed_to_header = rsip::header_opt!(headers.iter(), Header::To)
+        let typed_to_header = rsip::header_opt!(headers.iter(), Header::To)
             .expect("to header")
             .typed()
             .expect("typed to header");

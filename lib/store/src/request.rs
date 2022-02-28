@@ -93,7 +93,7 @@ impl From<rsip::Request> for DirtyRequest {
             method: Some(model.method().to_string()),
             uri: Some(model.uri().to_string()),
             headers: Some(format!("{:?}", model.headers())),
-            body: Some(String::from_utf8_lossy(&model.body()).to_string()),
+            body: Some(String::from_utf8_lossy(model.body()).to_string()),
             ..Default::default()
         }
     }

@@ -4,7 +4,7 @@ pub mod snitches;
 
 use std::time::Duration;
 
-use diesel_migrations::{self};
+use diesel_migrations;
 diesel_migrations::embed_migrations!();
 
 use store::DbConn;
@@ -46,7 +46,7 @@ pub fn clean_db(conn: &DbConn) {
     use store::schema::registrations;
     use store::schema::requests;
     use store::schema::responses;
-    use store::schema::transactions;
+    //use store::schema::transactions;
 
     embedded_migrations::run(conn).expect("running migrations");
     diesel::delete(auth_requests::table)

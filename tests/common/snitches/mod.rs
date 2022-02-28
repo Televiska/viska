@@ -1,11 +1,7 @@
-mod core;
 mod messages;
-mod transaction;
-mod transport;
+mod panic;
+mod spy;
 
-pub use self::core::{
-    CapabilitiesSnitch, CorePanic, CoreSnitch, RegistrarSnitch, ReqProcessorPanic,
-};
-pub use self::transaction::{TransactionEmptySnitch, TransactionPanic};
-pub use self::transport::{TransportErrorSnitch, TransportPanic, TransportSnitch};
 pub use messages::Messages;
+pub use panic::PanicSnitch;
+pub use spy::SpySnitch;

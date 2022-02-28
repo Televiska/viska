@@ -92,7 +92,7 @@ impl From<rsip::Response> for DirtyResponse {
         DirtyResponse {
             code: Some(Into::<u16>::into(model.status_code.clone()) as i16),
             headers: Some(format!("{:?}", model.headers())),
-            body: Some(String::from_utf8_lossy(&model.body()).to_string()),
+            body: Some(String::from_utf8_lossy(model.body()).to_string()),
             ..Default::default()
         }
     }

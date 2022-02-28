@@ -1,6 +1,5 @@
 use crate::Error;
-use common::rsip::{self};
-use models::transport::TransportMsg;
+use models::transport::{RequestMsg, ResponseMsg};
 
 //transport processor
 
@@ -8,51 +7,69 @@ use models::transport::TransportMsg;
 pub struct Processor;
 
 impl Processor {
-    pub async fn process_incoming_message(&self, msg: TransportMsg) -> Result<TransportMsg, Error> {
-        use super::{uac, uas};
-
-        let TransportMsg {
-            sip_message,
+    pub async fn process_outgoing_request(
+        &self,
+        RequestMsg {
+            sip_request,
             peer,
             transport,
-        } = msg;
+        }: RequestMsg,
+    ) -> Result<RequestMsg, Error> {
+        let sip_request = super::uac::apply_request_defaults(sip_request, peer, transport)?;
 
-        let sip_message = match sip_message {
-            rsip::SipMessage::Request(request) => {
-                uas::apply_request_defaults(request, peer, transport)?
-            }
-            rsip::SipMessage::Response(response) => {
-                uac::apply_response_defaults(response, peer, transport)?
-            }
-        };
-
-        Ok(TransportMsg {
-            sip_message,
+        Ok(RequestMsg {
+            sip_request,
             peer,
             transport,
         })
     }
 
-    pub fn process_outgoing_message(&self, msg: TransportMsg) -> Result<TransportMsg, Error> {
-        use super::{uac, uas};
-
-        let TransportMsg {
-            sip_message,
+    pub async fn process_incoming_response(
+        &self,
+        ResponseMsg {
+            sip_response,
             peer,
             transport,
-        } = msg;
+        }: ResponseMsg,
+    ) -> Result<ResponseMsg, Error> {
+        let sip_response = super::uac::apply_response_defaults(sip_response, peer, transport)?;
 
-        let sip_message = match sip_message {
-            rsip::SipMessage::Request(request) => {
-                uac::apply_request_defaults(request, peer, transport)?
-            }
-            rsip::SipMessage::Response(response) => {
-                uas::apply_response_defaults(response, peer, transport)
-            }
-        };
+        Ok(ResponseMsg {
+            sip_response,
+            peer,
+            transport,
+        })
+    }
 
-        Ok(TransportMsg {
-            sip_message,
+    pub async fn process_incoming_request(
+        &self,
+        RequestMsg {
+            sip_request,
+            peer,
+            transport,
+        }: RequestMsg,
+    ) -> Result<RequestMsg, Error> {
+        let sip_request = super::uas::apply_request_defaults(sip_request, peer, transport)?;
+
+        Ok(RequestMsg {
+            sip_request,
+            peer,
+            transport,
+        })
+    }
+
+    pub async fn process_outgoing_response(
+        &self,
+        ResponseMsg {
+            sip_response,
+            peer,
+            transport,
+        }: ResponseMsg,
+    ) -> Result<ResponseMsg, Error> {
+        let sip_response = super::uas::apply_response_defaults(sip_response, peer, transport);
+
+        Ok(ResponseMsg {
+            sip_response,
             peer,
             transport,
         })

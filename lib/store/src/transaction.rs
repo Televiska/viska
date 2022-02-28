@@ -14,7 +14,7 @@ use std::{
 };
 
 #[derive(Queryable, AsChangeset, Insertable, Debug, Associations, Clone)]
-#[belongs_to(crate::Dialog)]
+//#[belongs_to(crate::Dialog)]
 #[table_name = "transactions"]
 pub struct Transaction {
     pub id: i64,
@@ -149,9 +149,9 @@ impl std::str::FromStr for TransactionState {
 }
 
 #[allow(clippy::from_over_into)]
-impl Into<models::transactions::NotFound> for Transaction {
-    fn into(self) -> models::transactions::NotFound {
-        use models::transactions::{not_found::TransactionData, NotFound};
+impl Into<models::transaction::NotFound> for Transaction {
+    fn into(self) -> models::transaction::NotFound {
+        use models::transaction::{NotFound, TransactionData};
 
         match self.state {
             TransactionState::Trying => NotFound::Default(TransactionData {
@@ -178,9 +178,9 @@ impl Into<models::transactions::NotFound> for Transaction {
     }
 }
 
-impl From<models::transactions::NotFound> for DirtyTransaction {
-    fn from(model: models::transactions::NotFound) -> Self {
-        use models::transactions::NotFound;
+impl From<models::transaction::NotFound> for DirtyTransaction {
+    fn from(model: models::transaction::NotFound) -> Self {
+        use models::transaction::NotFound;
 
         match model {
             NotFound::Default(data) => Self {
@@ -193,9 +193,9 @@ impl From<models::transactions::NotFound> for DirtyTransaction {
 }
 
 #[allow(clippy::from_over_into)]
-impl Into<models::transactions::Registration> for Transaction {
-    fn into(self) -> models::transactions::Registration {
-        use models::transactions::{registration::TransactionData, Registration};
+impl Into<models::transaction::Registration> for Transaction {
+    fn into(self) -> models::transaction::Registration {
+        use models::transaction::{Registration, TransactionData};
 
         match self.state {
             TransactionState::Trying => Registration::Trying(TransactionData {
@@ -222,9 +222,9 @@ impl Into<models::transactions::Registration> for Transaction {
     }
 }
 
-impl From<models::transactions::Registration> for DirtyTransaction {
-    fn from(model: models::transactions::Registration) -> Self {
-        use models::transactions::Registration;
+impl From<models::transaction::Registration> for DirtyTransaction {
+    fn from(model: models::transaction::Registration) -> Self {
+        use models::transaction::Registration;
 
         match model {
             Registration::Trying(data) => DirtyTransaction {

@@ -1,4 +1,7 @@
-use crate::{server::UdpTuple, transport::TransportMsg, Error};
+use crate::{
+    transport::{TransportMsg, UdpTuple},
+    Error,
+};
 use common::rsip::{self, prelude::*, Transport};
 use std::convert::{TryFrom, TryInto};
 use std::net::SocketAddr;
@@ -20,8 +23,8 @@ impl RequestMsg {
         }
     }
 
-    pub fn transaction_id(&self) -> Result<String, Error> {
-        Ok(self.sip_request.transaction_id()?)
+    pub fn transaction_id(&self) -> Result<Option<String>, Error> {
+        Ok(self.sip_request.transaction_id()?.map(Into::into))
     }
 }
 

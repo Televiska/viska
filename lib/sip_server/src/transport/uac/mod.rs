@@ -7,7 +7,7 @@ pub fn apply_request_defaults(
     mut request: rsip::Request,
     peer: SocketAddr,
     _transport: rsip::Transport,
-) -> Result<rsip::SipMessage, Error> {
+) -> Result<rsip::Request, Error> {
     apply_via_maddr_address(
         request.via_header_mut().expect("via header is missing!"),
         &peer,
@@ -18,7 +18,7 @@ pub fn apply_request_defaults(
     )?;
     apply_via_sent_by(request.via_header_mut().expect("via header is missing!"))?;
 
-    Ok(request.into())
+    Ok(request)
 }
 
 //incoming
@@ -26,9 +26,9 @@ pub fn apply_response_defaults(
     response: rsip::Response,
     _peer: SocketAddr,
     _transport: rsip::Transport,
-) -> Result<rsip::SipMessage, Error> {
+) -> Result<rsip::Response, Error> {
     assert_sent_by_value(response.via_header().expect("via header missing"))?;
-    Ok(response.into())
+    Ok(response)
 }
 
 pub fn apply_via_maddr_address(

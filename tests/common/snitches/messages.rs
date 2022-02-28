@@ -1,16 +1,19 @@
-use common::rsip::{self, prelude::*};
-use models::transport::{RequestMsg, ResponseMsg, TransportMsg};
+//use common::rsip;
+//use models::transport::{RequestMsg, ResponseMsg, TransportMsg};
+//use std::convert::TryInto;
+use common::rsip;
+use models::transport::{RequestMsg, ResponseMsg, TransportLayerMsg};
 use std::convert::TryInto;
 use tokio::sync::Mutex;
 
 #[derive(Debug)]
-pub struct Messages(pub Mutex<Vec<TransportMsg>>);
-impl Messages {
+pub struct Messages<T>(pub Mutex<Vec<T>>);
+impl<T: Clone> Messages<T> {
     pub async fn len(&self) -> usize {
         self.0.lock().await.len()
     }
 
-    pub async fn first(&self) -> TransportMsg {
+    pub async fn first(&self) -> T {
         self.0
             .lock()
             .await
@@ -19,25 +22,7 @@ impl Messages {
             .clone()
     }
 
-    pub async fn first_request_msg(&self) -> RequestMsg {
-        TryInto::<RequestMsg>::try_into(self.first().await).expect("convert to RequestMsg")
-    }
-
-    pub async fn first_request(&self) -> rsip::Request {
-        TryInto::<rsip::Request>::try_into(self.first().await.sip_message)
-            .expect("convert to rsip::Request")
-    }
-
-    pub async fn first_response_msg(&self) -> ResponseMsg {
-        TryInto::<ResponseMsg>::try_into(self.first().await).expect("convert to ResponseMsg")
-    }
-
-    pub async fn first_response(&self) -> rsip::Response {
-        TryInto::<rsip::Response>::try_into(self.first().await.sip_message)
-            .expect("convert to rsip::Response")
-    }
-
-    pub async fn last(&self) -> TransportMsg {
+    pub async fn last(&self) -> T {
         self.0
             .lock()
             .await
@@ -45,33 +30,99 @@ impl Messages {
             .expect("missing last message")
             .clone()
     }
+}
 
-    pub async fn last_request_msg(&self) -> RequestMsg {
-        TryInto::<RequestMsg>::try_into(self.last().await).expect("convert to RequestMsg")
-    }
-
-    pub async fn last_request(&self) -> rsip::Request {
-        TryInto::<rsip::Request>::try_into(self.last().await.sip_message)
-            .expect("convert to rsip::Request")
-    }
-
-    pub async fn last_response_msg(&self) -> ResponseMsg {
-        TryInto::<ResponseMsg>::try_into(self.last().await).expect("convert to ResponseMsg")
-    }
-
-    pub async fn last_response(&self) -> rsip::Response {
-        TryInto::<rsip::Response>::try_into(self.last().await.sip_message)
-            .expect("convert to rsip::Response")
-    }
-
-    pub async fn push(&self, msg: TransportMsg) {
+impl<T> Messages<T> {
+    pub async fn push(&self, msg: T) {
         let mut messages = self.0.lock().await;
         messages.push(msg);
     }
 }
 
-impl Default for Messages {
+impl<T> Default for Messages<T> {
     fn default() -> Self {
         Self(Mutex::new(vec![]))
+    }
+}
+
+impl Messages<TransportLayerMsg> {
+    pub async fn first_request_msg(&self) -> RequestMsg {
+        match self.first().await {
+            TransportLayerMsg::Outgoing(msg) => {
+                TryInto::<RequestMsg>::try_into(msg).expect("convert to RequestMsg")
+            }
+            _ => panic!("other"),
+        }
+    }
+
+    pub async fn first_request(&self) -> rsip::Request {
+        match self.first().await {
+            TransportLayerMsg::Outgoing(msg) => {
+                TryInto::<RequestMsg>::try_into(msg)
+                    .expect("convert to RequestMsg")
+                    .sip_request
+            }
+            _ => panic!("other"),
+        }
+    }
+
+    pub async fn first_response_msg(&self) -> ResponseMsg {
+        match self.first().await {
+            TransportLayerMsg::Outgoing(msg) => {
+                TryInto::<ResponseMsg>::try_into(msg).expect("convert to RequestMsg")
+            }
+            _ => panic!("other"),
+        }
+    }
+
+    pub async fn first_response(&self) -> rsip::Response {
+        match self.first().await {
+            TransportLayerMsg::Outgoing(msg) => {
+                TryInto::<ResponseMsg>::try_into(msg)
+                    .expect("convert to RequestMsg")
+                    .sip_response
+            }
+            _ => panic!("other"),
+        }
+    }
+
+    pub async fn last_request_msg(&self) -> RequestMsg {
+        match self.last().await {
+            TransportLayerMsg::Outgoing(msg) => {
+                TryInto::<RequestMsg>::try_into(msg).expect("convert to RequestMsg")
+            }
+            _ => panic!("other"),
+        }
+    }
+
+    pub async fn last_request(&self) -> rsip::Request {
+        match self.last().await {
+            TransportLayerMsg::Outgoing(msg) => {
+                TryInto::<RequestMsg>::try_into(msg)
+                    .expect("convert to RequestMsg")
+                    .sip_request
+            }
+            _ => panic!("other"),
+        }
+    }
+
+    pub async fn last_response_msg(&self) -> ResponseMsg {
+        match self.last().await {
+            TransportLayerMsg::Outgoing(msg) => {
+                TryInto::<ResponseMsg>::try_into(msg).expect("convert to RequestMsg")
+            }
+            _ => panic!("other"),
+        }
+    }
+
+    pub async fn last_response(&self) -> rsip::Response {
+        match self.last().await {
+            TransportLayerMsg::Outgoing(msg) => {
+                TryInto::<ResponseMsg>::try_into(msg)
+                    .expect("convert to RequestMsg")
+                    .sip_response
+            }
+            _ => panic!("other"),
+        }
     }
 }

@@ -14,7 +14,7 @@ helpers = { path = "lib/helpers" }
 models = { path = "lib/models" }
 sip_server = { path = "lib/sip_server" }
 store = { path = "lib/store" }
-tasks = { path = "lib/tasks" }
+#tasks = { path = "lib/tasks" }
 
 [dev-dependencies]
 fake = { version = "2.2.3", features=['derive']}
@@ -31,6 +31,6 @@ serial_test = "0.5.1"
 
 [workspace]
 members = [
-  "common", "lib/helpers", "lib/models", "lib/sip_server", "lib/store",
-  "lib/tasks"
+  "common", "lib/helpers", "lib/models", "lib/sip_server", "lib/store"
+  #"lib/tasks"
 ]

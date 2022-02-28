@@ -1,10 +1,7 @@
-use crate::common::{delay_for, factories::prelude::*};
-use common::futures_util::stream::StreamExt;
-use common::log::Level;
+use crate::common::factories::prelude::*;
 use common::rsip::{self, prelude::*};
-use models::transport::TransportMsg;
 use sip_server::transport::processor::Processor as TransportProcessor;
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryInto;
 use std::net::{IpAddr, Ipv4Addr};
 
 #[tokio::test]
@@ -14,19 +11,19 @@ async fn incoming_request_with_other_sent_by_adds_received_param() -> Result<(),
 
     let processor = TransportProcessor::default();
 
-    let mut request: rsip::Request =
+    let request: rsip::Request =
         requests::request(Some(Uri::default()), Some(Uri::default().with_port(5090)));
-    let server_msg = models::server::UdpTuple {
+    let server_msg = models::transport::UdpTuple {
         bytes: request.into(),
         peer: (IpAddr::V4(Ipv4Addr::new(196, 168, 0, 1)), 5061).into(),
     };
 
     let message = processor
-        .process_incoming_message(server_msg.try_into()?)
+        .process_incoming_request(server_msg.try_into()?)
         .await?;
-    let request: rsip::Request = message.sip_message.try_into()?;
+    let request: rsip::Request = message.sip_request;
     let typed_via_header = &request.via_header()?.typed()?;
-    let received_param = typed_via_header
+    let _received_param = typed_via_header
         .params
         .iter()
         .find(|s| matches!(s, Param::Received(_)))
@@ -41,17 +38,17 @@ async fn incoming_request_with_same_sent_by_param() -> Result<(), sip_server::Er
 
     let processor = TransportProcessor::default();
 
-    let mut request: rsip::Request =
+    let request: rsip::Request =
         requests::request(Some(Uri::default()), Some(Uri::default().with_port(5090)));
-    let server_msg = models::server::UdpTuple {
+    let server_msg = models::transport::UdpTuple {
         bytes: request.into(),
         peer: common::CONFIG.default_addr().try_into()?,
     };
 
     let message = processor
-        .process_incoming_message(server_msg.try_into()?)
+        .process_incoming_request(server_msg.try_into()?)
         .await?;
-    let request: rsip::Request = message.sip_message.try_into()?;
+    let request: rsip::Request = message.sip_request;
     let typed_via_header = &request.via_header()?.typed()?;
     let received_param = typed_via_header
         .params

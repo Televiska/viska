@@ -1,137 +1,134 @@
 pub mod uac;
 pub mod uas;
 
-use crate::{error::TransactionError, Error, SipManager};
+use crate::{error::TransactionError, Error};
 use common::{
-    async_trait::async_trait,
-    rsip::{self, prelude::*},
+    rsip,
     tokio::{
         self,
         sync::{Mutex, RwLock},
     },
 };
-use models::transport::{RequestMsg, ResponseMsg, TransportMsg};
-use std::collections::HashMap;
-use std::{
-    any::Any,
-    fmt::Debug,
-    sync::{Arc, Weak},
+use models::{
+    receivers::TrxReceiver,
+    transaction::{TransactionHandler, TransactionLayerMsg},
+    transport::{RequestMsg, ResponseMsg, TransportMsg},
+    Handlers,
 };
-
-#[async_trait]
-pub trait TransactionLayer: Send + Sync + Any + Debug {
-    fn new(sip_manager: Weak<SipManager>) -> Self
-    where
-        Self: Sized;
-    fn sip_manager(&self) -> Arc<SipManager>;
-    async fn new_uac_invite_transaction(&self, msg: RequestMsg) -> Result<(), Error>;
-    async fn new_uas_invite_transaction(
-        &self,
-        msg: RequestMsg,
-        response: Option<rsip::Response>,
-    ) -> Result<(), Error>;
-    async fn has_transaction(&self, transaction_id: &str) -> bool;
-    async fn process_incoming_message(&self, msg: TransportMsg);
-    async fn send(&self, msg: ResponseMsg) -> Result<(), Error>;
-    async fn run(&self);
-    fn as_any(&self) -> &dyn Any;
-}
+use std::collections::HashMap;
+use std::{fmt::Debug, sync::Arc};
 
 #[allow(dead_code)]
+#[derive(Debug)]
 pub struct Transaction {
     pub inner: Arc<Inner>,
 }
 
+#[derive(Debug)]
 pub struct Inner {
-    sip_manager: Weak<SipManager>,
+    handlers: Handlers,
     pub uac_state: RwLock<HashMap<String, Mutex<uac::TrxStateMachine>>>,
     pub uas_state: RwLock<HashMap<String, Mutex<uas::TrxStateMachine>>>,
 }
 
-#[allow(dead_code)]
-#[async_trait]
-impl TransactionLayer for Transaction {
-    fn new(sip_manager: Weak<SipManager>) -> Self {
-        let inner = Arc::new(Inner {
-            sip_manager,
-            uac_state: RwLock::new(Default::default()),
-            uas_state: RwLock::new(Default::default()),
-        });
+impl Transaction {
+    pub fn new(handlers: Handlers, messages_rx: TrxReceiver) -> Result<Self, Error> {
+        let me = Self {
+            inner: Arc::new(Inner {
+                handlers,
+                uac_state: RwLock::new(Default::default()),
+                uas_state: RwLock::new(Default::default()),
+            }),
+        };
 
-        Self { inner }
+        me.run(messages_rx);
+
+        Ok(me)
     }
 
-    async fn has_transaction(&self, transaction_id: &str) -> bool {
-        self.inner.has_transaction(transaction_id).await
+    pub fn handler(&self) -> TransactionHandler {
+        self.inner.handlers.transaction.clone()
     }
 
-    async fn process_incoming_message(&self, msg: TransportMsg) {
-        self.inner.process_incoming_message(msg).await
-    }
-
-    async fn new_uac_invite_transaction(&self, msg: RequestMsg) -> Result<(), Error> {
-        self.inner.new_uac_invite_transaction(msg).await
-    }
-
-    async fn new_uas_invite_transaction(
-        &self,
-        msg: RequestMsg,
-        response: Option<rsip::Response>,
-    ) -> Result<(), Error> {
-        self.inner.new_uas_invite_transaction(msg, response).await
-    }
-
-    async fn send(&self, msg: ResponseMsg) -> Result<(), Error> {
-        self.inner.send(msg).await
-    }
-
-    async fn run(&self) {
+    fn run(&self, messages: TrxReceiver) {
         let inner = self.inner.clone();
-        tokio::spawn(async move {
-            inner.run().await;
-        });
-    }
-
-    fn sip_manager(&self) -> Arc<SipManager> {
-        self.inner.sip_manager()
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
+        tokio::spawn(async move { inner.run(messages).await });
+        let inner_trx = self.inner.clone();
+        tokio::spawn(async move { inner_trx.run_transactions().await });
     }
 }
 
 impl Inner {
-    //potential bug if state changes between this and process_incoming_message ?
-    async fn has_transaction(&self, transaction_id: &str) -> bool {
-        let uas_state = self.uas_state.read().await;
-        let uac_state = self.uac_state.read().await;
-
-        match (uas_state.get(transaction_id), uac_state.get(transaction_id)) {
-            (Some(uas_trx), Some(uac_trx)) => {
-                uas_trx.lock().await.is_active() || uac_trx.lock().await.is_active()
+    async fn run(&self, mut messages: TrxReceiver) {
+        while let Some(request) = messages.recv().await {
+            if let Err(err) = self.receive(request).await {
+                common::log::error!("Error handling transaction layer message: {}", err)
             }
-            (Some(uas_trx), None) => uas_trx.lock().await.is_active(),
-            (None, Some(uac_trx)) => uac_trx.lock().await.is_active(),
-            (None, None) => false,
         }
     }
 
-    //returns error only if transaction is not found
-    //TODO: maybe fix that in the future ?
-    async fn process_incoming_message(&self, msg: TransportMsg) {
-        match self.process_incoming(msg).await {
-            Ok(_) => (),
-            Err(error) => {
-                common::log::warn!("error while processing incoming: {:?}", error);
+    //TODO: here we don't spawn, could lead to deadlocks
+    async fn receive(&self, msg: TransactionLayerMsg) -> Result<(), Error> {
+        match msg {
+            TransactionLayerMsg::NewUacInvite(msg) => self.new_uac_invite_transaction(msg).await?,
+            TransactionLayerMsg::NewUasInvite(msg, response) => {
+                self.new_uas_invite_transaction(msg, response).await?
+            }
+            TransactionLayerMsg::Reply(msg) => self.process_tu_reply(msg).await?,
+            TransactionLayerMsg::Incoming(msg) => self.process_incoming(msg).await?,
+            TransactionLayerMsg::TransportError(msg, error) => {
+                self.process_transport_error(msg, error).await?
+            }
+            TransactionLayerMsg::HasTransaction(transaction_id, tx) => tx
+                .send(self.has_transaction(&transaction_id).await)
+                .map_err(|e| Error::custom(format!("could not send respond: {}", e)))?,
+        };
+
+        Ok(())
+    }
+
+    //TODO: improve ergonomics
+    async fn process_transport_error(
+        &self,
+        msg: TransportMsg,
+        reason: String,
+    ) -> Result<(), Error> {
+        if msg.is_request() {
+            match self
+                .uas_state
+                .read()
+                .await
+                .get(&msg.transaction_id()?.expect("transaction id"))
+            {
+                Some(transaction_machine) => {
+                    let mut transaction_machine = transaction_machine.lock().await;
+                    transaction_machine.transport_error(reason).await;
+                    Ok(())
+                }
+                None => Err(Error::from(TransactionError::NotFound)),
+            }
+        } else {
+            match self
+                .uac_state
+                .read()
+                .await
+                .get(&msg.transaction_id()?.expect("transaction id"))
+            {
+                Some(transaction_machine) => {
+                    let mut transaction_machine = transaction_machine.lock().await;
+                    transaction_machine.transport_error(reason).await;
+
+                    Ok(())
+                }
+                None => Err(Error::from(TransactionError::NotFound)),
             }
         }
     }
 
     async fn new_uac_invite_transaction(&self, msg: RequestMsg) -> Result<(), Error> {
-        let transaction_data = uac::TrxStateMachine::new(self.sip_manager(), msg.clone())?;
+        let transaction_data = uac::TrxStateMachine::new(self.handlers.clone(), msg.clone())?;
 
-        self.sip_manager().transport.send(msg.into()).await?;
+        self.handlers.transport.send(msg.into()).await?;
         {
             let mut data = self.uac_state.write().await;
             data.insert(transaction_data.id.clone(), Mutex::new(transaction_data));
@@ -146,9 +143,9 @@ impl Inner {
         response: Option<rsip::Response>,
     ) -> Result<(), Error> {
         let transaction_data =
-            uas::TrxStateMachine::new(self.sip_manager(), msg.clone(), response)?;
+            uas::TrxStateMachine::new(self.handlers.clone(), msg.clone(), response)?;
 
-        self.sip_manager().transport.send(msg.into()).await?;
+        self.handlers.transport.send(msg.into()).await?;
         {
             let mut data = self.uas_state.write().await;
             data.insert(transaction_data.id.clone(), Mutex::new(transaction_data));
@@ -157,8 +154,13 @@ impl Inner {
         Ok(())
     }
 
-    async fn send(&self, msg: ResponseMsg) -> Result<(), Error> {
-        match self.uas_state.read().await.get(&msg.transaction_id()?) {
+    async fn process_tu_reply(&self, msg: ResponseMsg) -> Result<(), Error> {
+        match self
+            .uas_state
+            .read()
+            .await
+            .get(&msg.transaction_id()?.expect("transaction_id"))
+        {
             Some(transaction_machine) => {
                 let mut transaction_machine = transaction_machine.lock().await;
                 transaction_machine
@@ -167,42 +169,6 @@ impl Inner {
                 Ok(())
             }
             None => Err(Error::from(TransactionError::NotFound)),
-        }
-    }
-
-    async fn run(&self) {
-        use tokio::time;
-
-        let mut ticker = time::interval(time::Duration::from_millis(100));
-        loop {
-            ticker.tick().await;
-
-            self.check_transactions().await
-        }
-    }
-
-    fn sip_manager(&self) -> Arc<SipManager> {
-        self.sip_manager.upgrade().expect("sip manager is missing!")
-    }
-
-    async fn check_transactions(&self) {
-        {
-            let uac_state = self.uac_state.read().await;
-            for transaction_data in (*uac_state).values() {
-                let mut transaction_data = transaction_data.lock().await;
-                transaction_data.next(None).await;
-            }
-        }
-
-        {
-            let uas_state = self.uas_state.read().await;
-            for transaction_data in (*uas_state).values() {
-                let mut transaction_data = transaction_data.lock().await;
-                transaction_data
-                    .next(None)
-                    .await
-                    .expect("next on uas transaction");
-            }
         }
     }
 
@@ -224,10 +190,7 @@ impl Inner {
     }
 
     async fn process_incoming_request(&self, msg: RequestMsg) -> Result<(), Error> {
-        let transaction_id = msg
-            .sip_request
-            .transaction_id()
-            .map_err(|_| Error::from(TransactionError::NotFound))?;
+        let transaction_id = msg.transaction_id()?.expect("transaction_id");
 
         match self.uas_state.read().await.get(&transaction_id) {
             Some(transaction_machine) => {
@@ -243,10 +206,7 @@ impl Inner {
     }
 
     async fn process_incoming_response(&self, msg: ResponseMsg) -> Result<(), Error> {
-        let transaction_id = msg
-            .sip_response
-            .transaction_id()
-            .map_err(|_| Error::from(TransactionError::NotFound))?;
+        let transaction_id = msg.transaction_id()?.expect("transaction_id");
 
         match self.uac_state.read().await.get(&transaction_id) {
             Some(transaction_machine) => {
@@ -257,12 +217,50 @@ impl Inner {
             None => Err(Error::from(TransactionError::NotFound)),
         }
     }
-}
 
-impl std::fmt::Debug for Transaction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Transaction")
-            .field("state", &self.inner.uac_state)
-            .finish()
+    async fn has_transaction(&self, transaction_id: &str) -> bool {
+        let uas_state = self.uas_state.read().await;
+        let uac_state = self.uac_state.read().await;
+
+        match (uas_state.get(transaction_id), uac_state.get(transaction_id)) {
+            (Some(uas_trx), Some(uac_trx)) => {
+                uas_trx.lock().await.is_active() || uac_trx.lock().await.is_active()
+            }
+            (Some(uas_trx), None) => uas_trx.lock().await.is_active(),
+            (None, Some(uac_trx)) => uac_trx.lock().await.is_active(),
+            (None, None) => false,
+        }
+    }
+
+    async fn run_transactions(&self) {
+        use tokio::time;
+
+        let mut ticker = time::interval(time::Duration::from_millis(100));
+        loop {
+            ticker.tick().await;
+
+            self.check_transactions().await
+        }
+    }
+
+    async fn check_transactions(&self) {
+        {
+            let uac_state = self.uac_state.read().await;
+            for transaction_data in (*uac_state).values() {
+                let mut transaction_data = transaction_data.lock().await;
+                transaction_data.next(None).await;
+            }
+        }
+
+        {
+            let uas_state = self.uas_state.read().await;
+            for transaction_data in (*uas_state).values() {
+                let mut transaction_data = transaction_data.lock().await;
+                transaction_data
+                    .next(None)
+                    .await
+                    .expect("next on uas transaction");
+            }
+        }
     }
 }
