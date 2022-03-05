@@ -15,6 +15,7 @@ pub static TIMER_B: u64 = 64 * TIMER_T1;
 pub static TIMER_M: u64 = 64 * TIMER_T1;
 pub static TIMER_D: u64 = 32000;
 
+//implements RFC6026 as well
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct TrxStateMachine {

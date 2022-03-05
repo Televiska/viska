@@ -1,7 +1,8 @@
 use crate::Error;
 use models::transport::{RequestMsg, ResponseMsg};
 
-//transport processor
+//TODO: Processor should return an Option<T>
+//so that if None, transport skips the message
 
 #[derive(Debug, Default)]
 pub struct Processor;

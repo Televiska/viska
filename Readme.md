@@ -31,14 +31,14 @@ extension or service that is needed (like Registrar, Auth, Push notifications
 ## Progress
 - [x] SIP general purpose library/parser with types
 - [ ] SDP general purpose library/parser with type
-- [x] Transport layer trait + impl
+- [x] Transport layer
   - [x] Udp transport
   - [ ] Tcp transport
   - [ ] WS transport
-- [x] Transaction layer trait + impl
+- [x] Transaction layer
   - [x] Invite transaction + impl
   - [ ] Non Invite transaction + impl
-- [x] Core (tu) layer trait + impl
+- [x] TU layer trait
   - [x] Registrar
   - [x] Capabilities
   - [x] Authentication
