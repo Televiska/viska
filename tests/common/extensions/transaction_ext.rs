@@ -1,6 +1,8 @@
 use crate::common::delay_for;
 use common::async_trait::async_trait;
-use sip_server::transaction::{uac::TrxState as UacTrxState, uas::TrxState as UasTrxState};
+use sip_server::transaction::{
+    sm::uac::TrxState as UacTrxState, sm::uas::TrxState as UasTrxState, sm::TrxStateSm,
+};
 use std::time::Duration;
 
 #[async_trait]
@@ -17,74 +19,104 @@ pub trait TransactionUacExt {
 impl TransactionUacExt for sip_server::Transaction {
     async fn is_uac_calling(&self, transaction_id: String) -> bool {
         delay_for(Duration::from_millis(1)).await;
-        let state_reader = self.inner.uac_state.read().await;
-        let transaction_data = state_reader
+        match self
+            .inner
+            .state
+            .read()
+            .await
             .get(&transaction_id)
             .expect("getting transaction from state")
-            .lock()
-            .await;
-
-        matches!(transaction_data.state, UacTrxState::Calling { .. })
+        {
+            TrxStateSm::Uac(sm) => {
+                matches!(sm.lock().await.state, UacTrxState::Calling { .. })
+            }
+            _ => false,
+        }
     }
 
     async fn is_uac_proceeding(&self, transaction_id: String) -> bool {
         delay_for(Duration::from_millis(1)).await;
-        let state_reader = self.inner.uac_state.read().await;
-        let transaction_data = state_reader
+        match self
+            .inner
+            .state
+            .read()
+            .await
             .get(&transaction_id)
             .expect("getting transaction from state")
-            .lock()
-            .await;
-
-        matches!(transaction_data.state, UacTrxState::Proceeding { .. })
+        {
+            TrxStateSm::Uac(sm) => {
+                matches!(sm.lock().await.state, UacTrxState::Proceeding { .. })
+            }
+            _ => false,
+        }
     }
 
     async fn is_uac_completed(&self, transaction_id: String) -> bool {
         delay_for(Duration::from_millis(1)).await;
-        let state_reader = self.inner.uac_state.read().await;
-        let transaction_data = state_reader
+        match self
+            .inner
+            .state
+            .read()
+            .await
             .get(&transaction_id)
             .expect("getting transaction from state")
-            .lock()
-            .await;
-
-        matches!(transaction_data.state, UacTrxState::Completed { .. })
+        {
+            TrxStateSm::Uac(sm) => {
+                matches!(sm.lock().await.state, UacTrxState::Completed { .. })
+            }
+            _ => false,
+        }
     }
 
     async fn is_uac_accepted(&self, transaction_id: String) -> bool {
         delay_for(Duration::from_millis(1)).await;
-        let state_reader = self.inner.uac_state.read().await;
-        let transaction_data = state_reader
+        match self
+            .inner
+            .state
+            .read()
+            .await
             .get(&transaction_id)
             .expect("getting transaction from state")
-            .lock()
-            .await;
-
-        matches!(transaction_data.state, UacTrxState::Accepted { .. })
+        {
+            TrxStateSm::Uac(sm) => {
+                matches!(sm.lock().await.state, UacTrxState::Accepted { .. })
+            }
+            _ => false,
+        }
     }
 
     async fn is_uac_terminated(&self, transaction_id: String) -> bool {
         delay_for(Duration::from_millis(1)).await;
-        let state_reader = self.inner.uac_state.read().await;
-        let transaction_data = state_reader
+        match self
+            .inner
+            .state
+            .read()
+            .await
             .get(&transaction_id)
             .expect("getting transaction from state")
-            .lock()
-            .await;
-
-        matches!(transaction_data.state, UacTrxState::Terminated { .. })
+        {
+            TrxStateSm::Uac(sm) => {
+                matches!(sm.lock().await.state, UacTrxState::Terminated { .. })
+            }
+            _ => false,
+        }
     }
 
     async fn is_uac_errored(&self, transaction_id: String) -> bool {
         delay_for(Duration::from_millis(1)).await;
-        let state_reader = self.inner.uac_state.read().await;
-        let transaction_data = state_reader
+        match self
+            .inner
+            .state
+            .read()
+            .await
             .get(&transaction_id)
             .expect("getting transaction from state")
-            .lock()
-            .await;
-
-        matches!(transaction_data.state, UacTrxState::Errored { .. })
+        {
+            TrxStateSm::Uac(sm) => {
+                matches!(sm.lock().await.state, UacTrxState::Errored { .. })
+            }
+            _ => false,
+        }
     }
 }
 
@@ -102,73 +134,103 @@ pub trait TransactionUasExt {
 impl TransactionUasExt for sip_server::Transaction {
     async fn is_uas_proceeding(&self, transaction_id: String) -> bool {
         delay_for(Duration::from_millis(1)).await;
-        let state_reader = self.inner.uas_state.read().await;
-        let transaction_data = state_reader
+        match self
+            .inner
+            .state
+            .read()
+            .await
             .get(&transaction_id)
             .expect("getting transaction from state")
-            .lock()
-            .await;
-
-        matches!(transaction_data.state, UasTrxState::Proceeding { .. })
+        {
+            TrxStateSm::Uas(sm) => {
+                matches!(sm.lock().await.state, UasTrxState::Proceeding { .. })
+            }
+            _ => false,
+        }
     }
 
     async fn is_uas_completed(&self, transaction_id: String) -> bool {
         delay_for(Duration::from_millis(1)).await;
-        let state_reader = self.inner.uas_state.read().await;
-        let transaction_data = state_reader
+        match self
+            .inner
+            .state
+            .read()
+            .await
             .get(&transaction_id)
             .expect("getting transaction from state")
-            .lock()
-            .await;
-
-        matches!(transaction_data.state, UasTrxState::Completed { .. })
+        {
+            TrxStateSm::Uas(sm) => {
+                matches!(sm.lock().await.state, UasTrxState::Completed { .. })
+            }
+            _ => false,
+        }
     }
 
     async fn is_uas_accepted(&self, transaction_id: String) -> bool {
         delay_for(Duration::from_millis(1)).await;
-        let state_reader = self.inner.uas_state.read().await;
-        let transaction_data = state_reader
+        match self
+            .inner
+            .state
+            .read()
+            .await
             .get(&transaction_id)
             .expect("getting transaction from state")
-            .lock()
-            .await;
-
-        matches!(transaction_data.state, UasTrxState::Accepted { .. })
+        {
+            TrxStateSm::Uas(sm) => {
+                matches!(sm.lock().await.state, UasTrxState::Accepted { .. })
+            }
+            _ => false,
+        }
     }
 
     async fn is_uas_confirmed(&self, transaction_id: String) -> bool {
         delay_for(Duration::from_millis(1)).await;
-        let state_reader = self.inner.uas_state.read().await;
-        let transaction_data = state_reader
+        match self
+            .inner
+            .state
+            .read()
+            .await
             .get(&transaction_id)
             .expect("getting transaction from state")
-            .lock()
-            .await;
-
-        matches!(transaction_data.state, UasTrxState::Confirmed { .. })
+        {
+            TrxStateSm::Uas(sm) => {
+                matches!(sm.lock().await.state, UasTrxState::Confirmed { .. })
+            }
+            _ => false,
+        }
     }
 
     async fn is_uas_terminated(&self, transaction_id: String) -> bool {
         delay_for(Duration::from_millis(1)).await;
-        let state_reader = self.inner.uas_state.read().await;
-        let transaction_data = state_reader
+        match self
+            .inner
+            .state
+            .read()
+            .await
             .get(&transaction_id)
             .expect("getting transaction from state")
-            .lock()
-            .await;
-
-        matches!(transaction_data.state, UasTrxState::Terminated { .. })
+        {
+            TrxStateSm::Uas(sm) => {
+                matches!(sm.lock().await.state, UasTrxState::Terminated { .. })
+            }
+            _ => false,
+        }
     }
 
     async fn is_uas_errored(&self, transaction_id: String) -> bool {
         delay_for(Duration::from_millis(1)).await;
-        let state_reader = self.inner.uas_state.read().await;
-        let transaction_data = state_reader
+        match self
+            .inner
+            .state
+            .read()
+            .await
             .get(&transaction_id)
             .expect("getting transaction from state")
-            .lock()
-            .await;
-
-        matches!(transaction_data.state, UasTrxState::Errored { .. })
+        {
+            TrxStateSm::Uas(sm) => {
+                matches!(sm.lock().await.state, UasTrxState::Errored { .. })
+            }
+            _ => false,
+        }
     }
 }

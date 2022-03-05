@@ -27,7 +27,7 @@ async fn if_peer_not_alive() {
         .unwrap();
 
     assert_eq!(transport.messages().await.len().await, 1);
-    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.state.read().await.len(), 1);
 
     transaction
         .handler()
@@ -74,7 +74,7 @@ async fn multiple_invite_on_proceeding() {
         .unwrap();
 
     assert_eq!(transport.messages().await.len().await, 1);
-    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.state.read().await.len(), 1);
 
     transaction
         .handler()
@@ -100,7 +100,7 @@ async fn multiple_invite_on_proceeding() {
         }) => (),
         _ => panic!("unexpected message state"),
     };
-    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.state.read().await.len(), 1);
 }
 
 #[tokio::test]
@@ -121,7 +121,7 @@ async fn with_redirect_response_moves_to_completed() {
         .unwrap();
 
     assert_eq!(transport.messages().await.len().await, 1);
-    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.state.read().await.len(), 1);
 
     transaction
         .handler()
@@ -162,7 +162,7 @@ async fn with_ok_response_moves_to_accepted() {
         .unwrap();
 
     assert_eq!(transport.messages().await.len().await, 1);
-    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.state.read().await.len(), 1);
 
     transaction
         .handler()
@@ -245,7 +245,7 @@ async fn multiple_invites_on_completed_resends_response() {
         }) if resp == response => (),
         _ => panic!("unexpected message state"),
     };
-    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.state.read().await.len(), 1);
 }
 
 #[tokio::test]
@@ -362,7 +362,7 @@ async fn with_ack_moves_to_confirmed() {
     );
     assert_eq!(tu.messages().await.len().await, 0);
     assert_eq!(transport.messages().await.len().await, 2);
-    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.state.read().await.len(), 1);
 
     transaction
         .handler()
@@ -377,7 +377,7 @@ async fn with_ack_moves_to_confirmed() {
         .unwrap();
     assert_eq!(tu.messages().await.len().await, 0);
     assert_eq!(transport.messages().await.len().await, 2);
-    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.state.read().await.len(), 1);
     assert!(
         transaction
             .is_uas_confirmed(
@@ -451,7 +451,7 @@ async fn multiple_invites_on_accepted_resends_response() {
         }) if resp == response => (),
         _ => panic!("unexpected message state"),
     };
-    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.state.read().await.len(), 1);
 }
 
 #[tokio::test]
@@ -543,7 +543,7 @@ async fn with_multiple_ok_on_accepted() {
         .unwrap();
 
     assert_eq!(transport.messages().await.len().await, 1);
-    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.state.read().await.len(), 1);
 
     transaction
         .handler()
@@ -575,7 +575,7 @@ async fn with_multiple_ok_on_accepted() {
         .unwrap();
 
     assert_eq!(transport.messages().await.len().await, 3);
-    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.state.read().await.len(), 1);
 }
 
 #[tokio::test]
@@ -596,7 +596,7 @@ async fn with_error_on_second_ok_on_accepted() {
         .unwrap();
 
     assert_eq!(transport.messages().await.len().await, 1);
-    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.state.read().await.len(), 1);
 
     transaction
         .handler()
@@ -628,7 +628,7 @@ async fn with_error_on_second_ok_on_accepted() {
         .unwrap();
 
     assert_eq!(transport.messages().await.len().await, 3);
-    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.state.read().await.len(), 1);
     assert!(
         transaction
             .is_uas_accepted(
@@ -655,7 +655,7 @@ async fn with_error_on_second_ok_on_accepted() {
         .unwrap();
 
     assert_eq!(transport.messages().await.len().await, 3);
-    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.state.read().await.len(), 1);
 
     assert!(
         transaction
@@ -707,7 +707,7 @@ async fn multiple_ack_received_are_forwarded_to_tu() {
     );
     assert_eq!(tu.messages().await.len().await, 0);
     assert_eq!(transport.messages().await.len().await, 2);
-    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.state.read().await.len(), 1);
 
     transaction
         .handler()
@@ -722,7 +722,7 @@ async fn multiple_ack_received_are_forwarded_to_tu() {
         .unwrap();
     assert_eq!(tu.messages().await.len().await, 1);
     assert_eq!(transport.messages().await.len().await, 2);
-    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.state.read().await.len(), 1);
 }
 
 /* ##### confirmed state ##### */
@@ -765,7 +765,7 @@ async fn when_confirmed_acks_have_no_effect() {
 
     assert_eq!(tu.messages().await.len().await, 0);
     assert_eq!(transport.messages().await.len().await, 2);
-    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.state.read().await.len(), 1);
     assert!(
         transaction
             .is_uas_confirmed(
@@ -803,7 +803,7 @@ async fn when_confirmed_acks_have_no_effect() {
 
     assert_eq!(tu.messages().await.len().await, 0);
     assert_eq!(transport.messages().await.len().await, 2);
-    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.state.read().await.len(), 1);
     assert!(
         transaction
             .is_uas_confirmed(
@@ -856,7 +856,7 @@ async fn when_confirmed_when_time_i_kicks_in_move_to_terminated() {
 
     assert_eq!(tu.messages().await.len().await, 0);
     assert_eq!(transport.messages().await.len().await, 2);
-    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.state.read().await.len(), 1);
     assert!(
         transaction
             .is_uas_confirmed(
@@ -873,7 +873,7 @@ async fn when_confirmed_when_time_i_kicks_in_move_to_terminated() {
 
     assert_eq!(tu.messages().await.len().await, 0);
     assert_eq!(transport.messages().await.len().await, 2);
-    assert_eq!(transaction.inner.uas_state.read().await.len(), 1);
+    assert_eq!(transaction.inner.state.read().await.len(), 1);
     assert!(
         transaction
             .is_uas_terminated(

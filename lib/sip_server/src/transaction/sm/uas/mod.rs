@@ -94,7 +94,7 @@ impl TrxStateMachine {
         !matches!(self.state, TrxState::Errored(_) | TrxState::Terminated(_))
     }
 
-    pub async fn next(&mut self, sip_message: Option<rsip::SipMessage>) -> Result<(), Error> {
+    pub async fn next(&mut self, sip_message: Option<rsip::SipMessage>) {
         use rsip::SipMessage;
         let result = match sip_message {
             Some(SipMessage::Request(request)) => {
@@ -107,13 +107,8 @@ impl TrxStateMachine {
         };
 
         match result {
-            Ok(()) => Ok(()),
-            Err(error) => {
-                let error_str = format!("transaction {} errored: {}", self.id, error);
-                self.error(error_str.clone(), None);
-
-                Err(error_str.into())
-            }
+            Ok(()) => (),
+            Err(error) => self.error(format!("transaction {} errored: {}", self.id, error), None),
         }
     }
 

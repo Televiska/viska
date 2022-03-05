@@ -29,6 +29,7 @@ pub enum ErrorKind {
 #[derive(Debug)]
 pub enum TransactionError {
     NotFound,
+    UnexpectedState,
 }
 
 impl Error {
