@@ -104,12 +104,7 @@ async fn creates_a_confirmed_dialog() {
         Some(ok_response.clone().contact_header().unwrap().uri().unwrap())
     );
 
-    let ack_message = transport
-        .messages()
-        .await
-        .latest()
-        .await
-        .outgoing_sip_request();
+    let ack_message = transport.messages().await.latest().await.outgoing_request();
     assert_eq!(ack_message.method, rsip::Method::Ack);
     assert_eq!(
         ack_message.cseq_header().unwrap().seq().unwrap(),
@@ -147,7 +142,7 @@ async fn modifies_a_confirmed_dialog() {
         .await
         .try_latest()
         .await
-        .new_uac_invite_sip_msg();
+        .new_uac_invite_msg();
     assert_eq!(invite_req.cseq_header().unwrap().seq().unwrap(), 2);
     assert_eq!(invite_req.contact_header().unwrap().uri().unwrap(), new_uri);
 }
@@ -182,7 +177,7 @@ async fn peer_modifies_a_confirmed_dialog() {
         .await
         .try_latest()
         .await
-        .new_uac_invite_sip_msg();
+        .new_uac_invite_msg();
     assert_eq!(invite_req.cseq_header().unwrap().seq().unwrap(), 2);
     assert_eq!(invite_req.contact_header().unwrap().uri().unwrap(), new_uri);
 }*/
@@ -212,7 +207,7 @@ async fn closing_a_dialog() {
         .await
         .try_latest()
         .await
-        .new_uac_sip_msg();
+        .new_uac_msg();
     assert_eq!(invite_req.cseq_header().unwrap().seq().unwrap(), 2);
     assert!(matches!(dialog_sm.state, DialogState::Terminated(..)));
 }

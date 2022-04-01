@@ -1,10 +1,9 @@
 use crate::{
-    transaction::TransactionLayerMsg,
-    transport::{RequestMsg, ResponseMsg, TransportMsg},
+    transaction::{TransactionId, TransactionLayerMsg},
     Error,
 };
 use common::{
-    rsip::{Request, Response},
+    rsip,
     tokio::sync::{mpsc, oneshot},
 };
 
@@ -18,29 +17,29 @@ impl TransactionHandler {
         Self { tx }
     }
 
-    pub async fn process(&self, msg: TransportMsg) -> Result<(), Error> {
+    pub async fn process(&self, msg: rsip::SipMessage) -> Result<(), Error> {
         Ok(self.tx.send(TransactionLayerMsg::Incoming(msg)).await?)
     }
 
-    pub async fn reply(&self, msg: ResponseMsg) -> Result<(), Error> {
+    pub async fn reply(&self, msg: rsip::Response) -> Result<(), Error> {
         Ok(self.tx.send(TransactionLayerMsg::Reply(msg)).await?)
     }
 
-    pub async fn transport_error(&self, msg: TransportMsg, error: String) -> Result<(), Error> {
+    pub async fn transport_error(&self, msg: rsip::SipMessage, error: String) -> Result<(), Error> {
         Ok(self
             .tx
             .send(TransactionLayerMsg::TransportError(msg, error))
             .await?)
     }
 
-    pub async fn new_uac_invite(&self, msg: RequestMsg) -> Result<(), Error> {
+    pub async fn new_uac_invite(&self, msg: rsip::Request) -> Result<(), Error> {
         Ok(self.tx.send(TransactionLayerMsg::NewUacInvite(msg)).await?)
     }
 
     pub async fn new_uas_invite(
         &self,
-        msg: RequestMsg,
-        tu_response: Option<Response>,
+        msg: rsip::Request,
+        tu_response: Option<rsip::Response>,
     ) -> Result<(), Error> {
         Ok(self
             .tx
@@ -48,18 +47,22 @@ impl TransactionHandler {
             .await?)
     }
 
-    pub async fn new_uac(&self, msg: RequestMsg) -> Result<(), Error> {
+    pub async fn new_uac(&self, msg: rsip::Request) -> Result<(), Error> {
         Ok(self.tx.send(TransactionLayerMsg::NewUac(msg)).await?)
     }
 
-    pub async fn new_uas(&self, msg: Request, tu_response: Option<Response>) -> Result<(), Error> {
+    pub async fn new_uas(
+        &self,
+        msg: rsip::Request,
+        tu_response: Option<rsip::Response>,
+    ) -> Result<(), Error> {
         Ok(self
             .tx
             .send(TransactionLayerMsg::NewUas(msg, tu_response))
             .await?)
     }
 
-    pub async fn has_transaction_for(&self, transaction_id: String) -> Result<bool, Error> {
+    pub async fn has_transaction_for(&self, transaction_id: TransactionId) -> Result<bool, Error> {
         let (tx, rx) = oneshot::channel();
 
         self.tx

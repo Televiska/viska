@@ -1,10 +1,8 @@
-use crate::{presets, TuProcessor, Error, ReqProcessor};
+use crate::{presets, Error, ReqProcessor, TuProcessor};
 use common::{
     async_trait::async_trait,
     rsip::{self, prelude::*},
 };
-use models::transport::ResponseMsg;
-use models::transport::{RequestMsg, TransportMsg};
 use std::{
     any::Any,
     sync::{Arc, Weak},
@@ -27,14 +25,11 @@ impl<R: ReqProcessor, C: ReqProcessor> TuProcessor for UaProcessor<R, C> {
         }
     }
 
-    async fn process_incoming_message(&self, msg: TransportMsg) -> Result<(), Error> {
+    async fn process_incoming_message(&self, msg: rsip::SipMessage) -> Result<(), Error> {
         let sip_message = msg.sip_message;
 
         match sip_message {
-            rsip::SipMessage::Request(request) => {
-                self.handle_request(RequestMsg::new(request, msg.peer, msg.transport))
-                    .await
-            }
+            rsip::SipMessage::Request(request) => self.handle_request(request).await,
             rsip::SipMessage::Response(_) => Err(Error::from("we don't support responses yet")),
         }?;
 
@@ -47,7 +42,7 @@ impl<R: ReqProcessor, C: ReqProcessor> TuProcessor for UaProcessor<R, C> {
 }
 
 impl<R: ReqProcessor, C: ReqProcessor> UaProcessor<R, C> {
-    async fn handle_request(&self, msg: RequestMsg) -> Result<(), Error> {
+    async fn handle_request(&self, msg: rsip::Request) -> Result<(), Error> {
         use rsip::Method;
 
         match msg.sip_request.method {
@@ -60,14 +55,7 @@ impl<R: ReqProcessor, C: ReqProcessor> UaProcessor<R, C> {
             _ => {
                 self.sip_manager()
                     .transport
-                    .send(
-                        ResponseMsg::new(
-                            presets::create_405_from(msg.sip_request)?,
-                            msg.peer,
-                            msg.transport,
-                        )
-                        .into(),
-                    )
+                    .send(presets::create_405_from(msg.sip_request)?.into())
                     .await?
             }
         };
@@ -79,20 +67,13 @@ impl<R: ReqProcessor, C: ReqProcessor> UaProcessor<R, C> {
         self.sip_manager.upgrade().expect("sip manager is missing!")
     }
 
-    async fn with_auth(&self, msg: RequestMsg) -> Result<RequestMsg, Error> {
+    async fn with_auth(&self, msg: rsip::Request) -> Result<rsip::Request, Error> {
         match msg.sip_request.authorization_header() {
             Some(_) => Ok(msg),
             None => {
                 self.sip_manager()
                     .transport
-                    .send(
-                        ResponseMsg::from((
-                            presets::create_unauthorized_from(msg.sip_request)?,
-                            msg.peer,
-                            msg.transport,
-                        ))
-                        .into(),
-                    )
+                    .send(presets::create_unauthorized_from(msg.sip_request)?.into())
                     .await?;
                 Err(Error::from("missing auth header"))
             }

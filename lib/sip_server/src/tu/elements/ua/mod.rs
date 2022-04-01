@@ -4,12 +4,7 @@ use crate::{presets, tu::dialogs::Dialogs, Error, ReqProcessor};
 use common::{rsip, tokio};
 use std::sync::Arc;
 
-use models::{
-    receivers::TuReceiver,
-    transport::{RequestMsg, ResponseMsg, TransportMsg},
-    tu::TuLayerMsg,
-    Handlers,
-};
+use models::{receivers::TuReceiver, tu::TuLayerMsg, Handlers};
 
 //TODO: rename this to something else like ProxyTu etc
 #[derive(Debug)]
@@ -75,61 +70,50 @@ impl<R: ReqProcessor, C: ReqProcessor> Inner<R, C> {
         Ok(())
     }
 
-    async fn process_transport_error(&self, msg: TransportMsg, error: String) -> Result<(), Error> {
+    async fn process_transport_error(
+        &self,
+        msg: rsip::SipMessage,
+        error: String,
+    ) -> Result<(), Error> {
         Ok(self.dialogs.transport_error(msg, error).await?)
     }
 
-    async fn process_incoming_message(&self, msg: TransportMsg) -> Result<(), Error> {
-        let sip_message = msg.sip_message;
-
-        match sip_message {
+    async fn process_incoming_message(&self, msg: rsip::SipMessage) -> Result<(), Error> {
+        match msg {
             rsip::SipMessage::Request(request) => {
-                self.handle_incoming_request(RequestMsg::new(request, msg.peer, msg.transport))
-                    .await?;
+                self.handle_incoming_request(request).await?;
             }
             rsip::SipMessage::Response(response) => {
-                self.handle_incoming_response(ResponseMsg::new(response, msg.peer, msg.transport))
-                    .await?;
+                self.handle_incoming_response(response).await?;
             }
         };
 
         Ok(())
     }
 
-    async fn process_outgoing_message(&self, msg: TransportMsg) -> Result<(), Error> {
-        let sip_message = msg.sip_message;
-
-        match sip_message {
+    async fn process_outgoing_message(&self, msg: rsip::SipMessage) -> Result<(), Error> {
+        match msg {
             rsip::SipMessage::Request(request) => {
-                self.handle_outgoing_request(RequestMsg::new(request, msg.peer, msg.transport))
-                    .await?;
+                self.handle_outgoing_request(request).await?;
             }
             rsip::SipMessage::Response(response) => {
-                self.handle_outgoing_response(ResponseMsg::new(response, msg.peer, msg.transport))
-                    .await?;
+                self.handle_outgoing_response(response).await?;
             }
         };
 
         Ok(())
     }
 
-    async fn handle_incoming_request(&self, msg: RequestMsg) -> Result<(), Error> {
+    async fn handle_incoming_request(&self, request: rsip::Request) -> Result<(), Error> {
         use rsip::Method;
 
-        match msg.sip_request.method {
-            Method::Register => self.registrar.process_incoming_request(msg).await?,
-            Method::Options => self.capabilities.process_incoming_request(msg).await?,
+        match request.method {
+            Method::Register => self.registrar.process_incoming_request(request).await?,
+            Method::Options => self.capabilities.process_incoming_request(request).await?,
             _ => {
                 self.handlers
                     .transport
-                    .send(
-                        ResponseMsg::new(
-                            presets::create_405_from(msg.sip_request)?,
-                            msg.peer,
-                            msg.transport,
-                        )
-                        .into(),
-                    )
+                    .send(presets::create_405_from(request)?.into())
                     .await?
             }
         };
@@ -137,11 +121,11 @@ impl<R: ReqProcessor, C: ReqProcessor> Inner<R, C> {
         Ok(())
     }
 
-    async fn handle_incoming_response(&self, msg: ResponseMsg) -> Result<(), Error> {
-        if let Ok(dialog_id) = msg.dialog_id() {
+    async fn handle_incoming_response(&self, response: rsip::Response) -> Result<(), Error> {
+        if let Ok(dialog_id) = response.dialog_id() {
             if self.dialogs.exists(dialog_id).await {
                 //TODO: this is wrong, uac dialogs can process requests as well
-                self.dialogs.uac_process_incoming_response(msg).await?
+                self.dialogs.uac_process_incoming_response(response).await?
             } else {
                 common::log::warn!("received response msg but no dialog exists for that msg");
             };
@@ -150,22 +134,22 @@ impl<R: ReqProcessor, C: ReqProcessor> Inner<R, C> {
         Ok(())
     }
 
-    async fn handle_outgoing_request(&self, msg: RequestMsg) -> Result<(), Error> {
+    async fn handle_outgoing_request(&self, request: rsip::Request) -> Result<(), Error> {
         use rsip::Method;
 
-        match msg.sip_request.method {
+        match request.method {
             Method::Invite => {
                 //TODO: consider letting the dialog handle the transaction creation ?
-                self.dialogs.new_uac_session(msg.clone()).await?;
+                self.dialogs.new_uac_session(request.clone()).await?;
             }
-            _ => self.handlers.transport.send(msg.into()).await?,
+            _ => self.handlers.transport.send(request.into()).await?,
         };
 
         Ok(())
     }
 
-    async fn handle_outgoing_response(&self, msg: ResponseMsg) -> Result<(), Error> {
-        self.handlers.transport.send(msg.into()).await?;
+    async fn handle_outgoing_response(&self, response: rsip::Response) -> Result<(), Error> {
+        self.handlers.transport.send(response.into()).await?;
 
         Ok(())
     }

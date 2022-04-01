@@ -1,5 +1,5 @@
-use crate::{transport::TransportMsg, tu::TuLayerMsg, Error};
-use common::tokio::sync::mpsc::Sender;
+use crate::{tu::TuLayerMsg, Error};
+use common::{rsip, tokio::sync::mpsc::Sender};
 
 #[derive(Debug, Clone)]
 pub struct TuHandler {
@@ -11,11 +11,11 @@ impl TuHandler {
         Self { tx }
     }
 
-    pub async fn process(&self, msg: TransportMsg) -> Result<(), Error> {
+    pub async fn process(&self, msg: rsip::SipMessage) -> Result<(), Error> {
         Ok(self.tx.send(TuLayerMsg::Incoming(msg)).await?)
     }
 
-    pub async fn transport_error(&self, msg: TransportMsg, error: String) -> Result<(), Error> {
+    pub async fn transport_error(&self, msg: rsip::SipMessage, error: String) -> Result<(), Error> {
         Ok(self.tx.send(TuLayerMsg::TransportError(msg, error)).await?)
     }
 }

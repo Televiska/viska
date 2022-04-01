@@ -2,7 +2,7 @@ mod transaction_handler;
 mod transaction_layer_msg;
 
 pub use transaction_handler::TransactionHandler;
-pub use transaction_layer_msg::TransactionLayerMsg;
+pub use transaction_layer_msg::{TransactionId, TransactionLayerMsg, TransportError};
 
 //TODO: reconsider
 #[derive(Debug, Clone)]

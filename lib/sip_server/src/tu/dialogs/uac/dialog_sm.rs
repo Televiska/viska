@@ -6,12 +6,7 @@ use super::{
 use crate::{presets, Error};
 use common::rsip::{self, prelude::*, uri::UriWithParams};
 use common::tokio::time::Instant;
-use models::{
-    rsip_ext::*,
-    transport::{RequestMsg, ResponseMsg},
-    tu::DialogId,
-    Handlers,
-};
+use models::{rsip_ext::*, tu::DialogId, Handlers};
 
 #[derive(Debug)]
 pub struct DialogSm {
@@ -29,7 +24,7 @@ pub struct DialogSm {
     pub route_set: Vec<UriWithParams>,
     pub session_type: SessionType,
     pub contact_header: rsip::headers::Contact,
-    pub msg: rsip::Request,
+    pub request: rsip::Request,
     pub state: DialogState,
     pub created_at: Instant,
     pub handlers: Handlers,
@@ -56,10 +51,10 @@ pub enum DialogState {
 //TODO: need to apply strict or loose routing (probably in a helper/module)
 #[allow(dead_code)]
 impl DialogSm {
-    pub async fn new(handlers: Handlers, msg: rsip::Request) -> Result<Self, Error> {
-        validations::run(&msg)?;
+    pub async fn new(handlers: Handlers, request: rsip::Request) -> Result<Self, Error> {
+        validations::run(&request)?;
 
-        let mut route_set: Vec<UriWithParams> = msg
+        let mut route_set: Vec<UriWithParams> = request
             .record_route_header()
             .map(|h| h.typed().map(|h| h.uris().to_owned()))
             .transpose()?
@@ -69,34 +64,31 @@ impl DialogSm {
         //TODO: probably it is a good idea to save local_from and remote_to
         //and expose some attributes as fns on top of that
         let me = Self {
-            id: msg.dialog_id()?,
-            call_id: msg.call_id_header()?.clone(),
-            transaction_id: msg.transaction_id()?.expect("transaction id").into(),
-            local_tag: msg
+            id: request.dialog_id()?,
+            call_id: request.call_id_header()?.clone(),
+            transaction_id: request.transaction_id()?.expect("transaction id").into(),
+            local_tag: request
                 .from_header()?
                 .tag()?
                 .ok_or_else(|| Error::from("missing from tag"))?,
-            local_seqn: msg.cseq_header()?.seq()?,
-            local_uri: msg.from_header()?.uri()?,
+            local_seqn: request.cseq_header()?.seq()?,
+            local_uri: request.from_header()?.uri()?,
             remote_tag: None,
             remote_seqn: None,
-            remote_uri: msg.to_header()?.uri()?,
+            remote_uri: request.to_header()?.uri()?,
             remote_target: None,
             route_set,
-            session_type: session_type(&msg)?,
+            session_type: session_type(&request)?,
             //TODO: need to check transport as well (arrived from TLS?)
-            secure: msg.uri.is_sips()?,
-            contact_header: msg.contact_header()?.clone(),
-            msg: msg.clone(),
+            secure: request.uri.is_sips()?,
+            contact_header: request.contact_header()?.clone(),
+            request: request.clone(),
             state: DialogState::Unconfirmed(Default::default()),
             created_at: Instant::now(),
             handlers: handlers.clone(),
         };
 
-        handlers
-            .transaction
-            .new_uac_invite(request_msg_from(msg).await)
-            .await?;
+        handlers.transaction.new_uac_invite(request).await?;
 
         Ok(me)
     }
@@ -140,37 +132,34 @@ impl DialogSm {
         Ok(())
     }
 
-    async fn _process_incoming_response(&mut self, msg: rsip::Response) -> Result<(), Error> {
-        match msg.status_code().kind() {
-            rsip::StatusCodeKind::Provisional => self.early(msg).await,
+    async fn _process_incoming_response(&mut self, response: rsip::Response) -> Result<(), Error> {
+        match response.status_code().kind() {
+            rsip::StatusCodeKind::Provisional => self.early(response).await,
             rsip::StatusCodeKind::Successful => {
-                self.confirm(msg.clone()).await?;
+                self.confirm(response.clone()).await?;
                 self.handlers
                     .transport
-                    .send(
-                        request_msg_from(self.msg.ack_request_from(msg))
-                            .await
-                            .into(),
-                    )
+                    .send(self.request.ack_request_from(response).into())
                     .await?;
             }
             rsip::StatusCodeKind::Redirection => self.error(
                 format!(
                     "({}): received status {}, peer wants redirection to {}",
                     self.id,
-                    msg.status_code,
-                    msg.contact_header()
+                    response.status_code,
+                    response
+                        .contact_header()
                         .map(|h| h.to_string())
                         .unwrap_or_else(|_| "no contact header".into()),
                 ),
-                Some(msg.into()),
+                Some(response.into()),
             ),
             _ => self.error(
                 format!(
                     "({}): unknown match: {}, {}",
-                    self.id, msg.status_code, self.state,
+                    self.id, response.status_code, self.state,
                 ),
-                Some(msg.into()),
+                Some(response.into()),
             ),
         };
 
@@ -188,18 +177,10 @@ impl DialogSm {
         let request = self.set_outgoing_request_defaults_for(request)?;
 
         match request.method {
-            rsip::Method::Invite => {
-                self.handlers
-                    .transaction
-                    .new_uac_invite(request_msg_from(request).await)
-                    .await?
-            }
+            rsip::Method::Invite => self.handlers.transaction.new_uac_invite(request).await?,
             rsip::Method::Bye => {
                 self.terminate(request.clone().into());
-                self.handlers
-                    .transaction
-                    .new_uac(request_msg_from(request).await)
-                    .await?
+                self.handlers.transaction.new_uac(request).await?
             }
             _ => self.error(
                 format!(
@@ -340,8 +321,8 @@ impl DialogSm {
         Ok(())
     }
 
-    pub async fn process_incoming_request(&mut self, msg: rsip::Request) {
-        if let Err(err) = self._process_incoming_request(msg).await {
+    pub async fn process_incoming_request(&mut self, request: rsip::Request) {
+        if let Err(err) = self._process_incoming_request(request).await {
             self.error(
                 format!(
                     "Dialog {} failed to process incoming request: {}",
@@ -352,8 +333,8 @@ impl DialogSm {
         }
     }
 
-    pub async fn process_incoming_response(&mut self, msg: rsip::Response) {
-        if let Err(err) = self._process_incoming_response(msg).await {
+    pub async fn process_incoming_response(&mut self, response: rsip::Response) {
+        if let Err(err) = self._process_incoming_response(response).await {
             self.error(
                 format!(
                     "Dialog {} failed to process incoming response: {}",
@@ -364,8 +345,8 @@ impl DialogSm {
         }
     }
 
-    pub async fn process_outgoing_request(&mut self, msg: rsip::Request) {
-        if let Err(err) = self._process_outgoing_request(msg).await {
+    pub async fn process_outgoing_request(&mut self, request: rsip::Request) {
+        if let Err(err) = self._process_outgoing_request(request).await {
             self.error(
                 format!(
                     "Dialog {} failed to process outgoing request: {}",
@@ -376,8 +357,8 @@ impl DialogSm {
         }
     }
 
-    pub async fn process_outgoing_response(&mut self, msg: rsip::Response) {
-        if let Err(err) = self._process_outgoing_response(msg).await {
+    pub async fn process_outgoing_response(&mut self, response: rsip::Response) {
+        if let Err(err) = self._process_outgoing_response(response).await {
             self.error(
                 format!(
                     "Dialog {} failed to process outgoing response: {}",
@@ -413,47 +394,6 @@ pub fn session_type(request: &rsip::Request) -> Result<SessionType, Error> {
     }
 }
 
-async fn request_msg_from(request: rsip::Request) -> RequestMsg {
-    let target = resolve_address_for(request.uri.clone()).await;
-
-    RequestMsg {
-        sip_request: request,
-        peer: target.socket_addr(),
-        transport: rsip::Transport::Udp,
-    }
-}
-
-#[allow(dead_code)]
-async fn response_msg_from(response: rsip::Response) -> Result<ResponseMsg, Error> {
-    let via_header = response.via_header()?.typed()?;
-    let port: u16 = via_header
-        .sent_by()
-        .port()
-        .cloned()
-        .map(Into::into)
-        .unwrap_or(5060);
-
-    match (
-        via_header.sent_protocol(),
-        via_header.received().ok().flatten(),
-    ) {
-        (rsip::Transport::Udp, Some(received)) => Ok(ResponseMsg {
-            sip_response: response,
-            peer: (received, port).into(),
-            transport: rsip::Transport::Udp,
-        }),
-        (rsip::Transport::Udp, None) => match via_header.sent_by().host() {
-            rsip::Host::Domain(_) => panic!("need to run from RFC3263"),
-            rsip::Host::IpAddr(ip_addr) => Ok(ResponseMsg {
-                sip_response: response,
-                peer: (*ip_addr, port).into(),
-                transport: rsip::Transport::Udp,
-            }),
-        },
-        (transport, _) => panic!("not supported transport: {}", transport),
-    }
-}
-
 #[allow(dead_code)]
 fn dialog_response_from(request: rsip::Request) -> Result<rsip::Response, crate::Error> {
     let mut headers: rsip::Headers = Default::default();
@@ -470,26 +410,6 @@ fn dialog_response_from(request: rsip::Request) -> Result<rsip::Response, crate:
         status_code: 404.into(),
         ..Default::default()
     })
-}
-
-async fn resolve_address_for(uri: rsip::Uri) -> common::rsip_dns::Target {
-    use common::rsip_dns::{self, trust_dns_resolver::TokioAsyncResolver, ResolvableExt};
-
-    let context = rsip_dns::Context::initialize_from(
-        uri,
-        rsip_dns::AsyncTrustDnsClient::new(
-            TokioAsyncResolver::tokio(Default::default(), Default::default()).unwrap(),
-        ),
-        rsip_dns::SupportedTransports::only(vec![rsip::Transport::Udp]),
-    )
-    .unwrap();
-
-    let mut lookup = rsip_dns::Lookup::from(context);
-
-    lookup
-        .resolve_next()
-        .await
-        .expect("next Target in dns lookup")
 }
 
 impl std::fmt::Display for DialogState {

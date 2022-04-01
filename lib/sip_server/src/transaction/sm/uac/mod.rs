@@ -3,12 +3,11 @@ mod states;
 pub use states::{Accepted, Calling, Completed, Errored, Proceeding, Terminated};
 
 use crate::Error;
-use common::{rsip, tokio::time::Instant};
-use models::{
-    rsip_ext::*,
-    transport::{RequestMsg, ResponseMsg},
-    Handlers,
+use common::{
+    rsip::{self, message::HeadersExt},
+    tokio::time::Instant,
 };
+use models::{rsip_ext::*, transaction::TransactionId, Handlers};
 
 //TODO: add state checks as well for better guarantees, look at dialogs
 
@@ -22,9 +21,9 @@ pub static TIMER_D: u64 = 32000;
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct TrxStateMachine {
-    pub id: String,
+    pub id: TransactionId,
     pub state: TrxState,
-    pub msg: RequestMsg,
+    pub request: rsip::Request,
     pub created_at: Instant,
     handlers: Handlers,
 }
@@ -53,11 +52,11 @@ impl std::fmt::Display for TrxState {
 }
 
 impl TrxStateMachine {
-    pub fn new(handlers: Handlers, msg: RequestMsg) -> Result<Self, Error> {
+    pub fn new(handlers: Handlers, request: rsip::Request) -> Result<Self, Error> {
         Ok(Self {
-            id: msg.transaction_id()?.expect("transaction_id"),
+            id: request.transaction_id()?.expect("transaction_id"),
             state: TrxState::Calling(Default::default()),
-            msg,
+            request,
             created_at: Instant::now(),
             handlers,
         })
@@ -92,7 +91,7 @@ impl TrxStateMachine {
                     (false, true) => {
                         self.handlers
                             .transport
-                            .send(self.msg.clone().into())
+                            .send(self.request.clone().into())
                             .await?;
                         self.state = TrxState::Calling(calling.retransmit());
                     }
@@ -120,53 +119,32 @@ impl TrxStateMachine {
 
         match (&self.state, response.status_code.kind()) {
             (TrxState::Calling(_), StatusCodeKind::Provisional) => {
-                self.handlers
-                    .tu
-                    .process(self.response_msg_from(response.clone()).into())
-                    .await?;
+                self.handlers.tu.process(response.clone().into()).await?;
                 self.proceed(response);
             }
             (TrxState::Calling(_), StatusCodeKind::Successful) => {
-                self.handlers
-                    .tu
-                    .process(self.response_msg_from(response.clone()).into())
-                    .await?;
+                self.handlers.tu.process(response.clone().into()).await?;
                 self.accept(response);
             }
             (TrxState::Calling(_), _) => {
-                self.handlers
-                    .tu
-                    .process(self.response_msg_from(response.clone()).into())
-                    .await?;
+                self.handlers.tu.process(response.clone().into()).await?;
                 self.complete(response);
             }
             (TrxState::Proceeding(_), StatusCodeKind::Provisional) => {
-                self.handlers
-                    .tu
-                    .process(self.response_msg_from(response.clone()).into())
-                    .await?;
+                self.handlers.tu.process(response.clone().into()).await?;
                 self.update_response(response);
             }
             (TrxState::Proceeding(_), StatusCodeKind::Successful) => {
-                self.handlers
-                    .tu
-                    .process(self.response_msg_from(response.clone()).into())
-                    .await?;
+                self.handlers.tu.process(response.clone().into()).await?;
                 self.accept(response);
             }
             (TrxState::Proceeding(_), _) => {
-                self.handlers
-                    .tu
-                    .process(self.response_msg_from(response.clone()).into())
-                    .await?;
+                self.handlers.tu.process(response.clone().into()).await?;
                 self.send_ack_request_from(response.clone()).await?;
                 self.complete(response);
             }
             (TrxState::Accepted(_), StatusCodeKind::Successful) => {
-                self.handlers
-                    .tu
-                    .process(self.response_msg_from(response.clone()).into())
-                    .await?;
+                self.handlers.tu.process(response.clone().into()).await?;
                 self.update_response(response);
             }
             (TrxState::Completed(_), kind) if kind > StatusCodeKind::Successful => {
@@ -264,30 +242,11 @@ impl TrxStateMachine {
         });
     }
 
-    fn response_msg_from(&self, response: rsip::Response) -> ResponseMsg {
-        ResponseMsg {
-            sip_response: response,
-            peer: self.msg.peer,
-            transport: self.msg.transport,
-        }
-    }
-
-    fn request_msg_from(&self, request: rsip::Request) -> RequestMsg {
-        RequestMsg {
-            sip_request: request,
-            peer: self.msg.peer,
-            transport: self.msg.transport,
-        }
-    }
-
     async fn send_ack_request_from(&self, response: rsip::Response) -> Result<(), Error> {
         Ok(self
             .handlers
             .transport
-            .send(
-                self.request_msg_from(self.msg.sip_request.ack_request_from(response))
-                    .into(),
-            )
+            .send(self.request.ack_request_from(response).into())
             .await?)
     }
 

@@ -1,8 +1,8 @@
 use crate::{
-    transport::{TransportLayerMsg, TransportMsg, UdpTuple},
+    transport::{TransportLayerMsg, UdpTuple},
     Error,
 };
-use common::tokio::sync::mpsc::Sender;
+use common::{rsip, tokio::sync::mpsc::Sender};
 
 #[derive(Debug, Clone)]
 pub struct TransportHandler {
@@ -18,7 +18,7 @@ impl TransportHandler {
         Ok(self.tx.send(TransportLayerMsg::Incoming(msg)).await?)
     }
 
-    pub async fn send(&self, msg: TransportMsg) -> Result<(), Error> {
+    pub async fn send(&self, msg: rsip::SipMessage) -> Result<(), Error> {
         Ok(self.tx.send(TransportLayerMsg::Outgoing(msg)).await?)
     }
 }

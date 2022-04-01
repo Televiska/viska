@@ -1,10 +1,7 @@
 use super::setup;
 use crate::common::{advance_for, extensions::TransactionUasExt, factories::prelude::*};
 use common::rsip::{self, prelude::*};
-use models::{
-    rsip_ext::*,
-    transport::{RequestMsg, ResponseMsg, TransportLayerMsg, TransportMsg},
-};
+use models::{rsip_ext::*, transport::TransportLayerMsg};
 use std::time::Duration;
 
 /* ##### proceeding state ##### */
@@ -16,13 +13,7 @@ async fn if_peer_not_alive() {
     let request: rsip::Request = requests::invite_request();
     transaction
         .handler()
-        .new_uas_invite(
-            RequestMsg {
-                sip_request: request.clone(),
-                ..Randomized::default()
-            },
-            None,
-        )
+        .new_uas_invite(request.clone(), None)
         .await
         .unwrap();
 
@@ -31,14 +22,7 @@ async fn if_peer_not_alive() {
 
     transaction
         .handler()
-        .transport_error(
-            RequestMsg {
-                sip_request: request.clone(),
-                ..Randomized::default()
-            }
-            .into(),
-            "some error".into(),
-        )
+        .transport_error(request.clone().into(), "some error".into())
         .await
         .unwrap();
 
@@ -63,13 +47,7 @@ async fn multiple_invite_on_proceeding() {
     let request: rsip::Request = requests::invite_request();
     transaction
         .handler()
-        .new_uas_invite(
-            RequestMsg {
-                sip_request: request.clone(),
-                ..Randomized::default()
-            },
-            Some(request.provisional_of(180)),
-        )
+        .new_uas_invite(request.clone(), Some(request.provisional_of(180)))
         .await
         .unwrap();
 
@@ -78,26 +56,15 @@ async fn multiple_invite_on_proceeding() {
 
     transaction
         .handler()
-        .process(
-            RequestMsg {
-                sip_request: request.clone(),
-                ..Randomized::default()
-            }
-            .into(),
-        )
+        .process(request.clone().into())
         .await
         .unwrap();
     assert_eq!(transport.messages().await.len().await, 2);
     match transport.messages().await.last().await {
-        TransportLayerMsg::Outgoing(TransportMsg {
-            sip_message:
-                rsip::SipMessage::Response(rsip::Response {
-                    status_code: rsip::StatusCode::Ringing,
-                    ..
-                }),
-            peer: _,
-            transport: _,
-        }) => (),
+        TransportLayerMsg::Outgoing(rsip::SipMessage::Response(rsip::Response {
+            status_code: rsip::StatusCode::Ringing,
+            ..
+        })) => (),
         _ => panic!("unexpected message state"),
     };
     assert_eq!(transaction.inner.state.read().await.len(), 1);
@@ -110,13 +77,7 @@ async fn with_redirect_response_moves_to_completed() {
     let request: rsip::Request = requests::invite_request();
     transaction
         .handler()
-        .new_uas_invite(
-            RequestMsg {
-                sip_request: request.clone(),
-                ..Randomized::default()
-            },
-            Some(request.provisional_of(180)),
-        )
+        .new_uas_invite(request.clone(), Some(request.provisional_of(180)))
         .await
         .unwrap();
 
@@ -125,10 +86,7 @@ async fn with_redirect_response_moves_to_completed() {
 
     transaction
         .handler()
-        .reply(ResponseMsg {
-            sip_response: responses::redirection_response_from(request.clone()),
-            ..Randomized::default()
-        })
+        .reply(responses::redirection_response_from(request.clone()))
         .await
         .unwrap();
     assert!(
@@ -151,13 +109,7 @@ async fn with_ok_response_moves_to_accepted() {
     let request: rsip::Request = requests::invite_request();
     transaction
         .handler()
-        .new_uas_invite(
-            RequestMsg {
-                sip_request: request.clone(),
-                ..Randomized::default()
-            },
-            Some(request.provisional_of(180)),
-        )
+        .new_uas_invite(request.clone(), Some(request.provisional_of(180)))
         .await
         .unwrap();
 
@@ -166,10 +118,7 @@ async fn with_ok_response_moves_to_accepted() {
 
     transaction
         .handler()
-        .reply(ResponseMsg {
-            sip_response: responses::ok_response_from(request.clone()),
-            ..Randomized::default()
-        })
+        .reply(responses::ok_response_from(request.clone()))
         .await
         .unwrap();
     assert!(
@@ -193,25 +142,12 @@ async fn multiple_invites_on_completed_resends_response() {
     let request: rsip::Request = requests::invite_request();
     transaction
         .handler()
-        .new_uas_invite(
-            RequestMsg {
-                sip_request: request.clone(),
-                ..Randomized::default()
-            },
-            Some(request.provisional_of(180)),
-        )
+        .new_uas_invite(request.clone(), Some(request.provisional_of(180)))
         .await
         .unwrap();
 
     let response = responses::redirection_response_from(request.clone());
-    transaction
-        .handler()
-        .reply(ResponseMsg {
-            sip_response: response.clone(),
-            ..Randomized::default()
-        })
-        .await
-        .unwrap();
+    transaction.handler().reply(response.clone()).await.unwrap();
 
     assert!(
         transaction
@@ -227,22 +163,12 @@ async fn multiple_invites_on_completed_resends_response() {
 
     transaction
         .handler()
-        .process(
-            RequestMsg {
-                sip_request: request.clone(),
-                ..Randomized::default()
-            }
-            .into(),
-        )
+        .process(request.clone().into())
         .await
         .unwrap();
     assert_eq!(transport.messages().await.len().await, 3);
     match transport.messages().await.last().await {
-        TransportLayerMsg::Outgoing(TransportMsg {
-            sip_message: rsip::SipMessage::Response(resp),
-            peer: _,
-            transport: _,
-        }) if resp == response => (),
+        TransportLayerMsg::Outgoing(rsip::SipMessage::Response(resp)) if resp == response => (),
         _ => panic!("unexpected message state"),
     };
     assert_eq!(transaction.inner.state.read().await.len(), 1);
@@ -255,25 +181,12 @@ async fn redirect_but_peer_not_responding_with_ack() {
     let request: rsip::Request = requests::invite_request();
     transaction
         .handler()
-        .new_uas_invite(
-            RequestMsg {
-                sip_request: request.clone(),
-                ..Randomized::default()
-            },
-            Some(request.provisional_of(180)),
-        )
+        .new_uas_invite(request.clone(), Some(request.provisional_of(180)))
         .await
         .unwrap();
 
     let response = responses::redirection_response_from(request.clone());
-    transaction
-        .handler()
-        .reply(ResponseMsg {
-            sip_response: response.clone(),
-            ..Randomized::default()
-        })
-        .await
-        .unwrap();
+    transaction.handler().reply(response.clone()).await.unwrap();
 
     assert!(
         transaction
@@ -332,20 +245,11 @@ async fn with_ack_moves_to_confirmed() {
     let request: rsip::Request = requests::invite_request();
     transaction
         .handler()
-        .new_uas_invite(
-            RequestMsg {
-                sip_request: request.clone(),
-                ..Randomized::default()
-            },
-            Some(request.provisional_of(180)),
-        )
+        .new_uas_invite(request.clone(), Some(request.provisional_of(180)))
         .await
         .unwrap();
 
-    let response = ResponseMsg {
-        sip_response: responses::redirection_response_from(request.clone()),
-        ..Randomized::default()
-    };
+    let response = responses::redirection_response_from(request.clone());
     transaction.handler().reply(response.clone()).await.unwrap();
     assert!(
         transaction
@@ -364,13 +268,7 @@ async fn with_ack_moves_to_confirmed() {
 
     transaction
         .handler()
-        .process(
-            RequestMsg {
-                sip_request: request.ack_request_from(response.sip_response),
-                ..Randomized::default()
-            }
-            .into(),
-        )
+        .process(request.ack_request_from(response).into())
         .await
         .unwrap();
     assert_eq!(tu.messages().await.len().await, 0);
@@ -397,25 +295,12 @@ async fn multiple_invites_on_accepted_resends_response() {
     let request: rsip::Request = requests::invite_request();
     transaction
         .handler()
-        .new_uas_invite(
-            RequestMsg {
-                sip_request: request.clone(),
-                ..Randomized::default()
-            },
-            Some(request.provisional_of(180)),
-        )
+        .new_uas_invite(request.clone(), Some(request.provisional_of(180)))
         .await
         .unwrap();
 
     let response = responses::ok_response_from(request.clone());
-    transaction
-        .handler()
-        .reply(ResponseMsg {
-            sip_response: response.clone(),
-            ..Randomized::default()
-        })
-        .await
-        .unwrap();
+    transaction.handler().reply(response.clone()).await.unwrap();
 
     assert!(
         transaction
@@ -431,22 +316,12 @@ async fn multiple_invites_on_accepted_resends_response() {
 
     transaction
         .handler()
-        .process(
-            RequestMsg {
-                sip_request: request.clone(),
-                ..Randomized::default()
-            }
-            .into(),
-        )
+        .process(request.clone().into())
         .await
         .unwrap();
     assert_eq!(transport.messages().await.len().await, 3);
     match transport.messages().await.last().await {
-        TransportLayerMsg::Outgoing(TransportMsg {
-            sip_message: rsip::SipMessage::Response(resp),
-            peer: _,
-            transport: _,
-        }) if resp == response => (),
+        TransportLayerMsg::Outgoing(rsip::SipMessage::Response(resp)) if resp == response => (),
         _ => panic!("unexpected message state"),
     };
     assert_eq!(transaction.inner.state.read().await.len(), 1);
@@ -459,25 +334,12 @@ async fn ok_but_peer_not_responding_with_ack() {
     let request: rsip::Request = requests::invite_request();
     transaction
         .handler()
-        .new_uas_invite(
-            RequestMsg {
-                sip_request: request.clone(),
-                ..Randomized::default()
-            },
-            Some(request.provisional_of(180)),
-        )
+        .new_uas_invite(request.clone(), Some(request.provisional_of(180)))
         .await
         .unwrap();
 
     let response = responses::ok_response_from(request.clone());
-    transaction
-        .handler()
-        .reply(ResponseMsg {
-            sip_response: response.clone(),
-            ..Randomized::default()
-        })
-        .await
-        .unwrap();
+    transaction.handler().reply(response.clone()).await.unwrap();
 
     assert!(
         transaction
@@ -530,13 +392,7 @@ async fn with_multiple_ok_on_accepted() {
     let request: rsip::Request = requests::invite_request();
     transaction
         .handler()
-        .new_uas_invite(
-            RequestMsg {
-                sip_request: request.clone(),
-                ..Randomized::default()
-            },
-            Some(request.provisional_of(180)),
-        )
+        .new_uas_invite(request.clone(), Some(request.provisional_of(180)))
         .await
         .unwrap();
 
@@ -545,10 +401,7 @@ async fn with_multiple_ok_on_accepted() {
 
     transaction
         .handler()
-        .reply(ResponseMsg {
-            sip_response: responses::ok_response_from(request.clone()),
-            ..Randomized::default()
-        })
+        .reply(responses::ok_response_from(request.clone()))
         .await
         .unwrap();
     assert!(
@@ -565,10 +418,7 @@ async fn with_multiple_ok_on_accepted() {
 
     transaction
         .handler()
-        .reply(ResponseMsg {
-            sip_response: responses::ok_response_from(request.clone()),
-            ..Randomized::default()
-        })
+        .reply(responses::ok_response_from(request.clone()))
         .await
         .unwrap();
 
@@ -583,13 +433,7 @@ async fn with_error_on_second_ok_on_accepted() {
     let request: rsip::Request = requests::invite_request();
     transaction
         .handler()
-        .new_uas_invite(
-            RequestMsg {
-                sip_request: request.clone(),
-                ..Randomized::default()
-            },
-            Some(request.provisional_of(180)),
-        )
+        .new_uas_invite(request.clone(), Some(request.provisional_of(180)))
         .await
         .unwrap();
 
@@ -598,10 +442,7 @@ async fn with_error_on_second_ok_on_accepted() {
 
     transaction
         .handler()
-        .reply(ResponseMsg {
-            sip_response: responses::ok_response_from(request.clone()),
-            ..Randomized::default()
-        })
+        .reply(responses::ok_response_from(request.clone()))
         .await
         .unwrap();
     assert!(
@@ -618,10 +459,7 @@ async fn with_error_on_second_ok_on_accepted() {
 
     transaction
         .handler()
-        .reply(ResponseMsg {
-            sip_response: responses::ok_response_from(request.clone()),
-            ..Randomized::default()
-        })
+        .reply(responses::ok_response_from(request.clone()))
         .await
         .unwrap();
 
@@ -641,14 +479,7 @@ async fn with_error_on_second_ok_on_accepted() {
 
     transaction
         .handler()
-        .transport_error(
-            RequestMsg {
-                sip_request: request.clone(),
-                ..Randomized::default()
-            }
-            .into(),
-            "some error".into(),
-        )
+        .transport_error(request.clone().into(), "some error".into())
         .await
         .unwrap();
 
@@ -675,20 +506,11 @@ async fn multiple_ack_received_are_forwarded_to_tu() {
     let request: rsip::Request = requests::invite_request();
     transaction
         .handler()
-        .new_uas_invite(
-            RequestMsg {
-                sip_request: request.clone(),
-                ..Randomized::default()
-            },
-            Some(request.provisional_of(180)),
-        )
+        .new_uas_invite(request.clone(), Some(request.provisional_of(180)))
         .await
         .unwrap();
 
-    let response = ResponseMsg {
-        sip_response: responses::ok_response_from(request.clone()),
-        ..Randomized::default()
-    };
+    let response = responses::ok_response_from(request.clone());
     transaction.handler().reply(response.clone()).await.unwrap();
     assert!(
         transaction
@@ -707,13 +529,7 @@ async fn multiple_ack_received_are_forwarded_to_tu() {
 
     transaction
         .handler()
-        .process(
-            RequestMsg {
-                sip_request: request.ack_request_from(response.sip_response),
-                ..Randomized::default()
-            }
-            .into(),
-        )
+        .process(request.ack_request_from(response).into())
         .await
         .unwrap();
     assert_eq!(tu.messages().await.len().await, 1);
@@ -729,31 +545,16 @@ async fn when_confirmed_acks_have_no_effect() {
     let request: rsip::Request = requests::invite_request();
     transaction
         .handler()
-        .new_uas_invite(
-            RequestMsg {
-                sip_request: request.clone(),
-                ..Randomized::default()
-            },
-            Some(request.provisional_of(180)),
-        )
+        .new_uas_invite(request.clone(), Some(request.provisional_of(180)))
         .await
         .unwrap();
 
-    let response = ResponseMsg {
-        sip_response: responses::redirection_response_from(request.clone()),
-        ..Randomized::default()
-    };
+    let response = responses::redirection_response_from(request.clone());
     transaction.handler().reply(response.clone()).await.unwrap();
 
     transaction
         .handler()
-        .process(
-            RequestMsg {
-                sip_request: request.ack_request_from(response.sip_response.clone()),
-                ..Randomized::default()
-            }
-            .into(),
-        )
+        .process(request.ack_request_from(response.clone()).into())
         .await
         .unwrap();
 
@@ -774,24 +575,12 @@ async fn when_confirmed_acks_have_no_effect() {
 
     transaction
         .handler()
-        .process(
-            RequestMsg {
-                sip_request: request.ack_request_from(response.sip_response.clone()),
-                ..Randomized::default()
-            }
-            .into(),
-        )
+        .process(request.ack_request_from(response.clone()).into())
         .await
         .unwrap();
     transaction
         .handler()
-        .process(
-            RequestMsg {
-                sip_request: request.ack_request_from(response.sip_response),
-                ..Randomized::default()
-            }
-            .into(),
-        )
+        .process(request.ack_request_from(response).into())
         .await
         .unwrap();
 
@@ -818,31 +607,16 @@ async fn when_confirmed_when_time_i_kicks_in_move_to_terminated() {
     let request: rsip::Request = requests::invite_request();
     transaction
         .handler()
-        .new_uas_invite(
-            RequestMsg {
-                sip_request: request.clone(),
-                ..Randomized::default()
-            },
-            Some(request.provisional_of(180)),
-        )
+        .new_uas_invite(request.clone(), Some(request.provisional_of(180)))
         .await
         .unwrap();
 
-    let response = ResponseMsg {
-        sip_response: responses::redirection_response_from(request.clone()),
-        ..Randomized::default()
-    };
+    let response = responses::redirection_response_from(request.clone());
     transaction.handler().reply(response.clone()).await.unwrap();
 
     transaction
         .handler()
-        .process(
-            RequestMsg {
-                sip_request: request.ack_request_from(response.sip_response.clone()),
-                ..Randomized::default()
-            }
-            .into(),
-        )
+        .process(request.ack_request_from(response.clone()).into())
         .await
         .unwrap();
 

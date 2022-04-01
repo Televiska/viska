@@ -1,14 +1,14 @@
 use crate::common::factories::prelude::*;
 use common::rsip::{self, prelude::*};
 use models::transport::TransportMsg;
-use sip_server::transport::{Processor, TransportProcessor};
+use sip_server::transport::{DefaultProcessor, TransportProcessor};
 use std::convert::TryInto;
 
 #[tokio::test]
 async fn incoming_response_asserts_with_wrong_sent_by() -> Result<(), sip_server::Error> {
     use rsip::Uri;
 
-    let processor = Processor::default();
+    let processor = DefaultProcessor::default();
 
     let mut response: rsip::Response =
         responses::response(Some(Uri::default()), Some(Uri::default().with_port(5090)));
@@ -42,7 +42,7 @@ async fn incoming_response_asserts_with_wrong_sent_by() -> Result<(), sip_server
 async fn incoming_response_asserts_with_correct_sent_by() -> Result<(), sip_server::Error> {
     use rsip::Uri;
 
-    let processor = Processor::default();
+    let processor = DefaultProcessor::default();
 
     let response: rsip::Response =
         responses::response(Some(Uri::default()), Some(Uri::default().with_port(5090)));
@@ -63,7 +63,7 @@ async fn incoming_response_asserts_with_correct_sent_by() -> Result<(), sip_serv
 async fn outgoing_transaction_request_applies_maddr() -> Result<(), sip_server::Error> {
     use rsip::{param::Maddr, Param};
 
-    let processor = Processor::default();
+    let processor = DefaultProcessor::default();
 
     let transport_msg = models::transport::TransportMsg {
         peer: SocketAddrBuilder {
@@ -104,7 +104,7 @@ async fn outgoing_transaction_request_applies_maddr() -> Result<(), sip_server::
 async fn outgoing_transaction_request_applies_ttl() -> Result<(), sip_server::Error> {
     use rsip::{param::Ttl, Param};
 
-    let processor = Processor::default();
+    let processor = DefaultProcessor::default();
 
     let transport_msg = TransportMsg {
         peer: SocketAddrBuilder {
@@ -140,7 +140,7 @@ async fn outgoing_transaction_request_applies_ttl() -> Result<(), sip_server::Er
 
 #[tokio::test]
 async fn outgoing_transaction_request_applies_sent_by() -> Result<(), sip_server::Error> {
-    let processor = Processor::default();
+    let processor = DefaultProcessor::default();
 
     let transport_msg = TransportMsg {
         peer: SocketAddrBuilder {
@@ -174,7 +174,7 @@ async fn outgoing_transaction_request_applies_sent_by() -> Result<(), sip_server
 async fn outgoing_core_request_applies_maddr() -> Result<(), sip_server::Error> {
     use rsip::{param::Maddr, Param};
 
-    let processor = Processor::default();
+    let processor = DefaultProcessor::default();
 
     let transport_msg = TransportMsg {
         peer: SocketAddrBuilder {
@@ -214,7 +214,7 @@ async fn outgoing_core_request_applies_maddr() -> Result<(), sip_server::Error> 
 async fn outgoing_core_request_applies_ttl() -> Result<(), sip_server::Error> {
     use rsip::{param::Ttl, Param};
 
-    let processor = Processor::default();
+    let processor = DefaultProcessor::default();
 
     let transport_msg = TransportMsg {
         peer: SocketAddrBuilder {
@@ -249,7 +249,7 @@ async fn outgoing_core_request_applies_ttl() -> Result<(), sip_server::Error> {
 
 #[tokio::test]
 async fn outgoing_core_request_applies_sent_by() -> Result<(), sip_server::Error> {
-    let processor = Processor::default();
+    let processor = DefaultProcessor::default();
 
     let transport_msg = TransportMsg {
         peer: SocketAddrBuilder {

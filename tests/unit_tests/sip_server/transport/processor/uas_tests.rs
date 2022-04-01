@@ -1,6 +1,6 @@
 use crate::common::factories::prelude::*;
 use common::rsip::{self, prelude::*};
-use sip_server::transport::{Processor, TransportProcessor};
+use sip_server::transport::{DefaultProcessor, TransportProcessor};
 use std::convert::TryInto;
 use std::net::{IpAddr, Ipv4Addr};
 
@@ -9,7 +9,7 @@ async fn incoming_request_with_other_sent_by_adds_received_param() -> Result<(),
 {
     use rsip::{Param, Uri};
 
-    let processor = Processor::default();
+    let processor = DefaultProcessor::default();
 
     let request: rsip::Request =
         requests::request(Some(Uri::default()), Some(Uri::default().with_port(5090)));
@@ -37,7 +37,7 @@ async fn incoming_request_with_other_sent_by_adds_received_param() -> Result<(),
 async fn incoming_request_with_same_sent_by_param() -> Result<(), sip_server::Error> {
     use rsip::{Param, Uri};
 
-    let processor = Processor::default();
+    let processor = DefaultProcessor::default();
 
     let request: rsip::Request =
         requests::request(Some(Uri::default()), Some(Uri::default().with_port(5090)));

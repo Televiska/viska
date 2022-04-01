@@ -1,12 +1,12 @@
-use crate::transport::TransportMsg;
+use common::rsip;
 
 //TODO: probably makes sense to split incoming from transport
 //and incoming from transaction
 #[derive(Debug, Clone)]
 pub enum TuLayerMsg {
-    Incoming(TransportMsg),
-    Outgoing(TransportMsg),
-    TransportError(TransportMsg, TransportError),
+    Incoming(rsip::SipMessage),
+    Outgoing(rsip::SipMessage),
+    TransportError(rsip::SipMessage, TransportError),
 }
 
 //TODO: add proper error type here

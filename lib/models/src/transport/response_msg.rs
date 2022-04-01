@@ -1,5 +1,6 @@
 use crate::{
     rsip_ext::DialogExt,
+    transaction::TransactionId,
     transport::{TransportMsg, UdpTuple},
     tu::DialogId,
     Error,
@@ -26,8 +27,8 @@ impl ResponseMsg {
     }
 
     //TODO: should be a proper type here instead of simply String
-    pub fn transaction_id(&self) -> Result<Option<String>, Error> {
-        Ok(self.sip_response.transaction_id()?.map(Into::into))
+    pub fn transaction_id(&self) -> Result<Option<TransactionId>, Error> {
+        Ok(self.sip_response.transaction_id()?)
     }
 
     pub fn dialog_id(&self) -> Result<DialogId, Error> {

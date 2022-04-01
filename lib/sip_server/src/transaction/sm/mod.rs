@@ -2,8 +2,7 @@ pub mod uac;
 pub mod uas;
 
 use crate::{error::TransactionError, Error};
-use common::tokio::sync::Mutex;
-use models::transport::{RequestMsg, ResponseMsg};
+use common::{rsip, tokio::sync::Mutex};
 use std::fmt::Debug;
 
 #[derive(Debug)]
@@ -28,33 +27,33 @@ impl TrxStateSm {
         };
     }
 
-    pub async fn uac_process_response(&self, msg: ResponseMsg) -> Result<(), Error> {
+    pub async fn uac_process_response(&self, msg: rsip::Response) -> Result<(), Error> {
         match self {
             Self::Uac(sm) => {
                 let mut sm = sm.lock().await;
-                sm.next(Some(msg.sip_response)).await;
+                sm.next(Some(msg)).await;
                 Ok(())
             }
             Self::Uas(_) => Err(Error::from(TransactionError::UnexpectedState)),
         }
     }
 
-    pub async fn uas_process_request(&self, msg: RequestMsg) -> Result<(), Error> {
+    pub async fn uas_process_request(&self, msg: rsip::Request) -> Result<(), Error> {
         match self {
             Self::Uas(sm) => {
                 let mut sm = sm.lock().await;
-                sm.next(Some(msg.sip_request.into())).await;
+                sm.next(Some(msg.into())).await;
                 Ok(())
             }
             Self::Uac(_) => Err(Error::from(TransactionError::UnexpectedState)),
         }
     }
 
-    pub async fn uas_process_tu_reply(&self, msg: ResponseMsg) -> Result<(), Error> {
+    pub async fn uas_process_tu_reply(&self, msg: rsip::Response) -> Result<(), Error> {
         match self {
             Self::Uas(sm) => {
                 let mut sm = sm.lock().await;
-                sm.next(Some(msg.sip_response.into())).await;
+                sm.next(Some(msg.into())).await;
                 Ok(())
             }
             Self::Uac(_) => Err(Error::from(TransactionError::UnexpectedState)),

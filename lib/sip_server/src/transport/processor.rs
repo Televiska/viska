@@ -7,10 +7,10 @@ use models::transport::{RequestMsg, ResponseMsg};
 //so that if None, transport skips the message
 
 #[derive(Debug, Default)]
-pub struct Processor;
+pub struct DefaultProcessor;
 
 #[async_trait]
-impl TransportProcessor for Processor {
+impl TransportProcessor for DefaultProcessor {
     async fn process_outgoing_request(
         &self,
         RequestMsg {

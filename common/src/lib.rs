@@ -23,7 +23,7 @@ pub use pretty_env_logger;
 pub use rand;
 pub use rand_chacha;
 pub use rsip;
-pub use rsip_dns;
+//pub use rsip_dns;
 pub use tokio;
 pub use tokio_util;
 pub use uuid;

@@ -3,11 +3,7 @@ use common::{
     ipnetwork::IpNetwork,
     rsip::{self, headers::UntypedHeader},
 };
-use models::{
-    transaction::TransactionLayerMsg,
-    transport::{RequestMsg, TransportLayerMsg},
-    tu::TuLayerMsg,
-};
+use models::{transaction::TransactionLayerMsg, transport::TransportLayerMsg, tu::TuLayerMsg};
 use sip_server::{tu::elements::Registrar, ReqProcessor};
 
 pub async fn setup() -> (
@@ -32,10 +28,7 @@ async fn with_no_records_returns_empty_list() {
     let registrar = Registrar::new(transport.handlers());
 
     registrar
-        .process_incoming_request(RequestMsg {
-            sip_request: requests::register_query_request(),
-            ..Randomized::default()
-        })
+        .process_incoming_request(requests::register_query_request())
         .await
         .unwrap();
 
@@ -45,7 +38,7 @@ async fn with_no_records_returns_empty_list() {
         .await
         .latest()
         .await
-        .outgoing_sip_response();
+        .outgoing_response();
     assert_eq!(sent_response.status_code, 200.into());
     assert!(sent_response
         .headers
@@ -66,10 +59,7 @@ async fn with_records_returns_a_list_of_contacts() {
     create_registration();
 
     registrar
-        .process_incoming_request(RequestMsg {
-            sip_request: requests::register_query_request(),
-            ..Randomized::default()
-        })
+        .process_incoming_request(requests::register_query_request())
         .await
         .unwrap();
     assert_eq!(transport.messages().await.len().await, 1);
@@ -78,7 +68,7 @@ async fn with_records_returns_a_list_of_contacts() {
         .await
         .latest()
         .await
-        .outgoing_sip_response();
+        .outgoing_response();
     assert_eq!(sent_response.status_code, 200.into());
     assert_eq!(
         sent_response
@@ -101,10 +91,7 @@ async fn with_new_register_request_saves_the_contact() {
     create_registration();
 
     registrar
-        .process_incoming_request(RequestMsg {
-            sip_request: requests::register_request(),
-            ..Randomized::default()
-        })
+        .process_incoming_request(requests::register_request())
         .await
         .unwrap();
     assert_eq!(transport.messages().await.len().await, 1);
@@ -113,7 +100,7 @@ async fn with_new_register_request_saves_the_contact() {
         .await
         .latest()
         .await
-        .outgoing_sip_response();
+        .outgoing_response();
     assert_eq!(sent_response.status_code, 200.into());
     assert_eq!(
         sent_response
@@ -145,12 +132,7 @@ async fn with_wrong_from_to_register() {
         .headers
         .unique_push(rsip::typed::To::from(Uri::default().with_user("another")).into());
 
-    let res = registrar
-        .process_incoming_request(RequestMsg {
-            sip_request: request,
-            ..Randomized::default()
-        })
-        .await;
+    let res = registrar.process_incoming_request(request).await;
     assert!(res.is_err());
     assert_eq!(transport.messages().await.len().await, 0);
 }
@@ -166,10 +148,7 @@ async fn delete_registration() {
     let (_registration, uri) = create_registration();
 
     registrar
-        .process_incoming_request(RequestMsg {
-            sip_request: requests::register_delete_request_with_uri(uri),
-            ..Randomized::default()
-        })
+        .process_incoming_request(requests::register_delete_request_with_uri(uri))
         .await
         .unwrap();
     assert_eq!(transport.messages().await.len().await, 1);
@@ -178,7 +157,7 @@ async fn delete_registration() {
         .await
         .latest()
         .await
-        .outgoing_sip_response();
+        .outgoing_response();
     assert_eq!(sent_response.status_code, 200.into());
     assert_eq!(
         sent_response
