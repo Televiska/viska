@@ -52,11 +52,7 @@ impl TransactionHandler {
         Ok(self.tx.send(TransactionLayerMsg::NewUac(msg)).await?)
     }
 
-    pub async fn new_uas(
-        &self,
-        msg: Request,
-        tu_response: Option<Response>,
-    ) -> Result<(), Error> {
+    pub async fn new_uas(&self, msg: Request, tu_response: Option<Response>) -> Result<(), Error> {
         Ok(self
             .tx
             .send(TransactionLayerMsg::NewUas(msg, tu_response))

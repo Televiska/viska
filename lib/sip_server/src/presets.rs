@@ -35,7 +35,13 @@ pub fn response_from(
     if request.to_header()?.tag()?.is_some() {
         headers.push(request.to_header()?.clone().into());
     } else {
-        headers.push(request.to_header()?.clone().with_tag(Default::default())?.into());
+        headers.push(
+            request
+                .to_header()?
+                .clone()
+                .with_tag(Default::default())?
+                .into(),
+        );
     }
 
     headers.push(rsip::Header::ContentLength(Default::default()));

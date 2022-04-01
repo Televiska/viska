@@ -1,6 +1,6 @@
 use crate::common::factories::prelude::*;
 use common::rsip::{self, prelude::*};
-use sip_server::transport::processor::Processor as TransportProcessor;
+use sip_server::transport::{Processor, TransportProcessor};
 use std::convert::TryInto;
 use std::net::{IpAddr, Ipv4Addr};
 
@@ -9,7 +9,7 @@ async fn incoming_request_with_other_sent_by_adds_received_param() -> Result<(),
 {
     use rsip::{Param, Uri};
 
-    let processor = TransportProcessor::default();
+    let processor = Processor::default();
 
     let request: rsip::Request =
         requests::request(Some(Uri::default()), Some(Uri::default().with_port(5090)));
@@ -20,7 +20,8 @@ async fn incoming_request_with_other_sent_by_adds_received_param() -> Result<(),
 
     let message = processor
         .process_incoming_request(server_msg.try_into()?)
-        .await?;
+        .await?
+        .unwrap();
     let request: rsip::Request = message.sip_request;
     let typed_via_header = &request.via_header()?.typed()?;
     let _received_param = typed_via_header
@@ -36,7 +37,7 @@ async fn incoming_request_with_other_sent_by_adds_received_param() -> Result<(),
 async fn incoming_request_with_same_sent_by_param() -> Result<(), sip_server::Error> {
     use rsip::{Param, Uri};
 
-    let processor = TransportProcessor::default();
+    let processor = Processor::default();
 
     let request: rsip::Request =
         requests::request(Some(Uri::default()), Some(Uri::default().with_port(5090)));
@@ -47,7 +48,8 @@ async fn incoming_request_with_same_sent_by_param() -> Result<(), sip_server::Er
 
     let message = processor
         .process_incoming_request(server_msg.try_into()?)
-        .await?;
+        .await?
+        .unwrap();
     let request: rsip::Request = message.sip_request;
     let typed_via_header = &request.via_header()?.typed()?;
     let received_param = typed_via_header
