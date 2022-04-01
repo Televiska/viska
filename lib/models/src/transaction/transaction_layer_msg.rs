@@ -1,22 +1,18 @@
-use crate::transport::{RequestMsg, ResponseMsg, TransportMsg};
-use common::{
-    rsip::{Request, Response},
-    tokio::sync::oneshot::Sender,
-};
+use common::{rsip, tokio::sync::oneshot::Sender};
 
 #[derive(Debug)]
 pub enum TransactionLayerMsg {
-    NewUacInvite(RequestMsg),                   //from tu
-    NewUasInvite(RequestMsg, Option<Response>), //from tu
-    NewUac(RequestMsg),                         //from tu
-    NewUas(Request, Option<Response>),          //from tu
-    Reply(ResponseMsg),                         //from tu
-    Incoming(TransportMsg),                     //from transport
-    TransportError(TransportMsg, TransportError),
+    NewUacInvite(rsip::Request),                         //from tu
+    NewUasInvite(rsip::Request, Option<rsip::Response>), //from tu
+    NewUac(rsip::Request),                               //from tu
+    NewUas(rsip::Request, Option<rsip::Response>),       //from tu
+    Reply(rsip::Response),                               //from tu
+    Incoming(rsip::SipMessage),                          //from transport
+    TransportError(rsip::SipMessage, TransportError),
     HasTransaction(TransactionId, Sender<bool>), //from transport
 }
 
 //TODO: add proper error type here
 pub type TransportError = String;
 //TODO: add proper (rsip) type here
-pub type TransactionId = String;
+pub type TransactionId = rsip::param::Branch;

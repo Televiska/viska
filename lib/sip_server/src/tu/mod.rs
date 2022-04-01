@@ -1,19 +1,17 @@
 pub mod dialogs;
 pub mod elements;
 
-use common::async_trait::async_trait;
+use common::{async_trait::async_trait, rsip};
 use std::fmt::Debug;
-
-use models::transport::{RequestMsg, ResponseMsg};
 
 #[async_trait]
 pub trait ReqProcessor: Send + Sync + Debug + 'static {
-    async fn process_incoming_request(&self, msg: RequestMsg) -> Result<(), crate::Error>;
+    async fn process_incoming_request(&self, msg: rsip::Request) -> Result<(), crate::Error>;
 }
 
 #[async_trait]
 pub trait RespProcessor: Send + Sync + Debug + 'static {
-    async fn process_incoming_response(&self, msg: ResponseMsg) -> Result<(), crate::Error>;
+    async fn process_incoming_response(&self, msg: rsip::Response) -> Result<(), crate::Error>;
 }
 
 /*

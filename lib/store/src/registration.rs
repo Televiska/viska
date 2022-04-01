@@ -12,7 +12,6 @@ use diesel::{
     serialize::{Output, ToSql},
     sql_types::Text,
 };
-use models::transport::RequestMsg;
 use std::{
     convert::TryFrom,
     fmt::{self, Debug},
@@ -236,12 +235,10 @@ impl From<rsip::Transport> for Transport {
     }
 }
 
-impl TryFrom<RequestMsg> for DirtyRegistration {
+impl TryFrom<rsip::Request> for DirtyRegistration {
     type Error = crate::Error;
 
-    fn try_from(msg: RequestMsg) -> Result<Self, Self::Error> {
-        let request = msg.sip_request;
-
+    fn try_from(request: rsip::Request) -> Result<Self, Self::Error> {
         if request.method != rsip::Method::Register {
             return Err(Self::Error::custom(format!(
                 "cannot create registration from {} method",

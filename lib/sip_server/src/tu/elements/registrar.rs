@@ -3,10 +3,7 @@ use common::{
     async_trait::async_trait,
     rsip::{self, prelude::*},
 };
-use models::{
-    transport::{RequestMsg, ResponseMsg},
-    Handlers,
-};
+use models::Handlers;
 
 #[derive(Debug)]
 pub struct Registrar {
@@ -15,10 +12,10 @@ pub struct Registrar {
 
 #[async_trait]
 impl ReqProcessor for Registrar {
-    async fn process_incoming_request(&self, msg: RequestMsg) -> Result<(), Error> {
-        apply_default_checks(&msg.sip_request)?;
+    async fn process_incoming_request(&self, msg: rsip::Request) -> Result<(), Error> {
+        apply_default_checks(&msg)?;
 
-        match msg.sip_request.contact_header() {
+        match msg.contact_header() {
             Ok(_) => self.handle_update(msg).await,
             Err(_) => self.handle_query(msg).await,
         }
@@ -30,13 +27,13 @@ impl Registrar {
         Self { handlers }
     }
 
-    async fn handle_update(&self, msg: RequestMsg) -> Result<(), Error> {
+    async fn handle_update(&self, msg: rsip::Request) -> Result<(), Error> {
         use std::convert::TryFrom;
 
-        for contact_header in msg.sip_request.contact_headers() {
+        for contact_header in msg.contact_headers() {
             let typed_contact_header = contact_header.typed()?;
 
-            match expires_value_for(contact_header, msg.sip_request.expires_header())? {
+            match expires_value_for(contact_header, msg.expires_header())? {
                 0 => {
                     store::Registration::delete_by_uri(typed_contact_header.uri.to_string())?;
                 }
@@ -50,19 +47,15 @@ impl Registrar {
         self.handle_query(msg).await
     }
 
-    async fn handle_query(&self, msg: RequestMsg) -> Result<(), Error> {
+    async fn handle_query(&self, msg: rsip::Request) -> Result<(), Error> {
         let response = create_registration_ok_from(
-            msg.sip_request.clone(),
+            msg.clone(),
             store::Registration::search(Default::default())?
                 .into_iter()
                 .map(Into::into)
                 .collect::<Vec<rsip::headers::Contact>>(),
         )?;
-        Ok(self
-            .handlers
-            .transport
-            .send(ResponseMsg::from((response, msg.peer, msg.transport)).into())
-            .await?)
+        Ok(self.handlers.transport.send(response.into()).await?)
     }
 }
 

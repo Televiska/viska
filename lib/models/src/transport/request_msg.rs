@@ -1,5 +1,6 @@
 use crate::{
     rsip_ext::DialogExt,
+    transaction::TransactionId,
     transport::{TransportMsg, UdpTuple},
     tu::DialogId,
     Error,
@@ -25,8 +26,8 @@ impl RequestMsg {
         }
     }
 
-    pub fn transaction_id(&self) -> Result<Option<String>, Error> {
-        Ok(self.sip_request.transaction_id()?.map(Into::into))
+    pub fn transaction_id(&self) -> Result<Option<TransactionId>, Error> {
+        Ok(self.sip_request.transaction_id()?)
     }
 
     pub fn dialog_id(&self) -> Result<DialogId, Error> {

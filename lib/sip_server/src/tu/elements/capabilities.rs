@@ -3,10 +3,7 @@ use common::{
     async_trait::async_trait,
     rsip::{self, prelude::*},
 };
-use models::{
-    transport::{RequestMsg, ResponseMsg},
-    Handlers,
-};
+use models::Handlers;
 
 #[derive(Debug)]
 pub struct Capabilities {
@@ -21,16 +18,12 @@ impl Capabilities {
 
 #[async_trait]
 impl ReqProcessor for Capabilities {
-    async fn process_incoming_request(&self, msg: RequestMsg) -> Result<(), Error> {
-        apply_default_checks(&msg.sip_request)?;
+    async fn process_incoming_request(&self, msg: rsip::Request) -> Result<(), Error> {
+        apply_default_checks(&msg)?;
 
-        let response = create_busy_here_from(msg.sip_request.clone())?;
+        let response = create_busy_here_from(msg.clone())?;
 
-        Ok(self
-            .handlers
-            .transport
-            .send(ResponseMsg::from((response, msg.peer, msg.transport)).into())
-            .await?)
+        Ok(self.handlers.transport.send(response.into()).await?)
     }
 }
 

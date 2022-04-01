@@ -28,29 +28,29 @@ impl Dialogs {
         self.data.read().await.get(&dialog_id).is_some()
     }
 
-    pub async fn new_uac_session(&self, msg: rsip::Request) -> Result<(), Error> {
-        let dialog_data = uac::MultiDialog::new(self.handlers.clone(), msg).await?;
+    pub async fn new_uac_session(&self, request: rsip::Request) -> Result<(), Error> {
+        let dialog_data = uac::MultiDialog::new(self.handlers.clone(), request).await?;
         let mut data = self.data.write().await;
         data.insert(dialog_data.id.clone(), dialog_data.into());
 
         Ok(())
     }
 
-    pub async fn process_incoming_response(&self, msg: rsip::Response) -> Result<(), Error> {
-        let dialog_id = msg.dialog_id()?;
+    pub async fn process_incoming_response(&self, response: rsip::Response) -> Result<(), Error> {
+        let dialog_id = response.dialog_id()?;
 
         if let Some(sm) = self.data.read().await.get(&dialog_id) {
-            sm.process_incoming_response(msg).await
+            sm.process_incoming_response(response).await
         } else {
             Err(Error::from(DialogError::NotFound))
         }
     }
 
-    pub async fn process_incoming_request(&self, msg: rsip::Request) -> Result<(), Error> {
-        let dialog_id = msg.dialog_id()?;
+    pub async fn process_incoming_request(&self, request: rsip::Request) -> Result<(), Error> {
+        let dialog_id = request.dialog_id()?;
 
         if let Some(sm) = self.data.read().await.get(&dialog_id) {
-            sm.process_incoming_request(msg).await
+            sm.process_incoming_request(request).await
         } else {
             Err(Error::from(DialogError::NotFound))
         }

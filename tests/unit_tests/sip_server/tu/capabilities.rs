@@ -1,9 +1,5 @@
 use crate::common::{factories::prelude::*, snitches::SpySnitch};
-use models::{
-    transaction::TransactionLayerMsg,
-    transport::{RequestMsg, TransportLayerMsg},
-    tu::TuLayerMsg,
-};
+use models::{transaction::TransactionLayerMsg, transport::TransportLayerMsg, tu::TuLayerMsg};
 use sip_server::{tu::elements::Capabilities, ReqProcessor};
 
 pub async fn setup() -> (
@@ -27,10 +23,7 @@ async fn sending_an_options_request_receives_busy() {
     let capabilities = Capabilities::new(transport.handlers());
 
     capabilities
-        .process_incoming_request(RequestMsg {
-            sip_request: requests::options_request(),
-            ..Randomized::default()
-        })
+        .process_incoming_request(requests::options_request())
         .await
         .unwrap();
     assert_eq!(transport.messages().await.len().await, 1);

@@ -1,7 +1,6 @@
 use super::setup;
 use crate::common::{advance_for, extensions::TransactionUacExt, factories::prelude::*};
 use common::rsip::{self, prelude::*};
-use models::transport::{RequestMsg, TransportMsg};
 use sip_server::transaction::sm::uac::TIMER_M;
 use std::time::Duration;
 
@@ -12,10 +11,7 @@ async fn if_peer_not_responding() {
     let request: rsip::Request = requests::invite_request();
     transaction
         .handler()
-        .new_uac_invite(RequestMsg {
-            sip_request: request.clone(),
-            ..Randomized::default()
-        })
+        .new_uac_invite(request.clone())
         .await
         .unwrap();
 
@@ -66,13 +62,7 @@ async fn with_trying_goes_through_proceeding() {
     let (tu, transaction, transport) = setup().await;
 
     let request: rsip::Request = requests::invite_request();
-    let result = transaction
-        .handler()
-        .new_uac_invite(RequestMsg {
-            sip_request: request.clone(),
-            ..Randomized::default()
-        })
-        .await;
+    let result = transaction.handler().new_uac_invite(request.clone()).await;
     assert!(result.is_ok(), "returns: {:?}", result);
 
     assert_eq!(transport.messages().await.len().await, 1);
@@ -93,10 +83,7 @@ async fn with_trying_goes_through_proceeding() {
     let response: rsip::Response = responses::trying_response_from(request.clone());
     transaction
         .handler()
-        .process(TransportMsg {
-            sip_message: response.clone().into(),
-            ..Randomized::default()
-        })
+        .process(response.clone().into())
         .await
         .unwrap();
 
@@ -119,10 +106,7 @@ async fn with_trying_goes_through_proceeding() {
     let response: rsip::Response = responses::ok_response_from(request.clone());
     transaction
         .handler()
-        .process(TransportMsg {
-            sip_message: response.clone().into(),
-            ..Randomized::default()
-        })
+        .process(response.clone().into())
         .await
         .unwrap();
 
@@ -164,10 +148,7 @@ async fn request_failure_goes_through_completed() {
     let request: rsip::Request = requests::invite_request();
     transaction
         .handler()
-        .new_uac_invite(RequestMsg {
-            sip_request: request.clone(),
-            ..Randomized::default()
-        })
+        .new_uac_invite(request.clone())
         .await
         .unwrap();
 
@@ -190,10 +171,7 @@ async fn request_failure_goes_through_completed() {
     let response: rsip::Response = responses::request_failure_response_from(request.clone());
     transaction
         .handler()
-        .process(TransportMsg {
-            sip_message: response.clone().into(),
-            ..Randomized::default()
-        })
+        .process(response.clone().into())
         .await
         .unwrap();
 
@@ -235,10 +213,7 @@ async fn multiple_request_failure_goes_through_completed() {
     let request: rsip::Request = requests::invite_request();
     transaction
         .handler()
-        .new_uac_invite(RequestMsg {
-            sip_request: request.clone(),
-            ..Randomized::default()
-        })
+        .new_uac_invite(request.clone())
         .await
         .unwrap();
 
@@ -261,10 +236,7 @@ async fn multiple_request_failure_goes_through_completed() {
     let response: rsip::Response = responses::request_failure_response_from(request.clone());
     transaction
         .handler()
-        .process(TransportMsg {
-            sip_message: response.clone().into(),
-            ..Randomized::default()
-        })
+        .process(response.clone().into())
         .await
         .unwrap();
 
@@ -289,10 +261,7 @@ async fn multiple_request_failure_goes_through_completed() {
     let response: rsip::Response = responses::request_failure_response_from(request.clone());
     transaction
         .handler()
-        .process(TransportMsg {
-            sip_message: response.clone().into(),
-            ..Randomized::default()
-        })
+        .process(response.clone().into())
         .await
         .unwrap();
 
@@ -334,10 +303,7 @@ async fn unexpected_failures_when_accepted_goes_to_errored() {
     let request: rsip::Request = requests::invite_request();
     transaction
         .handler()
-        .new_uac_invite(RequestMsg {
-            sip_request: request.clone(),
-            ..Randomized::default()
-        })
+        .new_uac_invite(request.clone())
         .await
         .unwrap();
 
@@ -360,10 +326,7 @@ async fn unexpected_failures_when_accepted_goes_to_errored() {
     let response: rsip::Response = responses::trying_response_from(request.clone());
     transaction
         .handler()
-        .process(TransportMsg {
-            sip_message: response.clone().into(),
-            ..Randomized::default()
-        })
+        .process(response.clone().into())
         .await
         .unwrap();
 
@@ -386,10 +349,7 @@ async fn unexpected_failures_when_accepted_goes_to_errored() {
     let response: rsip::Response = responses::ok_response_from(request.clone());
     transaction
         .handler()
-        .process(TransportMsg {
-            sip_message: response.clone().into(),
-            ..Randomized::default()
-        })
+        .process(response.clone().into())
         .await
         .unwrap();
 
@@ -413,10 +373,7 @@ async fn unexpected_failures_when_accepted_goes_to_errored() {
     let response: rsip::Response = responses::request_failure_response_from(request.clone());
     transaction
         .handler()
-        .process(TransportMsg {
-            sip_message: response.clone().into(),
-            ..Randomized::default()
-        })
+        .process(response.clone().into())
         .await
         .unwrap();
 
@@ -440,10 +397,7 @@ async fn ok_when_completed_goes_to_errored() {
     let request: rsip::Request = requests::invite_request();
     transaction
         .handler()
-        .new_uac_invite(RequestMsg {
-            sip_request: request.clone(),
-            ..Randomized::default()
-        })
+        .new_uac_invite(request.clone())
         .await
         .unwrap();
 
@@ -465,10 +419,7 @@ async fn ok_when_completed_goes_to_errored() {
     let response: rsip::Response = responses::trying_response_from(request.clone());
     transaction
         .handler()
-        .process(TransportMsg {
-            sip_message: response.clone().into(),
-            ..Randomized::default()
-        })
+        .process(response.clone().into())
         .await
         .unwrap();
 
@@ -491,10 +442,7 @@ async fn ok_when_completed_goes_to_errored() {
     let response: rsip::Response = responses::request_failure_response_from(request.clone());
     transaction
         .handler()
-        .process(TransportMsg {
-            sip_message: response.clone().into(),
-            ..Randomized::default()
-        })
+        .process(response.clone().into())
         .await
         .unwrap();
 
@@ -519,10 +467,7 @@ async fn ok_when_completed_goes_to_errored() {
     let response: rsip::Response = responses::ok_response_from(request.clone());
     transaction
         .handler()
-        .process(TransportMsg {
-            sip_message: response.clone().into(),
-            ..Randomized::default()
-        })
+        .process(response.clone().into())
         .await
         .unwrap();
 

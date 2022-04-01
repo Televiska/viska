@@ -2,13 +2,12 @@ pub mod sm;
 
 use crate::{error::TransactionError, Error};
 use common::{
-    rsip,
+    rsip::{self, message::HeadersExt},
     tokio::{self, sync::RwLock},
 };
 use models::{
     receivers::TrxReceiver,
-    transaction::{TransactionHandler, TransactionLayerMsg},
-    transport::{RequestMsg, ResponseMsg, TransportMsg},
+    transaction::{TransactionHandler, TransactionId, TransactionLayerMsg},
     Handlers,
 };
 use sm::TrxStateSm;
@@ -23,7 +22,7 @@ pub struct Transaction {
 #[derive(Debug)]
 pub struct Inner {
     handlers: Handlers,
-    pub state: RwLock<HashMap<String, TrxStateSm>>,
+    pub state: RwLock<HashMap<TransactionId, TrxStateSm>>,
 }
 
 //TODO: make impl here thinner by moving stuff over to TransactionsSm, like in dialogs
@@ -86,7 +85,7 @@ impl Inner {
         Ok(())
     }
 
-    pub async fn exists(&self, transaction_id: String) -> bool {
+    pub async fn exists(&self, transaction_id: TransactionId) -> bool {
         let state = self.state.read().await;
 
         state.get(&transaction_id).is_some()
@@ -94,7 +93,7 @@ impl Inner {
 
     async fn process_transport_error(
         &self,
-        msg: TransportMsg,
+        msg: rsip::SipMessage,
         reason: String,
     ) -> Result<(), Error> {
         let transaction_id = msg.transaction_id()?.expect("transaction_id");
@@ -107,7 +106,7 @@ impl Inner {
         Err(Error::from(TransactionError::NotFound))
     }
 
-    async fn new_uac_invite_transaction(&self, msg: RequestMsg) -> Result<(), Error> {
+    async fn new_uac_invite_transaction(&self, msg: rsip::Request) -> Result<(), Error> {
         self.handlers.transport.send(msg.clone().into()).await?;
         let transaction_data = sm::uac::TrxStateMachine::new(self.handlers.clone(), msg.clone())?;
         {
@@ -119,12 +118,12 @@ impl Inner {
 
     async fn new_uas_invite_transaction(
         &self,
-        msg: RequestMsg,
+        request: rsip::Request,
         response: Option<rsip::Response>,
     ) -> Result<(), Error> {
-        self.handlers.transport.send(msg.clone().into()).await?;
+        self.handlers.transport.send(request.clone().into()).await?;
         let transaction_data =
-            sm::uas::TrxStateMachine::new(self.handlers.clone(), msg.clone(), response)?;
+            sm::uas::TrxStateMachine::new(self.handlers.clone(), request.clone(), response)?;
 
         {
             let mut data = self.state.write().await;
@@ -134,7 +133,7 @@ impl Inner {
         Ok(())
     }
 
-    async fn new_uac_transaction(&self, _: RequestMsg) -> Result<(), Error> {
+    async fn new_uac_transaction(&self, _: rsip::Request) -> Result<(), Error> {
         unimplemented!("");
     }
 
@@ -146,46 +145,40 @@ impl Inner {
         unimplemented!("");
     }
 
-    async fn process_tu_reply(&self, msg: ResponseMsg) -> Result<(), Error> {
-        let transaction_id = msg.transaction_id()?.expect("transaction_id");
+    async fn process_tu_reply(&self, response: rsip::Response) -> Result<(), Error> {
+        let transaction_id = response.transaction_id()?.expect("transaction_id");
 
         match self.state.read().await.get(&transaction_id) {
-            Some(sm) => Ok(sm.uas_process_tu_reply(msg).await?),
+            Some(sm) => Ok(sm.uas_process_tu_reply(response).await?),
             None => Err(Error::from(TransactionError::NotFound)),
         }
     }
 
-    async fn process_incoming(&self, msg: TransportMsg) -> Result<(), Error> {
-        let sip_message = msg.sip_message;
-
-        match sip_message {
-            rsip::SipMessage::Request(request) => {
-                self.process_incoming_request(RequestMsg::new(request, msg.peer, msg.transport))
-                    .await?
-            }
+    async fn process_incoming(&self, msg: rsip::SipMessage) -> Result<(), Error> {
+        match msg {
+            rsip::SipMessage::Request(request) => self.process_incoming_request(request).await?,
             rsip::SipMessage::Response(response) => {
-                self.process_incoming_response(ResponseMsg::new(response, msg.peer, msg.transport))
-                    .await?
+                self.process_incoming_response(response).await?
             }
         }
 
         Ok(())
     }
 
-    async fn process_incoming_request(&self, msg: RequestMsg) -> Result<(), Error> {
-        let transaction_id = msg.transaction_id()?.expect("transaction_id");
+    async fn process_incoming_request(&self, request: rsip::Request) -> Result<(), Error> {
+        let transaction_id = request.transaction_id()?.expect("transaction_id");
 
         match self.state.read().await.get(&transaction_id) {
-            Some(sm) => Ok(sm.uas_process_request(msg).await?),
+            Some(sm) => Ok(sm.uas_process_request(request).await?),
             None => Err(Error::from(TransactionError::NotFound)),
         }
     }
 
-    async fn process_incoming_response(&self, msg: ResponseMsg) -> Result<(), Error> {
-        let transaction_id = msg.transaction_id()?.expect("transaction_id");
+    async fn process_incoming_response(&self, response: rsip::Response) -> Result<(), Error> {
+        let transaction_id = response.transaction_id()?.expect("transaction_id");
 
         match self.state.read().await.get(&transaction_id) {
-            Some(sm) => Ok(sm.uac_process_response(msg).await?),
+            Some(sm) => Ok(sm.uac_process_response(response).await?),
             None => Err(Error::from(TransactionError::NotFound)),
         }
     }
