@@ -1,7 +1,7 @@
 use common::{rsip, tokio::time::Instant};
 
 #[derive(Debug)]
-pub struct Early {
+pub struct UnAcked {
     pub entered_at: Instant,
     pub response: rsip::Response,
 }

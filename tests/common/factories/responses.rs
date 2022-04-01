@@ -27,30 +27,12 @@ pub fn response(from_uri: Option<Uri>, to_uri: Option<Uri>) -> rsip::Response {
 }
 
 pub fn trying_response_from(request: rsip::Request) -> rsip::Response {
-    let mut headers: rsip::Headers = Default::default();
-    headers.push(request.via_header().expect("via header").clone().into());
-    headers.push(From::new(request.to_header().expect("to header").clone()).into());
-    headers.push(To::new(request.from_header().expect("from header").clone()).into());
-    headers.push(
-        request
-            .call_id_header()
-            .expect("call_id header")
-            .clone()
-            .into(),
-    );
-    headers.push(
-        typed::CSeq::from((
-            request
-                .cseq_header()
-                .expect("cseq header")
-                .typed()
-                .expect("cseq typed header")
-                .seq,
-            request.method,
-        ))
-        .into(),
-    );
-    headers.push(MaxForwards::default().into());
+    let mut headers = request.headers().clone();
+    let typed_to_header = rsip::header_opt!(headers.iter(), Header::To)
+        .expect("to header")
+        .typed()
+        .expect("to from header");
+    headers.unique_push(rsip::typed::Contact::from(typed_to_header.uri).into());
 
     rsip::Response {
         status_code: 100.into(),
@@ -60,31 +42,30 @@ pub fn trying_response_from(request: rsip::Request) -> rsip::Response {
     }
 }
 
+pub fn ringing_response_from(request: rsip::Request) -> rsip::Response {
+    let mut headers = request.headers().clone();
+    let typed_to_header = rsip::header_opt!(headers.iter(), Header::To)
+        .expect("to header")
+        .typed()
+        .expect("to from header");
+    headers.unique_push(rsip::typed::Contact::from(typed_to_header.uri).into());
+
+    rsip::Response {
+        status_code: 180.into(),
+        headers,
+        version: Default::default(),
+        body: Default::default(),
+    }
+}
+
 pub fn ok_response_from(request: rsip::Request) -> rsip::Response {
-    let mut headers: rsip::Headers = Default::default();
-    headers.push(request.via_header().expect("via header").clone().into());
-    headers.push(From::new(request.to_header().expect("to header").clone()).into());
-    headers.push(To::new(request.from_header().expect("from header").clone()).into());
-    headers.push(
-        request
-            .call_id_header()
-            .expect("call_id header")
-            .clone()
-            .into(),
-    );
-    headers.push(
-        typed::CSeq::from((
-            request
-                .cseq_header()
-                .expect("cseq header")
-                .typed()
-                .expect("typed cseq header")
-                .seq,
-            request.method,
-        ))
-        .into(),
-    );
-    headers.push(MaxForwards::default().into());
+    let mut headers = request.headers().clone();
+    let typed_to_header = rsip::header_opt!(headers.iter(), Header::To)
+        .expect("to header")
+        .typed()
+        .expect("to from header");
+    headers.unique_push(rsip::typed::Contact::from(typed_to_header.uri.clone()).into());
+    headers.unique_push(typed_to_header.with_tag(Default::default()).into());
 
     rsip::Response {
         status_code: 200.into(),

@@ -34,13 +34,31 @@ pub fn request(from_uri: Option<Uri>, to_uri: Option<Uri>) -> rsip::Request {
 pub fn invite_request() -> rsip::Request {
     let mut headers: Headers = Randomized::default();
     headers.unique_push(typed::CSeq::from((1, Method::Invite)).into());
+
     let typed_to_header = rsip::header_opt!(headers.iter(), Header::To)
-        .expect("to header")
+        .unwrap()
         .typed()
-        .expect("typed to header");
+        .unwrap();
 
     rsip::Request {
         method: Method::Invite,
+        uri: typed_to_header.uri.stripped(),
+        headers,
+        ..Randomized::default()
+    }
+}
+
+pub fn bye_request() -> rsip::Request {
+    let mut headers: Headers = Randomized::default();
+    headers.unique_push(typed::CSeq::from((1, Method::Bye)).into());
+
+    let typed_to_header = rsip::header_opt!(headers.iter(), Header::To)
+        .unwrap()
+        .typed()
+        .unwrap();
+
+    rsip::Request {
+        method: Method::Bye,
         uri: typed_to_header.uri.stripped(),
         headers,
         ..Randomized::default()

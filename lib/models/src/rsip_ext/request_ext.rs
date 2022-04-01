@@ -1,14 +1,13 @@
 use common::rsip::{self, prelude::*};
 
 pub trait RequestExt {
-    fn ack_request_with(&self, response: rsip::Response) -> rsip::Request;
+    fn ack_request_from(&self, response: rsip::Response) -> rsip::Request;
     fn provisional_of(&self, code: impl Into<rsip::StatusCode>) -> rsip::Response;
 }
 
 impl RequestExt for rsip::Request {
-    //TODO: should probably pass headers or just To and Route header
-    fn ack_request_with(&self, response: rsip::Response) -> rsip::Request {
-        use rsip::{headers::*, param::Tag, Headers, Method};
+    fn ack_request_from(&self, response: rsip::Response) -> rsip::Request {
+        use rsip::{headers::*, Headers, Method};
 
         let mut headers: Headers = Default::default();
         headers.push(
@@ -19,16 +18,13 @@ impl RequestExt for rsip::Request {
         );
         headers.push(self.from_header().expect("from header").clone().into());
 
-        let mut to_header = response
+        let to_header = response
             .to_header()
             .expect("to header")
             .typed()
             .expect("typed to header");
 
-        if to_header.tag().is_none() {
-            to_header.with_tag(Tag::default());
-        }
-        headers.push(to_header.into());
+        headers.push(to_header.with_tag(Default::default()).into());
 
         //TODO: should be only the top via header
         headers.push(self.via_header().expect("via header").clone().into());
@@ -59,7 +55,7 @@ impl RequestExt for rsip::Request {
     }
 
     fn provisional_of(&self, status_code: impl Into<rsip::StatusCode>) -> rsip::Response {
-        use rsip::{headers::*, param::Tag, Headers};
+        use rsip::{headers::*, Headers};
 
         let mut headers: Headers = Default::default();
         headers.push(
@@ -70,13 +66,12 @@ impl RequestExt for rsip::Request {
         );
         headers.push(self.from_header().expect("from header").clone().into());
 
-        let mut to_header = self
+        let to_header = self
             .to_header()
             .expect("to header")
             .typed()
             .expect("typed to header");
-        to_header.with_tag(Tag::default());
-        headers.push(to_header.into());
+        headers.push(to_header.with_tag(Default::default()).into());
 
         //TODO: should be only the top via header
         headers.push(self.via_header().expect("via header").clone().into());

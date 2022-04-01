@@ -1,6 +1,6 @@
 //mod processor;
 
-use crate::{presets, Dialogs, Error, ReqProcessor};
+use crate::{presets, tu::dialogs::Dialogs, Error, ReqProcessor};
 use common::{rsip, tokio};
 use std::sync::Arc;
 
@@ -28,7 +28,7 @@ impl<R: ReqProcessor, C: ReqProcessor> UserAgent<R, C> {
             inner: Arc::new(Inner {
                 registrar,
                 capabilities,
-                dialogs: Dialogs::new(handlers.clone())?,
+                dialogs: Dialogs::new(handlers.clone()),
                 handlers,
             }),
         };
@@ -66,6 +66,7 @@ impl<R: ReqProcessor, C: ReqProcessor> Inner<R, C> {
     async fn receive(&self, msg: TuLayerMsg) -> Result<(), Error> {
         match msg {
             TuLayerMsg::Incoming(msg) => self.process_incoming_message(msg).await?,
+            TuLayerMsg::Outgoing(msg) => self.process_outgoing_message(msg).await?,
             TuLayerMsg::TransportError(msg, error) => {
                 self.process_transport_error(msg, error).await?
             }
@@ -74,12 +75,8 @@ impl<R: ReqProcessor, C: ReqProcessor> Inner<R, C> {
         Ok(())
     }
 
-    async fn process_transport_error(
-        &self,
-        _msg: TransportMsg,
-        _error: String,
-    ) -> Result<(), Error> {
-        Ok(())
+    async fn process_transport_error(&self, msg: TransportMsg, error: String) -> Result<(), Error> {
+        Ok(self.dialogs.transport_error(msg, error).await?)
     }
 
     async fn process_incoming_message(&self, msg: TransportMsg) -> Result<(), Error> {
@@ -87,16 +84,36 @@ impl<R: ReqProcessor, C: ReqProcessor> Inner<R, C> {
 
         match sip_message {
             rsip::SipMessage::Request(request) => {
-                self.handle_request(RequestMsg::new(request, msg.peer, msg.transport))
+                self.handle_incoming_request(RequestMsg::new(request, msg.peer, msg.transport))
                     .await?;
             }
-            rsip::SipMessage::Response(_) => common::log::error!("we don't support responses yet"),
+            rsip::SipMessage::Response(response) => {
+                self.handle_incoming_response(ResponseMsg::new(response, msg.peer, msg.transport))
+                    .await?;
+            }
         };
 
         Ok(())
     }
 
-    async fn handle_request(&self, msg: RequestMsg) -> Result<(), Error> {
+    async fn process_outgoing_message(&self, msg: TransportMsg) -> Result<(), Error> {
+        let sip_message = msg.sip_message;
+
+        match sip_message {
+            rsip::SipMessage::Request(request) => {
+                self.handle_outgoing_request(RequestMsg::new(request, msg.peer, msg.transport))
+                    .await?;
+            }
+            rsip::SipMessage::Response(response) => {
+                self.handle_outgoing_response(ResponseMsg::new(response, msg.peer, msg.transport))
+                    .await?;
+            }
+        };
+
+        Ok(())
+    }
+
+    async fn handle_incoming_request(&self, msg: RequestMsg) -> Result<(), Error> {
         use rsip::Method;
 
         match msg.sip_request.method {
@@ -116,6 +133,39 @@ impl<R: ReqProcessor, C: ReqProcessor> Inner<R, C> {
                     .await?
             }
         };
+
+        Ok(())
+    }
+
+    async fn handle_incoming_response(&self, msg: ResponseMsg) -> Result<(), Error> {
+        if let Ok(dialog_id) = msg.dialog_id() {
+            if self.dialogs.exists(dialog_id).await {
+                //TODO: this is wrong, uac dialogs can process requests as well
+                self.dialogs.uac_process_incoming_response(msg).await?
+            } else {
+                common::log::warn!("received response msg but no dialog exists for that msg");
+            };
+        }
+
+        Ok(())
+    }
+
+    async fn handle_outgoing_request(&self, msg: RequestMsg) -> Result<(), Error> {
+        use rsip::Method;
+
+        match msg.sip_request.method {
+            Method::Invite => {
+                //TODO: consider letting the dialog handle the transaction creation ?
+                self.dialogs.new_uac_session(msg.clone()).await?;
+            }
+            _ => self.handlers.transport.send(msg.into()).await?,
+        };
+
+        Ok(())
+    }
+
+    async fn handle_outgoing_response(&self, msg: ResponseMsg) -> Result<(), Error> {
+        self.handlers.transport.send(msg.into()).await?;
 
         Ok(())
     }

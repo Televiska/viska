@@ -10,4 +10,4 @@ pub mod tu;
 pub use error::{Error, ErrorKind};
 pub use transaction::Transaction;
 pub use transport::Transport;
-pub use tu::{Dialogs, ReqProcessor};
+pub use tu::ReqProcessor;

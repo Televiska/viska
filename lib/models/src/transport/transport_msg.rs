@@ -1,5 +1,7 @@
 use crate::{
+    rsip_ext::DialogExt,
     transport::{RequestMsg, ResponseMsg, UdpTuple},
+    tu::DialogId,
     Error,
 };
 use common::rsip::{self, prelude::*, Transport};
@@ -22,6 +24,10 @@ impl TransportMsg {
 
     pub fn is_request(&self) -> bool {
         self.sip_message.is_request()
+    }
+
+    pub fn dialog_id(&self) -> Result<DialogId, Error> {
+        self.sip_message.dialog_id()
     }
 }
 

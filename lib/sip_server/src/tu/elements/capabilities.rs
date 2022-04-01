@@ -60,11 +60,8 @@ fn create_busy_here_from(request: rsip::Request) -> Result<rsip::Response, crate
 
     let mut headers: Headers = Default::default();
 
-    let mut typed_to_header = request.to_header()?.typed()?;
-    typed_to_header.with_tag(Default::default());
-
     headers.push(request.via_header()?.clone().into());
-    headers.push(typed_to_header.into());
+    headers.push(request.to_header()?.typed()?.with_tag(Default::default()).into());
     headers.push(request.from_header()?.clone().into());
     headers.push(request.call_id_header()?.clone().into());
     headers.push(request.cseq_header()?.clone().into());
