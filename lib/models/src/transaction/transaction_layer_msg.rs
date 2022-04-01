@@ -9,7 +9,7 @@ pub enum TransactionLayerMsg {
     NewUacInvite(RequestMsg),                   //from tu
     NewUasInvite(RequestMsg, Option<Response>), //from tu
     NewUac(RequestMsg),                         //from tu
-    NewUas(Request, Option<Response>),    //from tu
+    NewUas(Request, Option<Response>),          //from tu
     Reply(ResponseMsg),                         //from tu
     Incoming(TransportMsg),                     //from transport
     TransportError(TransportMsg, TransportError),

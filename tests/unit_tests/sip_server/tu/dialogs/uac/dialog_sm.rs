@@ -84,7 +84,16 @@ async fn creates_a_confirmed_dialog() {
 
     assert_eq!(
         dialog_sm.remote_tag,
-        Some(ok_response.clone().to_header().unwrap().tag().ok().flatten().unwrap())
+        Some(
+            ok_response
+                .clone()
+                .to_header()
+                .unwrap()
+                .tag()
+                .ok()
+                .flatten()
+                .unwrap()
+        )
     );
     assert_eq!(
         dialog_sm.remote_seqn,

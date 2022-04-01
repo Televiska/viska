@@ -6,7 +6,12 @@ use super::{
 use crate::{presets, Error};
 use common::rsip::{self, prelude::*, uri::UriWithParams};
 use common::tokio::time::Instant;
-use models::{rsip_ext::*, transport::{ResponseMsg, RequestMsg}, tu::DialogId, Handlers};
+use models::{
+    rsip_ext::*,
+    transport::{RequestMsg, ResponseMsg},
+    tu::DialogId,
+    Handlers,
+};
 
 #[derive(Debug)]
 pub struct DialogSm {
@@ -318,16 +323,14 @@ impl DialogSm {
         Ok(request)
     }
 
-    fn validate_incoming_request(
-        &mut self,
-        request: &rsip::Request,
-    ) -> Result<(), Error> {
+    fn validate_incoming_request(&mut self, request: &rsip::Request) -> Result<(), Error> {
         let req_seqn = request.cseq_header()?.seq()?;
         if let (Some(remote_seqn), req_seqn) = (self.remote_seqn, req_seqn) {
             if remote_seqn > req_seqn {
-                return Err(Error::from(
-                    format!("request remote seqn is lower than {}", remote_seqn),
-                ));
+                return Err(Error::from(format!(
+                    "request remote seqn is lower than {}",
+                    remote_seqn
+                )));
             }
         }
         //    (_, req_seqn) => self.remote_seqn = Some(req_seqn),
@@ -423,7 +426,12 @@ async fn request_msg_from(request: rsip::Request) -> RequestMsg {
 #[allow(dead_code)]
 async fn response_msg_from(response: rsip::Response) -> Result<ResponseMsg, Error> {
     let via_header = response.via_header()?.typed()?;
-    let port: u16 = via_header.sent_by().port().cloned().map(Into::into).unwrap_or(5060);
+    let port: u16 = via_header
+        .sent_by()
+        .port()
+        .cloned()
+        .map(Into::into)
+        .unwrap_or(5060);
 
     match (
         via_header.sent_protocol(),
@@ -434,17 +442,15 @@ async fn response_msg_from(response: rsip::Response) -> Result<ResponseMsg, Erro
             peer: (received, port).into(),
             transport: rsip::Transport::Udp,
         }),
-        (rsip::Transport::Udp, None) => {
-            match via_header.sent_by().host() {
-                rsip::Host::Domain(_) => panic!("need to run from RFC3263"),
-                rsip::Host::IpAddr(ip_addr) => Ok(ResponseMsg {
-                    sip_response: response,
-                    peer: (*ip_addr, port).into(),
-                    transport: rsip::Transport::Udp,
-                }),
-            }
+        (rsip::Transport::Udp, None) => match via_header.sent_by().host() {
+            rsip::Host::Domain(_) => panic!("need to run from RFC3263"),
+            rsip::Host::IpAddr(ip_addr) => Ok(ResponseMsg {
+                sip_response: response,
+                peer: (*ip_addr, port).into(),
+                transport: rsip::Transport::Udp,
+            }),
         },
-        (transport, _) => panic!("not supported transport: {}", transport)
+        (transport, _) => panic!("not supported transport: {}", transport),
     }
 }
 

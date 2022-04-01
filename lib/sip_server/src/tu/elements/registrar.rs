@@ -138,7 +138,13 @@ fn create_registration_ok_from(
     headers.push(request.call_id_header()?.clone().into());
     headers.push(request.cseq_header()?.clone().into());
     headers.push(request.via_header()?.clone().into());
-    headers.push(request.to_header()?.typed()?.with_tag(Default::default()).into());
+    headers.push(
+        request
+            .to_header()?
+            .typed()?
+            .with_tag(Default::default())
+            .into(),
+    );
     headers.push(ContentLength::default().into());
     headers.push(Server::default().into());
     for contact in contacts {
