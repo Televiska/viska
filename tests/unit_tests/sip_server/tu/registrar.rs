@@ -40,20 +40,14 @@ async fn with_no_records_returns_empty_list() {
         .unwrap();
 
     assert_eq!(transport.messages().await.len().await, 1);
-    assert_eq!(
-        transport
-            .messages()
-            .await
-            .first_response()
-            .await
-            .status_code,
-        200.into()
-    );
-    assert!(transport
+    let sent_response = transport
         .messages()
         .await
-        .first_response()
+        .latest()
         .await
+        .outgoing_sip_response();
+    assert_eq!(sent_response.status_code, 200.into());
+    assert!(sent_response
         .headers
         .iter()
         .find(|h| matches!(h, rsip::Header::Contact(_)))
@@ -79,21 +73,15 @@ async fn with_records_returns_a_list_of_contacts() {
         .await
         .unwrap();
     assert_eq!(transport.messages().await.len().await, 1);
+    let sent_response = transport
+        .messages()
+        .await
+        .latest()
+        .await
+        .outgoing_sip_response();
+    assert_eq!(sent_response.status_code, 200.into());
     assert_eq!(
-        transport
-            .messages()
-            .await
-            .first_response()
-            .await
-            .status_code,
-        200.into()
-    );
-    assert_eq!(
-        transport
-            .messages()
-            .await
-            .first_response()
-            .await
+        sent_response
             .headers
             .iter()
             .filter(|h| matches!(h, rsip::Header::Contact(_)))
@@ -120,21 +108,15 @@ async fn with_new_register_request_saves_the_contact() {
         .await
         .unwrap();
     assert_eq!(transport.messages().await.len().await, 1);
+    let sent_response = transport
+        .messages()
+        .await
+        .latest()
+        .await
+        .outgoing_sip_response();
+    assert_eq!(sent_response.status_code, 200.into());
     assert_eq!(
-        transport
-            .messages()
-            .await
-            .first_response()
-            .await
-            .status_code,
-        200.into()
-    );
-    assert_eq!(
-        transport
-            .messages()
-            .await
-            .first_response()
-            .await
+        sent_response
             .headers
             .iter()
             .filter(|h| matches!(h, rsip::Header::Contact(_)))
@@ -191,21 +173,15 @@ async fn delete_registration() {
         .await
         .unwrap();
     assert_eq!(transport.messages().await.len().await, 1);
+    let sent_response = transport
+        .messages()
+        .await
+        .latest()
+        .await
+        .outgoing_sip_response();
+    assert_eq!(sent_response.status_code, 200.into());
     assert_eq!(
-        transport
-            .messages()
-            .await
-            .first_response()
-            .await
-            .status_code,
-        200.into()
-    );
-    assert_eq!(
-        transport
-            .messages()
-            .await
-            .first_response()
-            .await
+        sent_response
             .headers
             .iter()
             .filter(|h| matches!(h, rsip::Header::Contact(_)))

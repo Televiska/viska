@@ -26,6 +26,7 @@ pub struct Inner {
     pub state: RwLock<HashMap<String, TrxStateSm>>,
 }
 
+//TODO: make impl here thinner by moving stuff over to TransactionsSm, like in dialogs
 impl Transaction {
     pub fn new(handlers: Handlers, messages_rx: TrxReceiver) -> Result<Self, Error> {
         let me = Self {
@@ -67,6 +68,10 @@ impl Inner {
             TransactionLayerMsg::NewUacInvite(msg) => self.new_uac_invite_transaction(msg).await?,
             TransactionLayerMsg::NewUasInvite(msg, response) => {
                 self.new_uas_invite_transaction(msg, response).await?
+            }
+            TransactionLayerMsg::NewUac(msg) => self.new_uac_transaction(msg).await?,
+            TransactionLayerMsg::NewUas(msg, response) => {
+                self.new_uas_transaction(msg, response).await?
             }
             TransactionLayerMsg::Reply(msg) => self.process_tu_reply(msg).await?,
             TransactionLayerMsg::Incoming(msg) => self.process_incoming(msg).await?,
@@ -127,6 +132,18 @@ impl Inner {
         }
 
         Ok(())
+    }
+
+    async fn new_uac_transaction(&self, _: RequestMsg) -> Result<(), Error> {
+        unimplemented!("");
+    }
+
+    async fn new_uas_transaction(
+        &self,
+        _: rsip::Request,
+        _: Option<rsip::Response>,
+    ) -> Result<(), Error> {
+        unimplemented!("");
     }
 
     async fn process_tu_reply(&self, msg: ResponseMsg) -> Result<(), Error> {

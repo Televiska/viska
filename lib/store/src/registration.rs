@@ -280,7 +280,7 @@ impl TryFrom<RequestMsg> for DirtyRegistration {
             expires: Some(Utc::now() + Duration::seconds(expires)),
             call_id: Some(request.call_id_header()?.clone().into()),
             cseq: Some(request.cseq_header()?.typed()?.seq as i32),
-            user_agent: Some(request.user_agent_header()?.clone().into()),
+            user_agent: Some(request.user_agent_header().unwrap().clone().into()),
             instance: Some("something".into()),
             ip_address: Some(IpAddr::V4(Ipv4Addr::new(192, 168, 0, 3)).into()),
             port: Some(

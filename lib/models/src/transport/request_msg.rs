@@ -1,5 +1,7 @@
 use crate::{
+    rsip_ext::DialogExt,
     transport::{TransportMsg, UdpTuple},
+    tu::DialogId,
     Error,
 };
 use common::rsip::{self, prelude::*, Transport};
@@ -25,6 +27,10 @@ impl RequestMsg {
 
     pub fn transaction_id(&self) -> Result<Option<String>, Error> {
         Ok(self.sip_request.transaction_id()?.map(Into::into))
+    }
+
+    pub fn dialog_id(&self) -> Result<DialogId, Error> {
+        self.sip_request.dialog_id()
     }
 }
 

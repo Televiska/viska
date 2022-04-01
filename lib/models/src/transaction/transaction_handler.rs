@@ -4,7 +4,7 @@ use crate::{
     Error,
 };
 use common::{
-    rsip::Response,
+    rsip::{Request, Response},
     tokio::sync::{mpsc, oneshot},
 };
 
@@ -45,6 +45,21 @@ impl TransactionHandler {
         Ok(self
             .tx
             .send(TransactionLayerMsg::NewUasInvite(msg, tu_response))
+            .await?)
+    }
+
+    pub async fn new_uac(&self, msg: RequestMsg) -> Result<(), Error> {
+        Ok(self.tx.send(TransactionLayerMsg::NewUac(msg)).await?)
+    }
+
+    pub async fn new_uas(
+        &self,
+        msg: Request,
+        tu_response: Option<Response>,
+    ) -> Result<(), Error> {
+        Ok(self
+            .tx
+            .send(TransactionLayerMsg::NewUas(msg, tu_response))
             .await?)
     }
 

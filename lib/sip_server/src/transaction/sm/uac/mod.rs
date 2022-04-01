@@ -5,9 +5,12 @@ pub use states::{Accepted, Calling, Completed, Errored, Proceeding, Terminated};
 use crate::Error;
 use common::{rsip, tokio::time::Instant};
 use models::{
+    rsip_ext::*,
     transport::{RequestMsg, ResponseMsg},
-    Handlers, RequestExt,
+    Handlers,
 };
+
+//TODO: add state checks as well for better guarantees, look at dialogs
 
 //should come from config
 pub static TIMER_T1: u64 = 500;
@@ -282,7 +285,7 @@ impl TrxStateMachine {
             .handlers
             .transport
             .send(
-                self.request_msg_from(self.msg.sip_request.ack_request_with(response))
+                self.request_msg_from(self.msg.sip_request.ack_request_from(response))
                     .into(),
             )
             .await?)

@@ -22,13 +22,43 @@ pub fn create_unauthorized_from(request: rsip::Request) -> Result<rsip::Response
     })
 }*/
 
+// follows 8.2.6.2 of RFC3261
+pub fn response_from(
+    request: rsip::Request,
+    status_code: rsip::StatusCode,
+) -> Result<rsip::Response, crate::Error> {
+    let mut headers: rsip::Headers = Default::default();
+    headers.push(request.from_header()?.clone().into());
+    headers.push(request.call_id_header()?.clone().into());
+    headers.push(request.cseq_header()?.clone().into());
+    headers.push(request.via_header()?.clone().into());
+    if request.to_header()?.tag()?.is_some() {
+        headers.push(request.to_header()?.clone().into());
+    } else {
+        headers.push(request.to_header()?.clone().with_tag(Default::default())?.into());
+    }
+
+    headers.push(rsip::Header::ContentLength(Default::default()));
+    headers.push(rsip::Header::UserAgent(Default::default()));
+
+    Ok(rsip::Response {
+        headers,
+        status_code,
+        ..Default::default()
+    })
+}
+
 pub fn create_404_from(request: rsip::Request) -> Result<rsip::Response, crate::Error> {
     let mut headers: rsip::Headers = Default::default();
     headers.push(request.via_header()?.clone().into());
     headers.push(request.from_header()?.clone().into());
-    let mut to = request.to_header()?.typed()?;
-    to.with_tag(rsip::param::Tag::default());
-    headers.push(to.into());
+    headers.push(
+        request
+            .to_header()?
+            .typed()?
+            .with_tag(Default::default())
+            .into(),
+    );
     headers.push(request.call_id_header()?.clone().into());
     headers.push(request.cseq_header()?.clone().into());
     headers.push(rsip::Header::ContentLength(Default::default()));
@@ -45,9 +75,13 @@ pub fn create_405_from(request: rsip::Request) -> Result<rsip::Response, crate::
     let mut headers: rsip::Headers = Default::default();
     headers.push(request.via_header()?.clone().into());
     headers.push(request.from_header()?.clone().into());
-    let mut to = request.to_header()?.clone().typed()?;
-    to.with_tag(rsip::param::Tag::default());
-    headers.push(to.into());
+    headers.push(
+        request
+            .to_header()?
+            .typed()?
+            .with_tag(Default::default())
+            .into(),
+    );
     headers.push(request.call_id_header()?.clone().into());
     headers.push(request.cseq_header()?.clone().into());
     headers.push(rsip::Header::ContentLength(Default::default()));

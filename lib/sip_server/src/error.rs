@@ -22,12 +22,19 @@ pub enum ErrorKind {
     SipHelpers(String),
     Io(std::io::Error),
     Transaction(TransactionError),
+    Dialog(DialogError),
     Channel(String),
     Store(store::Error),
 }
 
 #[derive(Debug)]
 pub enum TransactionError {
+    NotFound,
+    UnexpectedState,
+}
+
+#[derive(Debug)]
+pub enum DialogError {
     NotFound,
     UnexpectedState,
 }
@@ -110,6 +117,12 @@ impl From<std::io::Error> for ErrorKind {
 impl From<TransactionError> for ErrorKind {
     fn from(e: TransactionError) -> Self {
         ErrorKind::Transaction(e)
+    }
+}
+
+impl From<DialogError> for ErrorKind {
+    fn from(e: DialogError) -> Self {
+        ErrorKind::Dialog(e)
     }
 }
 

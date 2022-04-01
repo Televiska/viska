@@ -12,6 +12,8 @@ use models::{
     Handlers,
 };
 
+//TODO: add state checks as well for better guarantees, look at dialogs
+
 static TIMED_OUT: bool = true;
 static DID_NOT_TIME_OUT: bool = false;
 
@@ -65,7 +67,7 @@ impl TrxStateMachine {
         msg: RequestMsg,
         response: Option<rsip::Response>,
     ) -> Result<Self, Error> {
-        use models::RequestExt;
+        use models::rsip_ext::*;
 
         let RequestMsg {
             sip_request,

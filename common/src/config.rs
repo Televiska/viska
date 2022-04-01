@@ -106,8 +106,7 @@ fn default_ip_addr_from(ip_addrs: &[IpAddr]) -> IpAddr {
 fn all_system_ip_addrs() -> Vec<IpAddr> {
     pnet::datalink::interfaces()
         .into_iter()
-        .map(|i| i.ips)
-        .flatten()
+        .flat_map(|i| i.ips)
         .map(|net| net.ip())
         .collect::<Vec<IpAddr>>()
 }

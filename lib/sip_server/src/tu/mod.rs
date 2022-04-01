@@ -1,17 +1,10 @@
-mod dialogs;
+pub mod dialogs;
 pub mod elements;
-
-pub use dialogs::Dialogs;
 
 use common::async_trait::async_trait;
 use std::fmt::Debug;
 
-use models::transport::{RequestMsg, ResponseMsg, TransportMsg};
-
-#[async_trait]
-pub trait TuProcessor: Send + Sync + Debug + 'static {
-    async fn process_incoming_message(&self, msg: TransportMsg) -> Result<(), crate::Error>;
-}
+use models::transport::{RequestMsg, ResponseMsg};
 
 #[async_trait]
 pub trait ReqProcessor: Send + Sync + Debug + 'static {

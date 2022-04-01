@@ -2,8 +2,8 @@ use super::setup;
 use crate::common::{advance_for, extensions::TransactionUasExt, factories::prelude::*};
 use common::rsip::{self, prelude::*};
 use models::{
+    rsip_ext::*,
     transport::{RequestMsg, ResponseMsg, TransportLayerMsg, TransportMsg},
-    RequestExt,
 };
 use std::time::Duration;
 
@@ -327,8 +327,6 @@ async fn redirect_but_peer_not_responding_with_ack() {
 
 #[tokio::test]
 async fn with_ack_moves_to_confirmed() {
-    use models::RequestExt;
-
     let (tu, transaction, transport) = setup().await;
 
     let request: rsip::Request = requests::invite_request();
@@ -368,7 +366,7 @@ async fn with_ack_moves_to_confirmed() {
         .handler()
         .process(
             RequestMsg {
-                sip_request: request.ack_request_with(response.sip_response),
+                sip_request: request.ack_request_from(response.sip_response),
                 ..Randomized::default()
             }
             .into(),
@@ -672,8 +670,6 @@ async fn with_error_on_second_ok_on_accepted() {
 
 #[tokio::test]
 async fn multiple_ack_received_are_forwarded_to_tu() {
-    use models::RequestExt;
-
     let (tu, transaction, transport) = setup().await;
 
     let request: rsip::Request = requests::invite_request();
@@ -713,7 +709,7 @@ async fn multiple_ack_received_are_forwarded_to_tu() {
         .handler()
         .process(
             RequestMsg {
-                sip_request: request.ack_request_with(response.sip_response),
+                sip_request: request.ack_request_from(response.sip_response),
                 ..Randomized::default()
             }
             .into(),
@@ -728,8 +724,6 @@ async fn multiple_ack_received_are_forwarded_to_tu() {
 /* ##### confirmed state ##### */
 #[tokio::test]
 async fn when_confirmed_acks_have_no_effect() {
-    use models::RequestExt;
-
     let (tu, transaction, transport) = setup().await;
 
     let request: rsip::Request = requests::invite_request();
@@ -755,7 +749,7 @@ async fn when_confirmed_acks_have_no_effect() {
         .handler()
         .process(
             RequestMsg {
-                sip_request: request.ack_request_with(response.sip_response.clone()),
+                sip_request: request.ack_request_from(response.sip_response.clone()),
                 ..Randomized::default()
             }
             .into(),
@@ -782,7 +776,7 @@ async fn when_confirmed_acks_have_no_effect() {
         .handler()
         .process(
             RequestMsg {
-                sip_request: request.ack_request_with(response.sip_response.clone()),
+                sip_request: request.ack_request_from(response.sip_response.clone()),
                 ..Randomized::default()
             }
             .into(),
@@ -793,7 +787,7 @@ async fn when_confirmed_acks_have_no_effect() {
         .handler()
         .process(
             RequestMsg {
-                sip_request: request.ack_request_with(response.sip_response),
+                sip_request: request.ack_request_from(response.sip_response),
                 ..Randomized::default()
             }
             .into(),
@@ -819,8 +813,6 @@ async fn when_confirmed_acks_have_no_effect() {
 
 #[tokio::test]
 async fn when_confirmed_when_time_i_kicks_in_move_to_terminated() {
-    use models::RequestExt;
-
     let (tu, transaction, transport) = setup().await;
 
     let request: rsip::Request = requests::invite_request();
@@ -846,7 +838,7 @@ async fn when_confirmed_when_time_i_kicks_in_move_to_terminated() {
         .handler()
         .process(
             RequestMsg {
-                sip_request: request.ack_request_with(response.sip_response.clone()),
+                sip_request: request.ack_request_from(response.sip_response.clone()),
                 ..Randomized::default()
             }
             .into(),

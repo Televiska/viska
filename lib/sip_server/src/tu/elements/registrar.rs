@@ -138,9 +138,7 @@ fn create_registration_ok_from(
     headers.push(request.call_id_header()?.clone().into());
     headers.push(request.cseq_header()?.clone().into());
     headers.push(request.via_header()?.clone().into());
-    let mut typed_to_header = request.to_header()?.typed()?;
-    typed_to_header.with_tag(Default::default());
-    headers.push(typed_to_header.into());
+    headers.push(request.to_header()?.typed()?.with_tag(Default::default()).into());
     headers.push(ContentLength::default().into());
     headers.push(Server::default().into());
     for contact in contacts {

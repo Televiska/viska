@@ -1,3 +1,7 @@
+fn main() {}
+
+//TODO: this should be moved in a different/outside crate
+/*
 use sip_server::{
     transaction::Transaction,
     transport::Transport,
@@ -29,3 +33,4 @@ async fn main() {
     .await
     .expect("sleeping");
 }
+*/

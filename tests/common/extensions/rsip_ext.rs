@@ -29,7 +29,12 @@ impl Randomized for Headers {
         let to_uri = base_uri.clone().with_user("fil").with_port(5090);
 
         headers.push(typed::To::from(to_uri.clone()).into());
-        headers.push(typed::From::from(from_uri.clone()).into());
+        headers.push(
+            typed::From::from(from_uri.clone())
+                .with_tag(Default::default())
+                .into(),
+        );
+        headers.push(typed::Contact::from(from_uri.clone()).into());
         headers.push(
             typed::CSeq {
                 seq: 1,

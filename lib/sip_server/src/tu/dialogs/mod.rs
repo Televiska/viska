@@ -1,41 +1,72 @@
-mod uac;
-mod uas;
+pub mod uac;
+//pub mod uas;
+pub mod dialog_sm;
 
-pub use crate::Error;
-use common::tokio::sync::{Mutex, RwLock};
-use models::Handlers;
+pub use crate::error::{DialogError, Error};
+use common::{rsip, tokio::sync::RwLock};
+use dialog_sm::DialogSm;
+use models::{rsip_ext::*, tu::DialogId, Handlers};
 use std::collections::HashMap;
-use std::sync::Arc;
 
-//TODO: why inner/Arc ?
 #[derive(Debug)]
 pub struct Dialogs {
-    #[allow(dead_code)]
-    inner: Arc<Inner>,
-}
-
-#[derive(Debug)]
-struct Inner {
-    #[allow(dead_code)]
-    pub uac_state: RwLock<HashMap<String, Mutex<uac::DialogSm>>>,
-    #[allow(dead_code)]
-    pub uas_state: RwLock<HashMap<String, Mutex<uas::DialogSm>>>,
-    #[allow(dead_code)]
     handlers: Handlers,
+    //TODO: convert to message passing
+    data: RwLock<HashMap<DialogId, DialogSm>>,
 }
 
 impl Dialogs {
-    pub fn new(handlers: Handlers) -> Result<Self, Error> {
-        let inner = Arc::new(Inner {
+    pub fn new(handlers: Handlers) -> Self {
+        Self {
             handlers,
-            uac_state: RwLock::new(Default::default()),
-            uas_state: RwLock::new(Default::default()),
-        });
-
-        Ok(Self { inner })
+            data: Default::default(),
+        }
     }
 
-    pub async fn has_dialog(&self, _dialog_id: &str) -> bool {
-        false
+    //TODO: add proper dialog id type
+    pub async fn exists(&self, dialog_id: DialogId) -> bool {
+        self.data.read().await.get(&dialog_id).is_some()
+    }
+
+    pub async fn new_uac_session(&self, msg: rsip::Request) -> Result<(), Error> {
+        let dialog_data = uac::MultiDialog::new(self.handlers.clone(), msg).await?;
+        let mut data = self.data.write().await;
+        data.insert(dialog_data.id.clone(), dialog_data.into());
+
+        Ok(())
+    }
+
+    pub async fn process_incoming_response(&self, msg: rsip::Response) -> Result<(), Error> {
+        let dialog_id = msg.dialog_id()?;
+
+        if let Some(sm) = self.data.read().await.get(&dialog_id) {
+            sm.process_incoming_response(msg).await
+        } else {
+            Err(Error::from(DialogError::NotFound))
+        }
+    }
+
+    pub async fn process_incoming_request(&self, msg: rsip::Request) -> Result<(), Error> {
+        let dialog_id = msg.dialog_id()?;
+
+        if let Some(sm) = self.data.read().await.get(&dialog_id) {
+            sm.process_incoming_request(msg).await
+        } else {
+            Err(Error::from(DialogError::NotFound))
+        }
+    }
+
+    //TODO: maybe take a dialog_id here ?
+    pub async fn transport_error(
+        &self,
+        msg: rsip::SipMessage,
+        reason: String,
+    ) -> Result<(), Error> {
+        if let Some(sm) = self.data.read().await.get(&msg.dialog_id()?) {
+            sm.transport_error(reason, msg).await;
+            Ok(())
+        } else {
+            Err(Error::from(DialogError::NotFound))
+        }
     }
 }

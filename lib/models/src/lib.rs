@@ -2,7 +2,8 @@ mod auth_request;
 mod error;
 pub mod handlers;
 pub mod receivers;
-mod sip_message_ext;
+pub mod result_ext;
+pub mod rsip_ext;
 pub mod transaction;
 pub mod transport;
 pub mod tu;
@@ -10,7 +11,7 @@ pub mod tu;
 pub use auth_request::AuthRequest;
 pub use error::Error;
 pub use handlers::Handlers;
-pub use sip_message_ext::RequestExt;
+pub use result_ext::ResultExt;
 
 use common::tokio::sync::mpsc::channel;
 
