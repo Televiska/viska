@@ -1,3 +1,4 @@
+pub mod uac;
 pub mod uac_invite;
 pub mod uas_invite;
 

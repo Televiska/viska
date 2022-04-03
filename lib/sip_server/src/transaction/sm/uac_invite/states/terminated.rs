@@ -1,8 +1,18 @@
 use common::{rsip, tokio::time::Instant};
 
 #[derive(Debug)]
-pub struct Terminated {
-    //final response, if none it means that it timedout
-    pub response: Option<rsip::Response>,
-    pub entered_at: Instant,
+pub enum Terminated {
+    Expected {
+        response: rsip::Response,
+        entered_at: Instant
+    },
+    TimedOut {
+        response: Option<rsip::Response>,
+        entered_at: Instant
+    },
+    Errored {
+        error: String,
+        response: Option<rsip::Response>,
+        entered_at: Instant
+    }
 }

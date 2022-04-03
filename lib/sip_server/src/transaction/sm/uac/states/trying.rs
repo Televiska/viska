@@ -2,16 +2,16 @@ use common::tokio::time::Instant;
 use std::time::Duration;
 
 //TODO: remove super::super here
-use super::super::{TIMER_B, TIMER_T1};
+use super::super::{TIMER_F, TIMER_T1};
 
 #[derive(Debug, Clone, Copy)]
-pub struct Calling {
+pub struct Trying {
     pub entered_at: Instant,
     pub retransmissions_count: u8,
     pub last_retransmission_at: Instant,
 }
 
-impl Calling {
+impl Trying {
     pub fn next_retrasmission(&self) -> Duration {
         use std::iter;
 
@@ -21,7 +21,7 @@ impl Calling {
     }
 
     pub fn has_timedout(&self) -> bool {
-        self.entered_at.elapsed() >= Duration::from_millis(TIMER_B)
+        self.entered_at.elapsed() >= Duration::from_millis(TIMER_F)
     }
 
     pub fn should_retransmit(&self) -> bool {
@@ -37,7 +37,7 @@ impl Calling {
     }
 }
 
-impl Default for Calling {
+impl Default for Trying {
     fn default() -> Self {
         Self {
             entered_at: Instant::now(),

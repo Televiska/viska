@@ -46,7 +46,7 @@ async fn if_peer_not_responding() {
     assert_eq!(transaction.inner.state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uac_terminated(
+            .is_uac_timedout(
                 request
                     .transaction_id()
                     .unwrap()

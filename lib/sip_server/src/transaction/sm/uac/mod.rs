@@ -1,6 +1,6 @@
 mod states;
 
-pub use states::{Accepted, Calling, Completed, Proceeding, Terminated};
+pub use states::{Completed, Errored, Proceeding, Terminated, Trying};
 
 use crate::Error;
 use common::{
@@ -13,9 +13,8 @@ use models::{rsip_ext::*, transaction::TransactionId, Handlers};
 
 //should come from config
 pub static TIMER_T1: u64 = 500;
-pub static TIMER_B: u64 = 64 * TIMER_T1;
-pub static TIMER_M: u64 = 64 * TIMER_T1;
-pub static TIMER_D: u64 = 32000;
+pub static TIMER_T2: u64 = 4000;
+pub static TIMER_F: u64 = 64 * TIMER_T1;
 
 //implements RFC6026 as well
 #[allow(dead_code)]
@@ -30,21 +29,21 @@ pub struct TrxStateMachine {
 
 #[derive(Debug)]
 pub enum TrxState {
-    Calling(Calling),
+    Trying(Trying),
     Proceeding(Proceeding),
     Completed(Completed),
-    Accepted(Accepted),
     Terminated(Terminated),
+    Errored(Errored),
 }
 
 impl std::fmt::Display for TrxState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Calling(_) => write!(f, "TrxState::Calling"),
+            Self::Trying(_) => write!(f, "TrxState::Trying"),
             Self::Proceeding(_) => write!(f, "TrxState::Proceeding"),
             Self::Completed(_) => write!(f, "TrxState::Completed"),
-            Self::Accepted(_) => write!(f, "TrxState::Accepted"),
             Self::Terminated(_) => write!(f, "TrxState::Terminated"),
+            Self::Errored(_) => write!(f, "TrxState::Errored"),
         }
     }
 }
@@ -53,7 +52,7 @@ impl TrxStateMachine {
     pub fn new(handlers: Handlers, request: rsip::Request) -> Result<Self, Error> {
         Ok(Self {
             id: request.transaction_id()?.expect("transaction_id"),
-            state: TrxState::Calling(Default::default()),
+            state: TrxState::Trying(Default::default()),
             request,
             created_at: Instant::now(),
             handlers,
@@ -68,46 +67,34 @@ impl TrxStateMachine {
 
         match result {
             Ok(()) => (),
-            Err(error) => self.terminate_due_to_error(
-                format!("transaction {} errored: {}", self.id, error),
-                None,
-            ),
+            Err(error) => self.error(format!("transaction {} errored: {}", self.id, error), None),
         };
     }
 
     pub fn is_active(&self) -> bool {
-        !matches!(self.state, TrxState::Terminated(_))
+        !matches!(self.state, TrxState::Errored(_) | TrxState::Terminated(_))
     }
 
     //TODO: use proper error type here
     pub async fn transport_error(&mut self, reason: String) {
-        self.terminate_due_to_error(reason, None);
+        self.error(reason, None);
     }
 
-    //TODO: can you investigate what will happen if the SM is in proceeding state
-    //but nothing comes from the peer? Will it stuck in proceeding forever ?
     async fn next_step(&mut self) -> Result<(), Error> {
         match &self.state {
-            TrxState::Calling(calling) => {
-                match (calling.has_timedout(), calling.should_retransmit()) {
-                    (true, _) => self.terminate_due_to_timeout(),
-                    (false, true) => {
-                        self.handlers
-                            .transport
-                            .send(self.request.clone().into())
-                            .await?;
-                        self.state = TrxState::Calling(calling.retransmit());
-                    }
-                    (false, false) => (),
+            TrxState::Trying(trying) => match (trying.has_timedout(), trying.should_retransmit()) {
+                (true, _) => self.terminate(),
+                (false, true) => {
+                    self.handlers
+                        .transport
+                        .send(self.request.clone().into())
+                        .await?;
+                    self.state = TrxState::Trying(trying.retransmit());
                 }
-            }
+                (false, false) => (),
+            },
             TrxState::Completed(completed) => {
                 if completed.should_terminate() {
-                    self.terminate();
-                }
-            }
-            TrxState::Accepted(accepted) => {
-                if accepted.should_terminate() {
                     self.terminate();
                 }
             }
@@ -121,15 +108,11 @@ impl TrxStateMachine {
         use rsip::common::StatusCodeKind;
 
         match (&self.state, response.status_code.kind()) {
-            (TrxState::Calling(_), StatusCodeKind::Provisional) => {
+            (TrxState::Trying(_), StatusCodeKind::Provisional) => {
                 self.handlers.tu.process(response.clone().into()).await?;
                 self.proceed(response);
             }
-            (TrxState::Calling(_), StatusCodeKind::Successful) => {
-                self.handlers.tu.process(response.clone().into()).await?;
-                self.accept(response);
-            }
-            (TrxState::Calling(_), _) => {
+            (TrxState::Trying(_), _) => {
                 self.handlers.tu.process(response.clone().into()).await?;
                 self.complete(response);
             }
@@ -137,26 +120,15 @@ impl TrxStateMachine {
                 self.handlers.tu.process(response.clone().into()).await?;
                 self.update_response(response);
             }
-            (TrxState::Proceeding(_), StatusCodeKind::Successful) => {
-                self.handlers.tu.process(response.clone().into()).await?;
-                self.accept(response);
-            }
             (TrxState::Proceeding(_), _) => {
                 self.handlers.tu.process(response.clone().into()).await?;
-                self.send_ack_request_from(response.clone()).await?;
                 self.complete(response);
             }
-            (TrxState::Accepted(_), StatusCodeKind::Successful) => {
-                self.handlers.tu.process(response.clone().into()).await?;
-                self.update_response(response);
-            }
             (TrxState::Completed(_), kind) if kind > StatusCodeKind::Successful => {
-                self.complete(response.clone());
-                self.send_ack_request_from(response.clone()).await?;
                 self.complete(response);
             }
             (_, _) => {
-                self.terminate_due_to_error(
+                self.error(
                     format!(
                         "unknown match: {}, {} for transaction {}",
                         response.status_code, self.state, self.id
@@ -184,13 +156,7 @@ impl TrxStateMachine {
                     entered_at: state.entered_at,
                 })
             }
-            TrxState::Accepted(state) => {
-                self.state = TrxState::Accepted(Accepted {
-                    response,
-                    entered_at: state.entered_at,
-                })
-            }
-            _ => self.terminate_due_to_error(
+            _ => self.error(
                 format!("Asking to update response when state is {}", self.state),
                 Some(response),
             ),
@@ -204,46 +170,15 @@ impl TrxStateMachine {
         });
     }
 
-    fn accept(&mut self, response: rsip::Response) {
-        self.state = TrxState::Accepted(Accepted {
-            response,
-            entered_at: Instant::now(),
-        });
-    }
-
     fn terminate(&mut self) {
-        let response: Option<rsip::Response> = match &self.state {
-            TrxState::Accepted(accepted) => Some(accepted.clone().response),
-            TrxState::Completed(completed) => Some(completed.clone().response),
-            _ => None,
-        };
-
-        self.state = TrxState::Terminated(Terminated::Expected {
-            response: response.expect("response in expected termination"),
-            entered_at: Instant::now(),
-        });
+        unimplemented!("");
     }
 
-    fn terminate_due_to_timeout(&mut self) {
-        self.state = TrxState::Terminated(Terminated::TimedOut {
-            response: None,
-            entered_at: Instant::now(),
-        });
-    }
-
-    fn terminate_due_to_error(&mut self, error: String, response: Option<rsip::Response>) {
-        self.state = TrxState::Terminated(Terminated::Errored {
+    fn error(&mut self, error: String, response: Option<rsip::Response>) {
+        self.state = TrxState::Errored(Errored {
             entered_at: Instant::now(),
             response,
             error,
         });
-    }
-
-    async fn send_ack_request_from(&self, response: rsip::Response) -> Result<(), Error> {
-        Ok(self
-            .handlers
-            .transport
-            .send(self.request.ack_request_from(response).into())
-            .await?)
     }
 }
