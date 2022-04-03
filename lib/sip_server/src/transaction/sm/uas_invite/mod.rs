@@ -1,6 +1,6 @@
 mod states;
 
-pub use states::{Accepted, Completed, Confirmed, Errored, Proceeding, Terminated};
+pub use states::{Accepted, Completed, Confirmed, Proceeding, Terminated};
 
 use crate::Error;
 use common::{
@@ -10,9 +10,6 @@ use common::{
 use models::{transaction::TransactionId, Handlers};
 
 //TODO: add state checks as well for better guarantees, look at dialogs
-
-static TIMED_OUT: bool = true;
-static DID_NOT_TIME_OUT: bool = false;
 
 //should come from config
 pub static TIMER_T1: u64 = 500;
@@ -42,7 +39,6 @@ pub enum TrxState {
     Accepted(Accepted),
     Confirmed(Confirmed),
     Terminated(Terminated),
-    Errored(Errored),
 }
 
 impl std::fmt::Display for TrxState {
@@ -53,7 +49,6 @@ impl std::fmt::Display for TrxState {
             Self::Accepted(_) => write!(f, "TrxState::Accepted"),
             Self::Confirmed(_) => write!(f, "TrxState::Confirmed"),
             Self::Terminated(_) => write!(f, "TrxState::Terminated"),
-            Self::Errored(_) => write!(f, "TrxState::Errored"),
         }
     }
 }
@@ -77,7 +72,7 @@ impl TrxStateMachine {
     }
 
     pub fn is_active(&self) -> bool {
-        !matches!(self.state, TrxState::Errored(_) | TrxState::Terminated(_))
+        !matches!(self.state, TrxState::Terminated(_))
     }
 
     pub async fn next(&mut self, sip_message: Option<rsip::SipMessage>) {
@@ -94,20 +89,23 @@ impl TrxStateMachine {
 
         match result {
             Ok(()) => (),
-            Err(error) => self.error(format!("transaction {} errored: {}", self.id, error), None),
+            Err(error) => self.terminate_due_to_error(
+                format!("transaction {} errored: {}", self.id, error),
+                None,
+            ),
         }
     }
 
     //TODO: use proper error type here
     pub async fn transport_error(&mut self, reason: String) {
-        self.error(reason, None);
+        self.terminate_due_to_error(reason, None);
     }
 
     async fn next_step(&mut self) -> Result<(), Error> {
         match &self.state {
             TrxState::Completed(completed) => {
                 match (completed.has_timedout(), completed.should_retransmit()) {
-                    (true, _) => self.terminate(TIMED_OUT),
+                    (true, _) => self.terminate_due_to_timeout(),
                     (false, true) => {
                         self.handlers
                             .transport
@@ -120,12 +118,12 @@ impl TrxStateMachine {
             }
             TrxState::Accepted(accepted) => {
                 if accepted.should_terminate() {
-                    self.terminate(TIMED_OUT);
+                    self.terminate_due_to_timeout();
                 }
             }
             TrxState::Confirmed(confirmed) => {
                 if confirmed.should_terminate() {
-                    self.terminate(DID_NOT_TIME_OUT);
+                    self.terminate();
                 }
             }
             _ => (),
@@ -172,7 +170,7 @@ impl TrxStateMachine {
             (TrxState::Confirmed(_), Method::Ack) => {
                 //absorb ack
             }
-            _ => self.error(
+            _ => self.terminate_due_to_error(
                 format!(
                     "unknown transition for {} and {}",
                     self.state, request.method
@@ -211,7 +209,7 @@ impl TrxStateMachine {
                     .send(self.response.clone().into())
                     .await?;
             }
-            _ => self.error(
+            _ => self.terminate_due_to_error(
                 format!(
                     "unknown transition for {} and {}",
                     self.state, response.status_code
@@ -238,15 +236,24 @@ impl TrxStateMachine {
         });
     }
 
-    fn terminate(&mut self, timedout: bool) {
-        self.state = TrxState::Terminated(Terminated {
-            timedout,
+    //TODO: check if we should get a response here
+    fn terminate(&mut self) {
+        self.state = TrxState::Terminated(Terminated::Expected {
+            //response: ...
             entered_at: Instant::now(),
         });
     }
 
-    fn error(&mut self, error: String, sip_message: Option<rsip::SipMessage>) {
-        self.state = TrxState::Errored(Errored {
+    //TODO: check if we can get a response here
+    fn terminate_due_to_timeout(&mut self) {
+        self.state = TrxState::Terminated(Terminated::TimedOut {
+            response: None,
+            entered_at: Instant::now(),
+        });
+    }
+
+    fn terminate_due_to_error(&mut self, error: String, sip_message: Option<rsip::SipMessage>) {
+        self.state = TrxState::Terminated(Terminated::Errored {
             entered_at: Instant::now(),
             sip_message,
             error,

@@ -100,7 +100,10 @@ impl TransactionUacExt for sip_server::Transaction {
             .expect("getting transaction from state")
         {
             TrxStateSm::UacInvite(sm) => {
-                matches!(sm.lock().await.state, UacTrxState::Terminated(UacTerminated::Expected { .. }))
+                matches!(
+                    sm.lock().await.state,
+                    UacTrxState::Terminated(UacTerminated::Expected { .. })
+                )
             }
             _ => false,
         }
@@ -117,7 +120,10 @@ impl TransactionUacExt for sip_server::Transaction {
             .expect("getting transaction from state")
         {
             TrxStateSm::UacInvite(sm) => {
-                matches!(sm.lock().await.state, UacTrxState::Terminated(UacTerminated::TimedOut { .. }))
+                matches!(
+                    sm.lock().await.state,
+                    UacTrxState::Terminated(UacTerminated::TimedOut { .. })
+                )
             }
             _ => false,
         }
@@ -151,6 +157,7 @@ pub trait TransactionUasExt {
     async fn is_uas_accepted(&self, transaction_id: TransactionId) -> bool;
     async fn is_uas_confirmed(&self, transaction_id: TransactionId) -> bool;
     async fn is_uas_terminated(&self, transaction_id: TransactionId) -> bool;
+    async fn is_uas_timedout(&self, transaction_id: TransactionId) -> bool;
     async fn is_uas_errored(&self, transaction_id: TransactionId) -> bool;
 }
 
@@ -235,7 +242,30 @@ impl TransactionUasExt for sip_server::Transaction {
             .expect("getting transaction from state")
         {
             TrxStateSm::UasInvite(sm) => {
-                matches!(sm.lock().await.state, UasTrxState::Terminated(UasTerminated { .. }))
+                matches!(
+                    sm.lock().await.state,
+                    UasTrxState::Terminated(UasTerminated::Expected { .. })
+                )
+            }
+            _ => false,
+        }
+    }
+
+    async fn is_uas_timedout(&self, transaction_id: TransactionId) -> bool {
+        delay_for(Duration::from_millis(1)).await;
+        match self
+            .inner
+            .state
+            .read()
+            .await
+            .get(&transaction_id)
+            .expect("getting transaction from state")
+        {
+            TrxStateSm::UasInvite(sm) => {
+                matches!(
+                    sm.lock().await.state,
+                    UasTrxState::Terminated(UasTerminated::TimedOut { .. })
+                )
             }
             _ => false,
         }
@@ -252,7 +282,10 @@ impl TransactionUasExt for sip_server::Transaction {
             .expect("getting transaction from state")
         {
             TrxStateSm::UasInvite(sm) => {
-                matches!(sm.lock().await.state, UasTrxState::Errored { .. })
+                matches!(
+                    sm.lock().await.state,
+                    UasTrxState::Terminated(UasTerminated::Errored { .. })
+                )
             }
             _ => false,
         }

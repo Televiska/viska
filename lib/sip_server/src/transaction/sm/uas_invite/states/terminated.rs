@@ -1,7 +1,18 @@
-use common::tokio::time::Instant;
+use common::{rsip, tokio::time::Instant};
 
 #[derive(Debug)]
-pub struct Terminated {
-    pub timedout: bool,
-    pub entered_at: Instant,
+pub enum Terminated {
+    Expected {
+        //response: rsip::Response,
+        entered_at: Instant
+    },
+    TimedOut {
+        response: Option<rsip::Response>,
+        entered_at: Instant
+    },
+    Errored {
+        error: String,
+        sip_message: Option<rsip::SipMessage>,
+        entered_at: Instant
+    }
 }

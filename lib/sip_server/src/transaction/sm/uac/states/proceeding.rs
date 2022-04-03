@@ -1,5 +1,4 @@
 use common::{rsip, tokio::time::Instant};
-use std::time::Duration;
 
 #[derive(Debug, Clone)]
 pub struct Proceeding {

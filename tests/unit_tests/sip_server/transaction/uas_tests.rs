@@ -227,7 +227,7 @@ async fn redirect_but_peer_not_responding_with_ack() {
 
     assert!(
         transaction
-            .is_uas_terminated(
+            .is_uas_timedout(
                 request
                     .transaction_id()
                     .unwrap()
@@ -374,7 +374,7 @@ async fn ok_but_peer_not_responding_with_ack() {
 
     assert!(
         transaction
-            .is_uas_terminated(
+            .is_uas_timedout(
                 request
                     .transaction_id()
                     .unwrap()

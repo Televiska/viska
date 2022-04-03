@@ -1,9 +1,18 @@
 use common::{rsip, tokio::time::Instant};
-use std::time::Duration;
 
-#[derive(Debug, Clone)]
-pub struct Terminated {
-    pub timed_out: bool,
-    pub response: Option<rsip::Response>,
-    pub entered_at: Instant,
+#[derive(Debug)]
+pub enum Terminated {
+    Expected {
+        response: rsip::Response,
+        entered_at: Instant
+    },
+    TimedOut {
+        response: Option<rsip::Response>,
+        entered_at: Instant
+    },
+    Errored {
+        error: String,
+        response: Option<rsip::Response>,
+        entered_at: Instant
+    }
 }
