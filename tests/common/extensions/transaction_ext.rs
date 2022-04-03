@@ -2,7 +2,8 @@ use crate::common::delay_for;
 use common::async_trait::async_trait;
 use models::transaction::TransactionId;
 use sip_server::transaction::{
-    sm::uac::TrxState as UacTrxState, sm::uas::TrxState as UasTrxState, sm::TrxStateSm,
+    sm::uac_invite::TrxState as UacTrxState, sm::uas_invite::TrxState as UasTrxState,
+    sm::TrxStateSm,
 };
 use std::time::Duration;
 
@@ -28,7 +29,7 @@ impl TransactionUacExt for sip_server::Transaction {
             .get(&transaction_id)
             .expect("getting transaction from state")
         {
-            TrxStateSm::Uac(sm) => {
+            TrxStateSm::UacInvite(sm) => {
                 matches!(sm.lock().await.state, UacTrxState::Calling { .. })
             }
             _ => false,
@@ -45,7 +46,7 @@ impl TransactionUacExt for sip_server::Transaction {
             .get(&transaction_id)
             .expect("getting transaction from state")
         {
-            TrxStateSm::Uac(sm) => {
+            TrxStateSm::UacInvite(sm) => {
                 matches!(sm.lock().await.state, UacTrxState::Proceeding { .. })
             }
             _ => false,
@@ -62,7 +63,7 @@ impl TransactionUacExt for sip_server::Transaction {
             .get(&transaction_id)
             .expect("getting transaction from state")
         {
-            TrxStateSm::Uac(sm) => {
+            TrxStateSm::UacInvite(sm) => {
                 matches!(sm.lock().await.state, UacTrxState::Completed { .. })
             }
             _ => false,
@@ -79,7 +80,7 @@ impl TransactionUacExt for sip_server::Transaction {
             .get(&transaction_id)
             .expect("getting transaction from state")
         {
-            TrxStateSm::Uac(sm) => {
+            TrxStateSm::UacInvite(sm) => {
                 matches!(sm.lock().await.state, UacTrxState::Accepted { .. })
             }
             _ => false,
@@ -96,7 +97,7 @@ impl TransactionUacExt for sip_server::Transaction {
             .get(&transaction_id)
             .expect("getting transaction from state")
         {
-            TrxStateSm::Uac(sm) => {
+            TrxStateSm::UacInvite(sm) => {
                 matches!(sm.lock().await.state, UacTrxState::Terminated { .. })
             }
             _ => false,
@@ -113,7 +114,7 @@ impl TransactionUacExt for sip_server::Transaction {
             .get(&transaction_id)
             .expect("getting transaction from state")
         {
-            TrxStateSm::Uac(sm) => {
+            TrxStateSm::UacInvite(sm) => {
                 matches!(sm.lock().await.state, UacTrxState::Errored { .. })
             }
             _ => false,
@@ -143,7 +144,7 @@ impl TransactionUasExt for sip_server::Transaction {
             .get(&transaction_id)
             .expect("getting transaction from state")
         {
-            TrxStateSm::Uas(sm) => {
+            TrxStateSm::UasInvite(sm) => {
                 matches!(sm.lock().await.state, UasTrxState::Proceeding { .. })
             }
             _ => false,
@@ -160,7 +161,7 @@ impl TransactionUasExt for sip_server::Transaction {
             .get(&transaction_id)
             .expect("getting transaction from state")
         {
-            TrxStateSm::Uas(sm) => {
+            TrxStateSm::UasInvite(sm) => {
                 matches!(sm.lock().await.state, UasTrxState::Completed { .. })
             }
             _ => false,
@@ -177,7 +178,7 @@ impl TransactionUasExt for sip_server::Transaction {
             .get(&transaction_id)
             .expect("getting transaction from state")
         {
-            TrxStateSm::Uas(sm) => {
+            TrxStateSm::UasInvite(sm) => {
                 matches!(sm.lock().await.state, UasTrxState::Accepted { .. })
             }
             _ => false,
@@ -194,7 +195,7 @@ impl TransactionUasExt for sip_server::Transaction {
             .get(&transaction_id)
             .expect("getting transaction from state")
         {
-            TrxStateSm::Uas(sm) => {
+            TrxStateSm::UasInvite(sm) => {
                 matches!(sm.lock().await.state, UasTrxState::Confirmed { .. })
             }
             _ => false,
@@ -211,7 +212,7 @@ impl TransactionUasExt for sip_server::Transaction {
             .get(&transaction_id)
             .expect("getting transaction from state")
         {
-            TrxStateSm::Uas(sm) => {
+            TrxStateSm::UasInvite(sm) => {
                 matches!(sm.lock().await.state, UasTrxState::Terminated { .. })
             }
             _ => false,
@@ -228,7 +229,7 @@ impl TransactionUasExt for sip_server::Transaction {
             .get(&transaction_id)
             .expect("getting transaction from state")
         {
-            TrxStateSm::Uas(sm) => {
+            TrxStateSm::UasInvite(sm) => {
                 matches!(sm.lock().await.state, UasTrxState::Errored { .. })
             }
             _ => false,

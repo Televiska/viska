@@ -106,12 +106,12 @@ impl Inner {
         Err(Error::from(TransactionError::NotFound))
     }
 
-    async fn new_uac_invite_transaction(&self, msg: rsip::Request) -> Result<(), Error> {
-        self.handlers.transport.send(msg.clone().into()).await?;
-        let transaction_data = sm::uac::TrxStateMachine::new(self.handlers.clone(), msg.clone())?;
+    async fn new_uac_invite_transaction(&self, request: rsip::Request) -> Result<(), Error> {
+        self.handlers.transport.send(request.clone().into()).await?;
+        let trx_state_sm = TrxStateSm::new_uac_invite(self.handlers.clone(), request)?;
         {
             let mut data = self.state.write().await;
-            data.insert(transaction_data.id.clone(), transaction_data.into());
+            data.insert(trx_state_sm.id().await, trx_state_sm.into());
         }
         Ok(())
     }
@@ -122,12 +122,11 @@ impl Inner {
         response: Option<rsip::Response>,
     ) -> Result<(), Error> {
         self.handlers.transport.send(request.clone().into()).await?;
-        let transaction_data =
-            sm::uas::TrxStateMachine::new(self.handlers.clone(), request.clone(), response)?;
-
+        let trx_state_sm =
+            TrxStateSm::new_uas_invite(self.handlers.clone(), request, response)?;
         {
             let mut data = self.state.write().await;
-            data.insert(transaction_data.id.clone(), transaction_data.into());
+            data.insert(trx_state_sm.id().await, trx_state_sm.into());
         }
 
         Ok(())
@@ -149,7 +148,7 @@ impl Inner {
         let transaction_id = response.transaction_id()?.expect("transaction_id");
 
         match self.state.read().await.get(&transaction_id) {
-            Some(sm) => Ok(sm.uas_process_tu_reply(response).await?),
+            Some(sm) => Ok(sm.process_tu_reply(response).await?),
             None => Err(Error::from(TransactionError::NotFound)),
         }
     }
@@ -169,7 +168,7 @@ impl Inner {
         let transaction_id = request.transaction_id()?.expect("transaction_id");
 
         match self.state.read().await.get(&transaction_id) {
-            Some(sm) => Ok(sm.uas_process_request(request).await?),
+            Some(sm) => Ok(sm.process_request(request).await?),
             None => Err(Error::from(TransactionError::NotFound)),
         }
     }
@@ -178,7 +177,7 @@ impl Inner {
         let transaction_id = response.transaction_id()?.expect("transaction_id");
 
         match self.state.read().await.get(&transaction_id) {
-            Some(sm) => Ok(sm.uac_process_response(response).await?),
+            Some(sm) => Ok(sm.process_response(response).await?),
             None => Err(Error::from(TransactionError::NotFound)),
         }
     }
@@ -198,8 +197,8 @@ impl Inner {
         let state = self.state.read().await;
         for transaction_data in (*state).values() {
             match transaction_data {
-                TrxStateSm::Uac(sm) => sm.lock().await.next(None).await,
-                TrxStateSm::Uas(sm) => sm.lock().await.next(None).await,
+                TrxStateSm::UacInvite(sm) => sm.lock().await.next(None).await,
+                TrxStateSm::UasInvite(sm) => sm.lock().await.next(None).await,
             };
         }
     }

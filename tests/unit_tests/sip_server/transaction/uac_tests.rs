@@ -1,7 +1,7 @@
 use super::setup;
 use crate::common::{advance_for, extensions::TransactionUacExt, factories::prelude::*};
 use common::rsip::{self, prelude::*};
-use sip_server::transaction::sm::uac::TIMER_M;
+use sip_server::transaction::sm::uac_invite::TIMER_M;
 use std::time::Duration;
 
 #[tokio::test]
