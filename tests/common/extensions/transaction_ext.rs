@@ -2,26 +2,26 @@ use crate::common::delay_for;
 use common::async_trait::async_trait;
 use models::transaction::TransactionId;
 use sip_server::transaction::{
-    sm::uac_invite::{Terminated as UacTerminated, TrxState as UacTrxState},
-    sm::uas_invite::{Terminated as UasTerminated, TrxState as UasTrxState},
+    sm::uac_invite,
+    sm::uas_invite,
     sm::TrxStateSm,
 };
 use std::time::Duration;
 
 #[async_trait]
-pub trait TransactionUacExt {
-    async fn is_uac_calling(&self, transaction_id: TransactionId) -> bool;
-    async fn is_uac_proceeding(&self, transaction_id: TransactionId) -> bool;
-    async fn is_uac_completed(&self, transaction_id: TransactionId) -> bool;
-    async fn is_uac_accepted(&self, transaction_id: TransactionId) -> bool;
-    async fn is_uac_terminated(&self, transaction_id: TransactionId) -> bool;
-    async fn is_uac_timedout(&self, transaction_id: TransactionId) -> bool;
-    async fn is_uac_errored(&self, transaction_id: TransactionId) -> bool;
+pub trait TransactionUacInviteExt {
+    async fn is_calling(&self, transaction_id: TransactionId) -> bool;
+    async fn is_proceeding(&self, transaction_id: TransactionId) -> bool;
+    async fn is_completed(&self, transaction_id: TransactionId) -> bool;
+    async fn is_accepted(&self, transaction_id: TransactionId) -> bool;
+    async fn is_terminated(&self, transaction_id: TransactionId) -> bool;
+    async fn is_timedout(&self, transaction_id: TransactionId) -> bool;
+    async fn is_errored(&self, transaction_id: TransactionId) -> bool;
 }
 
 #[async_trait]
-impl TransactionUacExt for sip_server::Transaction {
-    async fn is_uac_calling(&self, transaction_id: TransactionId) -> bool {
+impl TransactionUacInviteExt for sip_server::Transaction {
+    async fn is_calling(&self, transaction_id: TransactionId) -> bool {
         delay_for(Duration::from_millis(1)).await;
         match self
             .inner
@@ -32,13 +32,13 @@ impl TransactionUacExt for sip_server::Transaction {
             .expect("getting transaction from state")
         {
             TrxStateSm::UacInvite(sm) => {
-                matches!(sm.lock().await.state, UacTrxState::Calling { .. })
+                matches!(sm.lock().await.state, uac_invite::TrxState::Calling { .. })
             }
             _ => false,
         }
     }
 
-    async fn is_uac_proceeding(&self, transaction_id: TransactionId) -> bool {
+    async fn is_proceeding(&self, transaction_id: TransactionId) -> bool {
         delay_for(Duration::from_millis(1)).await;
         match self
             .inner
@@ -49,13 +49,13 @@ impl TransactionUacExt for sip_server::Transaction {
             .expect("getting transaction from state")
         {
             TrxStateSm::UacInvite(sm) => {
-                matches!(sm.lock().await.state, UacTrxState::Proceeding { .. })
+                matches!(sm.lock().await.state, uac_invite::TrxState::Proceeding { .. })
             }
             _ => false,
         }
     }
 
-    async fn is_uac_completed(&self, transaction_id: TransactionId) -> bool {
+    async fn is_completed(&self, transaction_id: TransactionId) -> bool {
         delay_for(Duration::from_millis(1)).await;
         match self
             .inner
@@ -66,13 +66,13 @@ impl TransactionUacExt for sip_server::Transaction {
             .expect("getting transaction from state")
         {
             TrxStateSm::UacInvite(sm) => {
-                matches!(sm.lock().await.state, UacTrxState::Completed { .. })
+                matches!(sm.lock().await.state, uac_invite::TrxState::Completed { .. })
             }
             _ => false,
         }
     }
 
-    async fn is_uac_accepted(&self, transaction_id: TransactionId) -> bool {
+    async fn is_accepted(&self, transaction_id: TransactionId) -> bool {
         delay_for(Duration::from_millis(1)).await;
         match self
             .inner
@@ -83,13 +83,13 @@ impl TransactionUacExt for sip_server::Transaction {
             .expect("getting transaction from state")
         {
             TrxStateSm::UacInvite(sm) => {
-                matches!(sm.lock().await.state, UacTrxState::Accepted { .. })
+                matches!(sm.lock().await.state, uac_invite::TrxState::Accepted { .. })
             }
             _ => false,
         }
     }
 
-    async fn is_uac_terminated(&self, transaction_id: TransactionId) -> bool {
+    async fn is_terminated(&self, transaction_id: TransactionId) -> bool {
         delay_for(Duration::from_millis(1)).await;
         match self
             .inner
@@ -102,14 +102,14 @@ impl TransactionUacExt for sip_server::Transaction {
             TrxStateSm::UacInvite(sm) => {
                 matches!(
                     sm.lock().await.state,
-                    UacTrxState::Terminated(UacTerminated::Expected { .. })
+                    uac_invite::TrxState::Terminated(uac_invite::Terminated::Expected { .. })
                 )
             }
             _ => false,
         }
     }
 
-    async fn is_uac_timedout(&self, transaction_id: TransactionId) -> bool {
+    async fn is_timedout(&self, transaction_id: TransactionId) -> bool {
         delay_for(Duration::from_millis(1)).await;
         match self
             .inner
@@ -122,14 +122,14 @@ impl TransactionUacExt for sip_server::Transaction {
             TrxStateSm::UacInvite(sm) => {
                 matches!(
                     sm.lock().await.state,
-                    UacTrxState::Terminated(UacTerminated::TimedOut { .. })
+                    uac_invite::TrxState::Terminated(uac_invite::Terminated::TimedOut { .. })
                 )
             }
             _ => false,
         }
     }
 
-    async fn is_uac_errored(&self, transaction_id: TransactionId) -> bool {
+    async fn is_errored(&self, transaction_id: TransactionId) -> bool {
         delay_for(Duration::from_millis(1)).await;
         match self
             .inner
@@ -142,7 +142,7 @@ impl TransactionUacExt for sip_server::Transaction {
             TrxStateSm::UacInvite(sm) => {
                 matches!(
                     sm.lock().await.state,
-                    UacTrxState::Terminated(UacTerminated::Errored { .. })
+                    uac_invite::TrxState::Terminated(uac_invite::Terminated::Errored { .. })
                 )
             }
             _ => false,
@@ -151,19 +151,19 @@ impl TransactionUacExt for sip_server::Transaction {
 }
 
 #[async_trait]
-pub trait TransactionUasExt {
-    async fn is_uas_proceeding(&self, transaction_id: TransactionId) -> bool;
-    async fn is_uas_completed(&self, transaction_id: TransactionId) -> bool;
-    async fn is_uas_accepted(&self, transaction_id: TransactionId) -> bool;
-    async fn is_uas_confirmed(&self, transaction_id: TransactionId) -> bool;
-    async fn is_uas_terminated(&self, transaction_id: TransactionId) -> bool;
-    async fn is_uas_timedout(&self, transaction_id: TransactionId) -> bool;
-    async fn is_uas_errored(&self, transaction_id: TransactionId) -> bool;
+pub trait TransactionUasInviteExt {
+    async fn is_proceeding(&self, transaction_id: TransactionId) -> bool;
+    async fn is_completed(&self, transaction_id: TransactionId) -> bool;
+    async fn is_accepted(&self, transaction_id: TransactionId) -> bool;
+    async fn is_confirmed(&self, transaction_id: TransactionId) -> bool;
+    async fn is_terminated(&self, transaction_id: TransactionId) -> bool;
+    async fn is_timedout(&self, transaction_id: TransactionId) -> bool;
+    async fn is_errored(&self, transaction_id: TransactionId) -> bool;
 }
 
 #[async_trait]
-impl TransactionUasExt for sip_server::Transaction {
-    async fn is_uas_proceeding(&self, transaction_id: TransactionId) -> bool {
+impl TransactionUasInviteExt for sip_server::Transaction {
+    async fn is_proceeding(&self, transaction_id: TransactionId) -> bool {
         delay_for(Duration::from_millis(1)).await;
         match self
             .inner
@@ -174,13 +174,13 @@ impl TransactionUasExt for sip_server::Transaction {
             .expect("getting transaction from state")
         {
             TrxStateSm::UasInvite(sm) => {
-                matches!(sm.lock().await.state, UasTrxState::Proceeding { .. })
+                matches!(sm.lock().await.state, uas_invite::TrxState::Proceeding { .. })
             }
             _ => false,
         }
     }
 
-    async fn is_uas_completed(&self, transaction_id: TransactionId) -> bool {
+    async fn is_completed(&self, transaction_id: TransactionId) -> bool {
         delay_for(Duration::from_millis(1)).await;
         match self
             .inner
@@ -191,13 +191,13 @@ impl TransactionUasExt for sip_server::Transaction {
             .expect("getting transaction from state")
         {
             TrxStateSm::UasInvite(sm) => {
-                matches!(sm.lock().await.state, UasTrxState::Completed { .. })
+                matches!(sm.lock().await.state, uas_invite::TrxState::Completed { .. })
             }
             _ => false,
         }
     }
 
-    async fn is_uas_accepted(&self, transaction_id: TransactionId) -> bool {
+    async fn is_accepted(&self, transaction_id: TransactionId) -> bool {
         delay_for(Duration::from_millis(1)).await;
         match self
             .inner
@@ -208,13 +208,13 @@ impl TransactionUasExt for sip_server::Transaction {
             .expect("getting transaction from state")
         {
             TrxStateSm::UasInvite(sm) => {
-                matches!(sm.lock().await.state, UasTrxState::Accepted { .. })
+                matches!(sm.lock().await.state, uas_invite::TrxState::Accepted { .. })
             }
             _ => false,
         }
     }
 
-    async fn is_uas_confirmed(&self, transaction_id: TransactionId) -> bool {
+    async fn is_confirmed(&self, transaction_id: TransactionId) -> bool {
         delay_for(Duration::from_millis(1)).await;
         match self
             .inner
@@ -225,13 +225,13 @@ impl TransactionUasExt for sip_server::Transaction {
             .expect("getting transaction from state")
         {
             TrxStateSm::UasInvite(sm) => {
-                matches!(sm.lock().await.state, UasTrxState::Confirmed { .. })
+                matches!(sm.lock().await.state, uas_invite::TrxState::Confirmed { .. })
             }
             _ => false,
         }
     }
 
-    async fn is_uas_terminated(&self, transaction_id: TransactionId) -> bool {
+    async fn is_terminated(&self, transaction_id: TransactionId) -> bool {
         delay_for(Duration::from_millis(1)).await;
         match self
             .inner
@@ -244,14 +244,14 @@ impl TransactionUasExt for sip_server::Transaction {
             TrxStateSm::UasInvite(sm) => {
                 matches!(
                     sm.lock().await.state,
-                    UasTrxState::Terminated(UasTerminated::Expected { .. })
+                    uas_invite::TrxState::Terminated(uas_invite::Terminated::Expected { .. })
                 )
             }
             _ => false,
         }
     }
 
-    async fn is_uas_timedout(&self, transaction_id: TransactionId) -> bool {
+    async fn is_timedout(&self, transaction_id: TransactionId) -> bool {
         delay_for(Duration::from_millis(1)).await;
         match self
             .inner
@@ -264,14 +264,14 @@ impl TransactionUasExt for sip_server::Transaction {
             TrxStateSm::UasInvite(sm) => {
                 matches!(
                     sm.lock().await.state,
-                    UasTrxState::Terminated(UasTerminated::TimedOut { .. })
+                    uas_invite::TrxState::Terminated(uas_invite::Terminated::TimedOut { .. })
                 )
             }
             _ => false,
         }
     }
 
-    async fn is_uas_errored(&self, transaction_id: TransactionId) -> bool {
+    async fn is_errored(&self, transaction_id: TransactionId) -> bool {
         delay_for(Duration::from_millis(1)).await;
         match self
             .inner
@@ -284,7 +284,7 @@ impl TransactionUasExt for sip_server::Transaction {
             TrxStateSm::UasInvite(sm) => {
                 matches!(
                     sm.lock().await.state,
-                    UasTrxState::Terminated(UasTerminated::Errored { .. })
+                    uas_invite::TrxState::Terminated(uas_invite::Terminated::Errored { .. })
                 )
             }
             _ => false,

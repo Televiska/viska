@@ -109,10 +109,9 @@ impl Inner {
     async fn new_uac_invite_transaction(&self, request: rsip::Request) -> Result<(), Error> {
         self.handlers.transport.send(request.clone().into()).await?;
         let trx_state_sm = TrxStateSm::new_uac_invite(self.handlers.clone(), request)?;
-        {
-            let mut data = self.state.write().await;
-            data.insert(trx_state_sm.id().await, trx_state_sm.into());
-        }
+        let mut data = self.state.write().await;
+        data.insert(trx_state_sm.id().await, trx_state_sm);
+
         Ok(())
     }
 
@@ -122,12 +121,9 @@ impl Inner {
         response: Option<rsip::Response>,
     ) -> Result<(), Error> {
         self.handlers.transport.send(request.clone().into()).await?;
-        let trx_state_sm =
-            TrxStateSm::new_uas_invite(self.handlers.clone(), request, response)?;
-        {
-            let mut data = self.state.write().await;
-            data.insert(trx_state_sm.id().await, trx_state_sm.into());
-        }
+        let trx_state_sm = TrxStateSm::new_uas_invite(self.handlers.clone(), request, response)?;
+        let mut data = self.state.write().await;
+        data.insert(trx_state_sm.id().await, trx_state_sm);
 
         Ok(())
     }

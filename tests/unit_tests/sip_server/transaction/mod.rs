@@ -1,5 +1,5 @@
-pub mod uac_tests;
-pub mod uas_tests;
+pub mod uac_invite_tests;
+pub mod uas_invite_tests;
 
 use crate::common::snitches::SpySnitch;
 use models::{transport::TransportLayerMsg, tu::TuLayerMsg};

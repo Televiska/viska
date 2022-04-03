@@ -1,5 +1,5 @@
 use super::setup;
-use crate::common::{advance_for, extensions::TransactionUasExt, factories::prelude::*};
+use crate::common::{advance_for, extensions::transaction_ext::TransactionUasInviteExt, factories::prelude::*};
 use common::rsip::{self, prelude::*};
 use models::{rsip_ext::*, transport::TransportLayerMsg};
 use std::time::Duration;
@@ -29,7 +29,7 @@ async fn if_peer_not_alive() {
     assert_eq!(transport.messages().await.len().await, 1);
     assert!(
         transaction
-            .is_uas_errored(
+            .is_errored(
                 request
                     .transaction_id()
                     .unwrap()
@@ -91,7 +91,7 @@ async fn with_redirect_response_moves_to_completed() {
         .unwrap();
     assert!(
         transaction
-            .is_uas_completed(
+            .is_completed(
                 request
                     .transaction_id()
                     .unwrap()
@@ -123,7 +123,7 @@ async fn with_ok_response_moves_to_accepted() {
         .unwrap();
     assert!(
         transaction
-            .is_uas_accepted(
+            .is_accepted(
                 request
                     .transaction_id()
                     .unwrap()
@@ -151,7 +151,7 @@ async fn multiple_invites_on_completed_resends_response() {
 
     assert!(
         transaction
-            .is_uas_completed(
+            .is_completed(
                 request
                     .transaction_id()
                     .unwrap()
@@ -190,7 +190,7 @@ async fn redirect_but_peer_not_responding_with_ack() {
 
     assert!(
         transaction
-            .is_uas_completed(
+            .is_completed(
                 request
                     .transaction_id()
                     .unwrap()
@@ -227,7 +227,7 @@ async fn redirect_but_peer_not_responding_with_ack() {
 
     assert!(
         transaction
-            .is_uas_timedout(
+            .is_timedout(
                 request
                     .transaction_id()
                     .unwrap()
@@ -253,7 +253,7 @@ async fn with_ack_moves_to_confirmed() {
     transaction.handler().reply(response.clone()).await.unwrap();
     assert!(
         transaction
-            .is_uas_completed(
+            .is_completed(
                 request
                     .transaction_id()
                     .unwrap()
@@ -276,7 +276,7 @@ async fn with_ack_moves_to_confirmed() {
     assert_eq!(transaction.inner.state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uas_confirmed(
+            .is_confirmed(
                 request
                     .transaction_id()
                     .unwrap()
@@ -304,7 +304,7 @@ async fn multiple_invites_on_accepted_resends_response() {
 
     assert!(
         transaction
-            .is_uas_accepted(
+            .is_accepted(
                 request
                     .transaction_id()
                     .unwrap()
@@ -343,7 +343,7 @@ async fn ok_but_peer_not_responding_with_ack() {
 
     assert!(
         transaction
-            .is_uas_accepted(
+            .is_accepted(
                 request
                     .transaction_id()
                     .unwrap()
@@ -359,7 +359,7 @@ async fn ok_but_peer_not_responding_with_ack() {
 
     assert!(
         transaction
-            .is_uas_accepted(
+            .is_accepted(
                 request
                     .transaction_id()
                     .unwrap()
@@ -374,7 +374,7 @@ async fn ok_but_peer_not_responding_with_ack() {
 
     assert!(
         transaction
-            .is_uas_timedout(
+            .is_timedout(
                 request
                     .transaction_id()
                     .unwrap()
@@ -406,7 +406,7 @@ async fn with_multiple_ok_on_accepted() {
         .unwrap();
     assert!(
         transaction
-            .is_uas_accepted(
+            .is_accepted(
                 request
                     .transaction_id()
                     .unwrap()
@@ -447,7 +447,7 @@ async fn with_error_on_second_ok_on_accepted() {
         .unwrap();
     assert!(
         transaction
-            .is_uas_accepted(
+            .is_accepted(
                 request
                     .transaction_id()
                     .unwrap()
@@ -467,7 +467,7 @@ async fn with_error_on_second_ok_on_accepted() {
     assert_eq!(transaction.inner.state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uas_accepted(
+            .is_accepted(
                 request
                     .transaction_id()
                     .unwrap()
@@ -488,7 +488,7 @@ async fn with_error_on_second_ok_on_accepted() {
 
     assert!(
         transaction
-            .is_uas_errored(
+            .is_errored(
                 request
                     .transaction_id()
                     .unwrap()
@@ -514,7 +514,7 @@ async fn multiple_ack_received_are_forwarded_to_tu() {
     transaction.handler().reply(response.clone()).await.unwrap();
     assert!(
         transaction
-            .is_uas_accepted(
+            .is_accepted(
                 request
                     .transaction_id()
                     .unwrap()
@@ -563,7 +563,7 @@ async fn when_confirmed_acks_have_no_effect() {
     assert_eq!(transaction.inner.state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uas_confirmed(
+            .is_confirmed(
                 request
                     .transaction_id()
                     .unwrap()
@@ -589,7 +589,7 @@ async fn when_confirmed_acks_have_no_effect() {
     assert_eq!(transaction.inner.state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uas_confirmed(
+            .is_confirmed(
                 request
                     .transaction_id()
                     .unwrap()
@@ -625,7 +625,7 @@ async fn when_confirmed_when_time_i_kicks_in_move_to_terminated() {
     assert_eq!(transaction.inner.state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uas_confirmed(
+            .is_confirmed(
                 request
                     .transaction_id()
                     .unwrap()
@@ -642,7 +642,7 @@ async fn when_confirmed_when_time_i_kicks_in_move_to_terminated() {
     assert_eq!(transaction.inner.state.read().await.len(), 1);
     assert!(
         transaction
-            .is_uas_terminated(
+            .is_terminated(
                 request
                     .transaction_id()
                     .unwrap()

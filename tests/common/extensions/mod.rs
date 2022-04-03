@@ -1,10 +1,9 @@
 mod models;
 mod rsip_ext;
-mod transaction_ext;
+pub mod transaction_ext;
 mod uri_ext;
 
 pub use self::models::{TransactionLayerMsgExt, TransportLayerMsgExt};
-pub use transaction_ext::{TransactionUacExt, TransactionUasExt};
 pub use uri_ext::{HostWithPortExt, UriExt};
 
 pub trait Randomized: Sized {
