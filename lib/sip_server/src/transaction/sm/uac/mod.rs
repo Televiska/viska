@@ -15,6 +15,7 @@ use models::{transaction::TransactionId, Handlers};
 pub static TIMER_T1: u64 = 500;
 pub static TIMER_T2: u64 = 4000;
 pub static TIMER_F: u64 = 64 * TIMER_T1;
+pub static TIMER_K: u64 = 5000;
 
 //implements RFC6026 as well
 #[allow(dead_code)]

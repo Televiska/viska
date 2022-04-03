@@ -11,6 +11,7 @@ use std::fmt::Debug;
 #[allow(clippy::large_enum_variant)]
 pub enum TrxStateSm {
     UacInvite(Mutex<uac_invite::TrxStateMachine>),
+    Uac(Mutex<uac::TrxStateMachine>),
     UasInvite(Mutex<uas_invite::TrxStateMachine>),
 }
 
@@ -19,6 +20,12 @@ impl TrxStateSm {
         Ok(Self::UacInvite(Mutex::new(
             uac_invite::TrxStateMachine::new(handlers, request)?,
         )))
+    }
+
+    pub fn new_uac(handlers: Handlers, request: rsip::Request) -> Result<Self, Error> {
+        Ok(Self::Uac(Mutex::new(uac::TrxStateMachine::new(
+            handlers, request,
+        )?)))
     }
 
     pub fn new_uas_invite(
@@ -34,6 +41,7 @@ impl TrxStateSm {
     pub async fn id(&self) -> TransactionId {
         match self {
             Self::UacInvite(sm) => sm.lock().await.id.clone(),
+            Self::Uac(sm) => sm.lock().await.id.clone(),
             Self::UasInvite(sm) => sm.lock().await.id.clone(),
         }
     }
@@ -41,6 +49,7 @@ impl TrxStateSm {
     pub async fn is_active(&self) -> bool {
         match self {
             Self::UacInvite(sm) => sm.lock().await.is_active(),
+            Self::Uac(sm) => sm.lock().await.is_active(),
             Self::UasInvite(sm) => sm.lock().await.is_active(),
         }
     }
@@ -48,6 +57,7 @@ impl TrxStateSm {
     pub async fn transport_error(&self, reason: String) {
         match self {
             Self::UacInvite(sm) => sm.lock().await.transport_error(reason).await,
+            Self::Uac(sm) => sm.lock().await.transport_error(reason).await,
             Self::UasInvite(sm) => sm.lock().await.transport_error(reason).await,
         };
     }
@@ -56,6 +66,11 @@ impl TrxStateSm {
     pub async fn process_response(&self, msg: rsip::Response) -> Result<(), Error> {
         match self {
             Self::UacInvite(sm) => {
+                let mut sm = sm.lock().await;
+                sm.next(Some(msg)).await;
+                Ok(())
+            }
+            Self::Uac(sm) => {
                 let mut sm = sm.lock().await;
                 sm.next(Some(msg)).await;
                 Ok(())
@@ -86,17 +101,5 @@ impl TrxStateSm {
             }
             _ => Err(Error::from(TransactionError::UnexpectedState)),
         }
-    }
-}
-
-impl From<uac_invite::TrxStateMachine> for TrxStateSm {
-    fn from(from: uac_invite::TrxStateMachine) -> Self {
-        Self::UacInvite(Mutex::new(from))
-    }
-}
-
-impl From<uas_invite::TrxStateMachine> for TrxStateSm {
-    fn from(from: uas_invite::TrxStateMachine) -> Self {
-        Self::UasInvite(Mutex::new(from))
     }
 }

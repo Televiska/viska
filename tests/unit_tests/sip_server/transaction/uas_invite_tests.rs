@@ -1,5 +1,7 @@
 use super::setup;
-use crate::common::{advance_for, extensions::transaction_ext::TransactionUasInviteExt, factories::prelude::*};
+use crate::common::{
+    advance_for, extensions::transaction_ext::TransactionUasInviteExt, factories::prelude::*,
+};
 use common::rsip::{self, prelude::*};
 use models::{rsip_ext::*, transport::TransportLayerMsg};
 use std::time::Duration;

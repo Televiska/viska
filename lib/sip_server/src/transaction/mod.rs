@@ -128,8 +128,13 @@ impl Inner {
         Ok(())
     }
 
-    async fn new_uac_transaction(&self, _: rsip::Request) -> Result<(), Error> {
-        unimplemented!("");
+    async fn new_uac_transaction(&self, request: rsip::Request) -> Result<(), Error> {
+        self.handlers.transport.send(request.clone().into()).await?;
+        let trx_state_sm = TrxStateSm::new_uac(self.handlers.clone(), request)?;
+        let mut data = self.state.write().await;
+        data.insert(trx_state_sm.id().await, trx_state_sm);
+
+        Ok(())
     }
 
     async fn new_uas_transaction(
@@ -189,11 +194,14 @@ impl Inner {
         }
     }
 
+    //TODO: this is definitely not going to scale, we need to decouple timers
+    //probably with message passing etc
     async fn check_transactions(&self) {
         let state = self.state.read().await;
         for transaction_data in (*state).values() {
             match transaction_data {
                 TrxStateSm::UacInvite(sm) => sm.lock().await.next(None).await,
+                TrxStateSm::Uac(sm) => sm.lock().await.next(None).await,
                 TrxStateSm::UasInvite(sm) => sm.lock().await.next(None).await,
             };
         }
