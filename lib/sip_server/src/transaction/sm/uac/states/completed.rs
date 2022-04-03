@@ -1,11 +1,10 @@
-use common::{rsip, tokio::time::Instant};
+use common::tokio::time::Instant;
 use std::time::Duration;
 
 use super::super::TIMER_F;
 
 #[derive(Debug, Clone)]
 pub struct Completed {
-    pub response: rsip::Response,
     pub entered_at: Instant,
 }
 

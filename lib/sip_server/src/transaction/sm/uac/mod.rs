@@ -94,9 +94,22 @@ impl TrxStateMachine {
                 }
                 (false, false) => (),
             },
+            TrxState::Proceeding(proceeding) => {
+                match (proceeding.has_timedout(), proceeding.should_retransmit()) {
+                    (true, _) => self.terminate_due_to_timeout(),
+                    (false, true) => {
+                        self.handlers
+                            .transport
+                            .send(self.request.clone().into())
+                            .await?;
+                        self.state = TrxState::Proceeding(proceeding.retransmit());
+                    }
+                    (false, false) => (),
+                }
+            }
             TrxState::Completed(completed) => {
                 if completed.should_terminate() {
-                    self.terminate_due_to_timeout();
+                    self.terminate();
                 }
             }
             _ => (),
@@ -111,22 +124,21 @@ impl TrxStateMachine {
         match (&self.state, response.status_code.kind()) {
             (TrxState::Trying(_), StatusCodeKind::Provisional) => {
                 self.handlers.tu.process(response.clone().into()).await?;
-                self.proceed(response);
+                self.proceed();
             }
             (TrxState::Trying(_), _) => {
-                self.handlers.tu.process(response.clone().into()).await?;
-                self.complete(response);
+                self.handlers.tu.process(response.into()).await?;
+                self.complete();
             }
             (TrxState::Proceeding(_), StatusCodeKind::Provisional) => {
-                self.handlers.tu.process(response.clone().into()).await?;
-                self.update_response(response);
+                self.handlers.tu.process(response.into()).await?;
             }
             (TrxState::Proceeding(_), _) => {
-                self.handlers.tu.process(response.clone().into()).await?;
-                self.complete(response);
+                self.handlers.tu.process(response.into()).await?;
+                self.complete();
             }
             (TrxState::Completed(_), kind) if kind > StatusCodeKind::Successful => {
-                self.complete(response);
+                //quench retransmission
             }
             (_, _) => {
                 self.terminate_due_to_error(
@@ -142,31 +154,27 @@ impl TrxStateMachine {
         Ok(())
     }
 
-    fn proceed(&mut self, response: rsip::Response) {
-        self.state = TrxState::Proceeding(Proceeding {
-            response,
+    fn proceed(&mut self) {
+        let trying = match self.state {
+            TrxState::Trying(trying) => trying,
+            _ => {
+                return self.terminate_due_to_error(
+                    format!("can't move to Proceeding state from state: {}", self.state),
+                    None,
+                );
+            }
+        };
+        self.state = TrxState::Proceeding(Proceeding::from(trying));
+    }
+
+    fn complete(&mut self) {
+        self.state = TrxState::Completed(Completed {
             entered_at: Instant::now(),
         });
     }
 
-    fn update_response(&mut self, response: rsip::Response) {
-        match &self.state {
-            TrxState::Proceeding(state) => {
-                self.state = TrxState::Proceeding(Proceeding {
-                    response,
-                    entered_at: state.entered_at,
-                })
-            }
-            _ => self.terminate_due_to_error(
-                format!("Asking to update response when state is {}", self.state),
-                Some(response),
-            ),
-        };
-    }
-
-    fn complete(&mut self, response: rsip::Response) {
-        self.state = TrxState::Completed(Completed {
-            response,
+    fn terminate(&mut self) {
+        self.state = TrxState::Terminated(Terminated::Expected {
             entered_at: Instant::now(),
         });
     }

@@ -3,7 +3,6 @@ use common::{rsip, tokio::time::Instant};
 #[derive(Debug)]
 pub enum Terminated {
     Expected {
-        response: rsip::Response,
         entered_at: Instant
     },
     TimedOut {
