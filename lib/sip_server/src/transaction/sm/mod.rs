@@ -40,24 +40,24 @@ impl TrxStateSm {
 
     pub async fn id(&self) -> TransactionId {
         match self {
-            Self::UacInvite(sm) => sm.lock().await.id.clone(),
             Self::Uac(sm) => sm.lock().await.id.clone(),
+            Self::UacInvite(sm) => sm.lock().await.id.clone(),
             Self::UasInvite(sm) => sm.lock().await.id.clone(),
         }
     }
 
     pub async fn is_active(&self) -> bool {
         match self {
-            Self::UacInvite(sm) => sm.lock().await.is_active(),
             Self::Uac(sm) => sm.lock().await.is_active(),
+            Self::UacInvite(sm) => sm.lock().await.is_active(),
             Self::UasInvite(sm) => sm.lock().await.is_active(),
         }
     }
 
     pub async fn transport_error(&self, reason: String) {
         match self {
-            Self::UacInvite(sm) => sm.lock().await.transport_error(reason).await,
             Self::Uac(sm) => sm.lock().await.transport_error(reason).await,
+            Self::UacInvite(sm) => sm.lock().await.transport_error(reason).await,
             Self::UasInvite(sm) => sm.lock().await.transport_error(reason).await,
         };
     }
@@ -65,12 +65,12 @@ impl TrxStateSm {
     //only UAC process a response in the transaction layer
     pub async fn process_response(&self, msg: rsip::Response) -> Result<(), Error> {
         match self {
-            Self::UacInvite(sm) => {
+            Self::Uac(sm) => {
                 let mut sm = sm.lock().await;
                 sm.next(Some(msg)).await;
                 Ok(())
             }
-            Self::Uac(sm) => {
+            Self::UacInvite(sm) => {
                 let mut sm = sm.lock().await;
                 sm.next(Some(msg)).await;
                 Ok(())

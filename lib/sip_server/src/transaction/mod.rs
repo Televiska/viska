@@ -200,8 +200,8 @@ impl Inner {
         let state = self.state.read().await;
         for transaction_data in (*state).values() {
             match transaction_data {
-                TrxStateSm::UacInvite(sm) => sm.lock().await.next(None).await,
                 TrxStateSm::Uac(sm) => sm.lock().await.next(None).await,
+                TrxStateSm::UacInvite(sm) => sm.lock().await.next(None).await,
                 TrxStateSm::UasInvite(sm) => sm.lock().await.next(None).await,
             };
         }
